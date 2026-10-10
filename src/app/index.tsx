@@ -1,0 +1,198 @@
+/** Schermata "Oggi": punti del giorno, obiettivo e tragitti fatti. */
+import { router, useFocusEffect } from 'expo-router';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+import { getMode } from '../core/modes';
+import { DAILY_GOAL, dayKey, streak, summarizeDay, type Trip } from '../core/scoring';
+import { clearTrips, loadTrips } from '../storage/trips';
+import { useActiveTrip } from '../tracking/store';
+import { restoreTracking } from '../tracking/tracker';
+import { currentLeg } from '../tracking/tripState';
+import { dateLabel, integer, km } from '../ui/format';
+import { FlameIcon, ModeIcon, PlayIcon } from '../ui/Icons';
+import { Mascot } from '../ui/Mascot';
+import { BonusRow, Divider, Header, LegRow, Panel, PrimaryButton, ProgressBar, Screen, text } from '../ui/parts';
+import { C, F } from '../ui/theme';
+
+export default function Oggi() {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const active = useActiveTrip();
+  const insets = useSafeAreaInsets();
+  const now = Date.now();
+
+  // Ricarica lo storico ogni volta che si torna su questa schermata.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      loadTrips().then((loaded) => {
+        if (alive) setTrips(loaded);
+      });
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
+
+  // Se l'app era stata chiusa a tragitto aperto, lo si recupera.
+  useEffect(() => {
+    restoreTracking().catch(() => undefined);
+  }, []);
+
+  const today = summarizeDay(trips, dayKey(now));
+  const days = streak(trips, now);
+  const rows = today.trips.flatMap((trip) => [
+    ...trip.legs.map((leg, i) => ({ key: `${trip.id}-${i}`, leg, bonus: 0 })),
+    ...(trip.bonus > 0 ? [{ key: `${trip.id}-bonus`, leg: null, bonus: trip.bonus }] : []),
+  ]);
+
+  async function reset() {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    await clearTrips();
+    setTrips([]);
+    setConfirmReset(false);
+  }
+
+  return (
+    <Screen>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <Header
+          caption={dateLabel(now)}
+          title="Oggi"
+          right={
+            days > 0 ? (
+              <View style={styles.streak} accessibilityLabel={`Serie di ${days} giorni`}>
+                <FlameIcon />
+                <Text style={styles.streakText}>{days === 1 ? '1 giorno' : `${days} giorni di fila`}</Text>
+              </View>
+            ) : null
+          }
+        />
+
+        <View style={styles.hero}>
+          <RouteDecoration />
+          <View style={styles.heroLine}>
+            <Text style={styles.heroPoints}>{today.points}</Text>
+            <Text style={styles.heroLabel}>punti oggi</Text>
+          </View>
+          <View style={styles.goal}>
+            <ProgressBar value={today.points} max={DAILY_GOAL} label="Obiettivo giornaliero" detail={`${today.points} di ${DAILY_GOAL}`} />
+          </View>
+        </View>
+
+        <View style={styles.stats}>
+          <Panel style={styles.stat}>
+            <Text style={text.value}>{km(today.carFreeMeters)}</Text>
+            <Text style={text.small}>senza auto privata</Text>
+          </Panel>
+          <Panel style={styles.stat}>
+            <Text style={text.value}>{integer(today.steps)}</Text>
+            <Text style={text.small}>passi nei tragitti</Text>
+          </Panel>
+        </View>
+
+        {active ? (
+          <Pressable onPress={() => router.push('/in-corso')} accessibilityRole="button" style={styles.activeBanner}>
+            <ModeIcon mode={currentLeg(active).mode} size={22} color={C.ink} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.activeTitle}>Tragitto in corso</Text>
+              <Text style={styles.activeDetail}>{getMode(currentLeg(active).mode).label} · tocca per riaprirlo</Text>
+            </View>
+          </Pressable>
+        ) : null}
+
+        <Panel>
+          <Text style={[text.h2, { marginBottom: 6 }]} accessibilityRole="header">
+            Tragitti di oggi
+          </Text>
+          {rows.length === 0 ? (
+            <View style={styles.empty}>
+              <Mascot size={84} />
+              <Text style={[text.body, { textAlign: 'center' }]}>
+                Ancora nessun tragitto. Scegli come ti muovi e premi Avvia: i punti arrivano a fine percorso.
+              </Text>
+            </View>
+          ) : (
+            rows.map((row, i) => (
+              <Fragment key={row.key}>
+                {i > 0 ? <Divider /> : null}
+                {row.leg ? <LegRow leg={row.leg} /> : <BonusRow points={row.bonus} />}
+              </Fragment>
+            ))
+          )}
+        </Panel>
+
+        {trips.length > 0 ? (
+          <Pressable onPress={reset} accessibilityRole="button" style={styles.reset}>
+            <Text style={[text.small, confirmReset && { color: C.coral }]}>
+              {confirmReset ? 'Tocca di nuovo per cancellare tutti i tragitti' : 'Azzera i dati di prova'}
+            </Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+
+      {active ? null : (
+        <View style={[styles.cta, { bottom: insets.bottom + 16 }]}>
+          <PrimaryButton label="Inizia un tragitto" icon={<PlayIcon size={22} />} onPress={() => router.push('/nuovo')} />
+        </View>
+      )}
+    </Screen>
+  );
+}
+
+/** Il percorso lime del mockup, puramente decorativo. */
+function RouteDecoration() {
+  return (
+    <View style={styles.decoration} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg width={82} height={170} viewBox="250 120 130 270">
+        <Path d="M352 384C352 340 292 336 292 290S350 250 330 206S276 176 318 140" fill="none" stroke={C.lime} strokeWidth={9} strokeLinecap="round" />
+        <Circle cx={292} cy={290} r={7} fill={C.bg} stroke="#FFFFFF" strokeWidth={3} />
+        <Circle cx={318} cy={140} r={11} fill={C.lime} stroke="#FFFFFF" strokeWidth={4} />
+      </Svg>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { gap: 16, paddingBottom: 110 },
+  decoration: { position: 'absolute', right: 6, top: 0 },
+  streak: {
+    height: 36,
+    paddingLeft: 10,
+    paddingRight: 14,
+    borderRadius: 18,
+    backgroundColor: C.panel,
+    borderColor: C.panelBorder,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  streakText: { fontFamily: F.semi, fontSize: 13, color: C.text },
+  hero: { height: 170, justifyContent: 'center', gap: 18 },
+  heroLine: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
+  heroPoints: { fontFamily: F.displayBold, fontSize: 104, lineHeight: 104, color: C.lime },
+  heroLabel: { fontFamily: F.semi, fontSize: 17, color: C.text },
+  goal: { width: 210 },
+  stats: { flexDirection: 'row', gap: 12 },
+  stat: { flex: 1, borderRadius: 20, paddingVertical: 13 },
+  activeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 20,
+    backgroundColor: C.lime,
+  },
+  activeTitle: { fontFamily: F.display, fontSize: 17, color: C.ink },
+  activeDetail: { fontFamily: F.medium, fontSize: 13, color: C.ink },
+  empty: { alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 8 },
+  reset: { alignSelf: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+  cta: { position: 'absolute', left: 20, right: 20 },
+});

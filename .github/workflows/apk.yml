@@ -1,0 +1,83 @@
+# Costruisce l'app Android a ogni modifica e la pubblica come file scaricabile.
+#
+# Risultato: una pagina "Releases" del repository con il file vado.apk, da
+# aprire e installare direttamente dal telefono. Non serve un PC.
+#
+# Si avvia da solo a ogni invio di codice sul ramo principale; si può anche
+# lanciare a mano dalla scheda Actions del repository ("Run workflow").
+
+name: Costruisci l'app Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Installa le dipendenze
+        run: npm ci
+
+      - name: Controlli automatici (regole del punteggio, filtro GPS, tipi)
+        run: |
+          npm test
+          npm run typecheck
+
+      - name: Genera il progetto Android
+        run: npx expo prebuild --platform android --no-install
+
+      # Ogni build ha un numero di versione più alto della precedente, così il
+      # telefono la accetta come aggiornamento senza disinstallare.
+      - name: Numero di versione
+        run: |
+          sed -i "s/versionCode [0-9]\+/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          grep -n "versionCode" android/app/build.gradle
+
+      # Solo l'architettura dei telefoni moderni (arm64): dimezza i tempi.
+      - name: Compila
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Prepara il file
+        run: cp android/app/build/outputs/apk/release/app-release.apk vado.apk
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vado-apk
+          path: vado.apk
+
+      - name: Pubblica come ultima versione
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete ultima --yes --cleanup-tag || true
+          gh release create ultima vado.apk \
+            --target "${{ github.sha }}" \
+            --title "Versione di prova n. ${{ github.run_number }}" \
+            --notes "Scarica vado.apk dal telefono e aprilo per installare. Firmata con una chiave di prova: va bene per provare, non per il Play Store."
