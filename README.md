@@ -12,7 +12,7 @@ decise insieme. Tutti i dati restano sul telefono.
 |---|---|
 | Schermata Oggi: punti, obiettivo da 80, serie di giorni, tragitti | Mappa vera sotto il percorso |
 | Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | CO₂ evitata (servono fattori di emissione con fonte) |
-| Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Trasparenze sfocate del mockup |
+| Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Tema scuro (la grafica è solo chiara) |
 | Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Riconoscimento automatico del mezzo |
 | Medaglie: nove, con avanzamento | |
 | Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
@@ -20,6 +20,15 @@ decise insieme. Tutti i dati restano sul telefono.
 | Rilevamento a schermo spento, con notifica fissa | |
 | Controlli anti-imbroglio di base | |
 | Schermata Riservatezza | |
+
+## Grafica
+
+Lo stile si chiama "Adesivi": fondo chiaro, blocco lime in cima alle schermate principali, schede bianche con bordo
+spesso color inchiostro e ombra piena (senza sfumatura), mascotte e medaglie disegnate come figurine. Colori,
+caratteri e forme stanno in `src/ui/theme.ts`; i pezzi riusati in `src/ui/parts.tsx` e `src/ui/Hero.tsx`.
+
+Regola per i testi: sul chiaro si scrive in inchiostro. Lime e corallo sono riempimenti, non colori di testo su
+bianco (il contrasto non basta); il lime come testo compare solo su fondo inchiostro.
 
 ## Installarla sul telefono, senza PC
 

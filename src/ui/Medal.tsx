@@ -18,8 +18,8 @@ const WHITE = '#FFFFFF';
 function Sticker({ color, children }: { color: string; children: ReactNode }) {
   return (
     <G>
-      <Circle cx={48} cy={48} r={46} fill={WHITE} />
-      <Circle cx={48} cy={48} r={39} fill={color} />
+      <Circle cx={48} cy={48} r={45} fill={WHITE} stroke={INK} strokeWidth={3} />
+      <Circle cx={48} cy={48} r={37.5} fill={color} />
       {children}
     </G>
   );
@@ -162,13 +162,13 @@ const ART: Record<BadgeId, ReactNode> = {
 /** Sagoma con il lucchetto, per le medaglie non ancora iniziate. */
 const LOCKED = (
   <G>
-    <Circle cx={48} cy={48} r={45} fill="none" stroke={WHITE} strokeOpacity={0.3} strokeWidth={2} strokeDasharray="5 6" />
-    <Circle cx={48} cy={48} r={39} fill={WHITE} fillOpacity={0.06} />
-    <Ellipse cx={48} cy={48} rx={21} ry={22} fill={WHITE} fillOpacity={0.14} />
-    <Rect x={35} y={69} width={11} height={6} rx={3} fill={WHITE} fillOpacity={0.14} />
-    <Rect x={50} y={69} width={11} height={6} rx={3} fill={WHITE} fillOpacity={0.14} />
-    <Rect x={40} y={46} width={16} height={13} rx={3} fill="none" stroke={WHITE} strokeWidth={2.4} />
-    <Path d="M43 46v-4a5 5 0 0 1 10 0v4" fill="none" stroke={WHITE} strokeWidth={2.4} strokeLinecap="round" />
+    <Circle cx={48} cy={48} r={45} fill={WHITE} stroke={INK} strokeOpacity={0.45} strokeWidth={2.5} strokeDasharray="5 6" />
+    <Circle cx={48} cy={48} r={37.5} fill={INK} fillOpacity={0.07} />
+    <Ellipse cx={48} cy={48} rx={21} ry={22} fill={INK} fillOpacity={0.12} />
+    <Rect x={35} y={69} width={11} height={6} rx={3} fill={INK} fillOpacity={0.12} />
+    <Rect x={50} y={69} width={11} height={6} rx={3} fill={INK} fillOpacity={0.12} />
+    <Rect x={40} y={46} width={16} height={13} rx={3} fill={WHITE} stroke={INK} strokeWidth={2.4} />
+    <Path d="M43 46v-4a5 5 0 0 1 10 0v4" fill="none" stroke={INK} strokeWidth={2.4} strokeLinecap="round" />
   </G>
 );
 

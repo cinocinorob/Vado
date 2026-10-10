@@ -3,11 +3,11 @@
  * È anche la spiegazione che Connessione Salute chiede a ogni app che ne legge i dati.
  */
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { IMPORT_DAYS } from '../core/health';
 import { CloseIcon } from '../ui/Icons';
-import { Header, Panel, Screen, text } from '../ui/parts';
+import { Header, Panel, RoundButton, Screen, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
 const SECTIONS: { title: string; body: string }[] = [
@@ -44,9 +44,9 @@ export default function Riservatezza() {
           caption="Cosa usa l'app e perché"
           title="Riservatezza"
           left={
-            <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Chiudi" style={styles.close}>
+            <RoundButton onPress={() => router.back()} label="Chiudi">
               <CloseIcon size={20} />
-            </Pressable>
+            </RoundButton>
           }
         />
         {SECTIONS.map((section) => (
@@ -64,18 +64,7 @@ export default function Riservatezza() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 12, paddingBottom: 40 },
-  close: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
+  scroll: { gap: 16, paddingBottom: 40 },
   section: { gap: 6, borderRadius: 20 },
-  title: { fontFamily: F.display, fontSize: 17, color: C.text },
+  title: { fontFamily: F.displayBold, fontSize: 17, color: C.text },
 });

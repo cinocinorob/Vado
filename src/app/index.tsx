@@ -2,7 +2,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
 
 import { appName } from '../core/health';
 import { getMode } from '../core/modes';
@@ -16,10 +15,11 @@ import { restoreTracking } from '../tracking/tracker';
 import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer, km } from '../ui/format';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
-import { ChevronIcon, FlameIcon, HeartIcon, ModeIcon } from '../ui/Icons';
-import { Mascot } from '../ui/Mascot';
-import { BonusRow, Divider, GhostButton, Header, LegRow, Panel, ProgressBar, Screen, text } from '../ui/parts';
-import { C, F } from '../ui/theme';
+import { HeroBlock, StickerChip, chipText } from '../ui/Hero';
+import { ChevronIcon, FlameIcon, HeartIcon } from '../ui/Icons';
+import { Mascot, StickerMascot } from '../ui/Mascot';
+import { BonusRow, Divider, GUTTER, GhostButton, LegRow, ModeBadge, Panel, ProgressBar, Screen, text } from '../ui/parts';
+import { BORDER, C, F, shadow } from '../ui/theme';
 
 export default function Oggi() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -110,137 +110,144 @@ export default function Oggi() {
   }
 
   return (
-    <Screen>
+    <Screen bleed>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Header
+        <HeroBlock
           caption={dateLabel(now)}
           title="Oggi"
           right={
             days > 0 ? (
-              <View style={styles.streak} accessibilityLabel={`Serie di ${days} giorni`}>
+              <StickerChip label={`Serie di ${days} giorni`}>
                 <FlameIcon />
-                <Text style={styles.streakText}>{days === 1 ? '1 giorno' : `${days} giorni di fila`}</Text>
-              </View>
+                <Text style={chipText}>{days === 1 ? '1 giorno' : `${days} giorni di fila`}</Text>
+              </StickerChip>
             ) : null
           }
-        />
-
-        <View style={styles.hero}>
-          <RouteDecoration />
-          <View style={styles.heroLine}>
-            <Text style={styles.heroPoints}>{today.points}</Text>
-            <Text style={styles.heroLabel}>punti oggi</Text>
-          </View>
-          <View style={styles.goal}>
-            <ProgressBar value={today.points} max={DAILY_GOAL} label="Obiettivo giornaliero" detail={`${today.points} di ${DAILY_GOAL}`} />
-          </View>
-        </View>
-
-        <View style={styles.stats}>
-          <Panel style={styles.stat}>
-            <Text style={text.value}>{km(today.carFreeMeters)}</Text>
-            <Text style={text.small}>senza auto privata</Text>
-          </Panel>
-          <Panel style={styles.stat}>
-            <Text style={text.value}>{integer(healthSteps ?? today.steps)}</Text>
-            <Text style={text.small}>{healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}</Text>
-          </Panel>
-        </View>
-
-        {active ? (
-          <Pressable onPress={() => router.push('/in-corso')} accessibilityRole="button" style={styles.activeBanner}>
-            <ModeIcon mode={currentLeg(active).mode} size={22} color={C.ink} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.activeTitle}>Tragitto in corso</Text>
-              <Text style={styles.activeDetail}>{getMode(currentLeg(active).mode).label} · tocca per riaprirlo</Text>
+        >
+          <View style={styles.heroRow}>
+            <View>
+              <Text style={styles.heroPoints}>{today.points}</Text>
+              <Text style={styles.heroLabel}>punti oggi</Text>
             </View>
-          </Pressable>
-        ) : null}
-
-        <Panel>
-          <Text style={[text.h2, { marginBottom: 6 }]} accessibilityRole="header">
-            Tragitti di oggi
-          </Text>
-          {rows.length === 0 ? (
-            <View style={styles.empty}>
-              <Mascot size={84} />
-              <Text style={[text.body, { textAlign: 'center' }]}>
-                Ancora nessun tragitto. Tocca il pulsante verde, scegli come ti muovi e premi Avvia: i punti arrivano a fine percorso.
-              </Text>
+            <View style={styles.heroMascot}>
+              <StickerMascot size={132} disc={C.coral} />
             </View>
-          ) : (
-            rows.map((row, i) => (
-              <Fragment key={row.key}>
-                {i > 0 ? <Divider /> : null}
-                {row.leg ? <LegRow leg={row.leg} caption={row.caption} /> : <BonusRow points={row.bonus} />}
-              </Fragment>
-            ))
-          )}
-        </Panel>
+          </View>
+          <ProgressBar value={today.points} max={DAILY_GOAL} label="Obiettivo di oggi" detail={`${today.points} di ${DAILY_GOAL}`} />
+        </HeroBlock>
 
-        {health && health.status !== 'non-disponibile' ? (
-          <Panel style={styles.health}>
-            <View style={styles.healthHead}>
-              <View style={[styles.healthIcon, health.connected && { backgroundColor: C.limeSoft }]}>
-                <HeartIcon size={20} color={health.connected ? C.lime : C.text} />
-              </View>
+        <View style={styles.body}>
+          <View style={styles.stats}>
+            <View style={[styles.stat, styles.statLight]}>
+              <Text style={text.value}>{km(today.carFreeMeters)}</Text>
+              <Text style={styles.statLabel}>senza auto privata</Text>
+            </View>
+            <View style={[styles.stat, styles.statDark]}>
+              <Text style={[text.value, { color: C.lime }]}>{integer(healthSteps ?? today.steps)}</Text>
+              <Text style={[styles.statLabel, { color: C.onInkDim }]}>{healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}</Text>
+            </View>
+          </View>
+
+          {active ? (
+            <Pressable
+              onPress={() => router.push('/in-corso')}
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.activeBanner, pressed ? [shadow(1), { transform: [{ translateY: 4 }] }] : shadow(5)]}
+            >
+              <ModeBadge mode={currentLeg(active).mode} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.healthTitle} accessibilityRole="header">
-                  Connessione Salute
-                </Text>
-                <Text style={text.small}>
-                  {health.status === 'da-aggiornare'
-                    ? 'Da aggiornare dal Play Store prima di poterla collegare.'
-                    : health.connected
-                      ? 'Collegata: passi e attività vengono letti quando apri l\'app.'
-                      : 'Non collegata'}
+                <Text style={styles.activeTitle}>Tragitto in corso</Text>
+                <Text style={styles.activeDetail}>{getMode(currentLeg(active).mode).label}: tocca per riaprirlo</Text>
+              </View>
+            </Pressable>
+          ) : null}
+
+          <Panel>
+            <Text style={[text.h2, { marginBottom: 6 }]} accessibilityRole="header">
+              Tragitti di oggi
+            </Text>
+            {rows.length === 0 ? (
+              <View style={styles.empty}>
+                <Mascot size={84} tilt={-6} />
+                <Text style={[text.body, { textAlign: 'center' }]}>
+                  Ancora nessun tragitto. Tocca il pulsante tondo in basso, scegli come ti muovi e premi Avvia: i punti arrivano a fine
+                  percorso.
                 </Text>
               </View>
-            </View>
-
-            {health.status === 'disponibile' && !health.connected ? (
-              <>
-                <Text style={text.body}>
-                  Collegala per confermare i tratti a piedi anche a schermo spento e per ricevere punti da camminate, corse e giri
-                  in bici registrati da altre app o dall&apos;orologio.
-                </Text>
-                <GhostButton label={connecting ? 'Collego…' : 'Collega'} onPress={connect} />
-              </>
-            ) : null}
-
-            {healthNote ? (
-              <Text style={styles.healthNote} accessibilityRole="alert">
-                {healthNote}
-              </Text>
-            ) : null}
-            {healthProblem ? (
-              <Text style={[styles.healthNote, { color: C.coral }]} accessibilityRole="alert">
-                {healthProblem}
-              </Text>
-            ) : null}
-
-            <View style={styles.healthLinks}>
-              {health.connected ? (
-                <Pressable onPress={openHealthSettings} accessibilityRole="button" style={styles.healthLink} hitSlop={6}>
-                  <Text style={styles.healthLinkText}>Gestisci i permessi</Text>
-                  <ChevronIcon size={14} color={C.dim} />
-                </Pressable>
-              ) : null}
-              <Pressable onPress={() => router.push('/riservatezza')} accessibilityRole="button" style={styles.healthLink} hitSlop={6}>
-                <Text style={styles.healthLinkText}>Come usiamo questi dati</Text>
-                <ChevronIcon size={14} color={C.dim} />
-              </Pressable>
-            </View>
+            ) : (
+              rows.map((row, i) => (
+                <Fragment key={row.key}>
+                  {i > 0 ? <Divider /> : null}
+                  {row.leg ? <LegRow leg={row.leg} caption={row.caption} /> : <BonusRow points={row.bonus} />}
+                </Fragment>
+              ))
+            )}
           </Panel>
-        ) : null}
 
-        {trips.length > 0 ? (
-          <Pressable onPress={reset} accessibilityRole="button" style={styles.reset}>
-            <Text style={[text.small, confirmReset && { color: C.coral }]}>
-              {confirmReset ? 'Tocca di nuovo per cancellare tutti i tragitti' : 'Azzera i dati di prova'}
-            </Text>
-          </Pressable>
-        ) : null}
+          {health && health.status !== 'non-disponibile' ? (
+            <Panel style={styles.health}>
+              <View style={styles.healthHead}>
+                <View style={[styles.healthIcon, health.connected && { backgroundColor: C.lime }]}>
+                  <HeartIcon size={20} color={C.ink} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.healthTitle} accessibilityRole="header">
+                    Connessione Salute
+                  </Text>
+                  <Text style={text.small}>
+                    {health.status === 'da-aggiornare'
+                      ? 'Da aggiornare dal Play Store prima di poterla collegare.'
+                      : health.connected
+                        ? "Collegata: passi e attività vengono letti quando apri l'app."
+                        : 'Non collegata'}
+                  </Text>
+                </View>
+              </View>
+
+              {health.status === 'disponibile' && !health.connected ? (
+                <>
+                  <Text style={text.body}>
+                    Collegala per confermare i tratti a piedi anche a schermo spento e per ricevere punti da camminate, corse e giri
+                    in bici registrati da altre app o dall&apos;orologio.
+                  </Text>
+                  <GhostButton label={connecting ? 'Collego…' : 'Collega'} onPress={connect} />
+                </>
+              ) : null}
+
+              {healthNote ? (
+                <Text style={styles.healthNote} accessibilityRole="alert">
+                  {healthNote}
+                </Text>
+              ) : null}
+              {healthProblem ? (
+                <Text style={[styles.healthNote, { color: C.alert }]} accessibilityRole="alert">
+                  {healthProblem}
+                </Text>
+              ) : null}
+
+              <View style={styles.healthLinks}>
+                {health.connected ? (
+                  <Pressable onPress={openHealthSettings} accessibilityRole="button" style={styles.healthLink} hitSlop={6}>
+                    <Text style={styles.healthLinkText}>Gestisci i permessi</Text>
+                    <ChevronIcon size={14} color={C.ink} />
+                  </Pressable>
+                ) : null}
+                <Pressable onPress={() => router.push('/riservatezza')} accessibilityRole="button" style={styles.healthLink} hitSlop={6}>
+                  <Text style={styles.healthLinkText}>Come usiamo questi dati</Text>
+                  <ChevronIcon size={14} color={C.ink} />
+                </Pressable>
+              </View>
+            </Panel>
+          ) : null}
+
+          {trips.length > 0 ? (
+            <Pressable onPress={reset} accessibilityRole="button" style={styles.reset}>
+              <Text style={[text.small, confirmReset && { color: C.alert, fontFamily: F.bold }]}>
+                {confirmReset ? 'Tocca di nuovo per cancellare tutti i tragitti' : 'Azzera i dati di prova'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       </ScrollView>
 
       <BottomNav current="oggi" tripActive={!!active} />
@@ -248,60 +255,39 @@ export default function Oggi() {
   );
 }
 
-/** Il percorso lime del mockup, puramente decorativo. */
-function RouteDecoration() {
-  return (
-    <View style={styles.decoration} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Svg width={82} height={170} viewBox="250 120 130 270">
-        <Path d="M352 384C352 340 292 336 292 290S350 250 330 206S276 176 318 140" fill="none" stroke={C.lime} strokeWidth={9} strokeLinecap="round" />
-        <Circle cx={292} cy={290} r={7} fill={C.bg} stroke="#FFFFFF" strokeWidth={3} />
-        <Circle cx={318} cy={140} r={11} fill={C.lime} stroke="#FFFFFF" strokeWidth={4} />
-      </Svg>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  scroll: { gap: 16, paddingBottom: NAV_SPACE },
-  decoration: { position: 'absolute', right: 6, top: 0 },
-  streak: {
-    height: 36,
-    paddingLeft: 10,
-    paddingRight: 14,
-    borderRadius: 18,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  streakText: { fontFamily: F.semi, fontSize: 13, color: C.text },
-  hero: { height: 170, justifyContent: 'center', gap: 18 },
-  heroLine: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
-  heroPoints: { fontFamily: F.displayBold, fontSize: 104, lineHeight: 104, color: C.lime },
-  heroLabel: { fontFamily: F.semi, fontSize: 17, color: C.text },
-  goal: { width: 210 },
+  scroll: { paddingBottom: NAV_SPACE },
+  body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 18 },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 14, marginBottom: 14 },
+  heroPoints: { fontFamily: F.displayBold, fontSize: 128, lineHeight: 122, letterSpacing: -3, color: C.ink },
+  heroLabel: { fontFamily: F.display, fontSize: 20, color: C.ink, marginTop: 2 },
+  heroMascot: { marginRight: -4, marginBottom: 2 },
   stats: { flexDirection: 'row', gap: 12 },
-  stat: { flex: 1, borderRadius: 20, paddingVertical: 13 },
+  stat: { flex: 1, minHeight: 76, borderRadius: 22, borderWidth: BORDER, borderColor: C.ink, paddingVertical: 11, paddingHorizontal: 16, justifyContent: 'center' },
+  // Le due tessere sono appoggiate un po' storte, una per parte.
+  statLight: { backgroundColor: C.card, transform: [{ rotate: '-1.5deg' }], ...shadow(5) },
+  statDark: { backgroundColor: C.ink, transform: [{ rotate: '1.5deg' }], ...shadow(5, C.coral) },
+  statLabel: { fontFamily: F.semi, fontSize: 12.5, color: C.dim },
   activeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
-    borderRadius: 20,
-    backgroundColor: C.lime,
+    padding: 12,
+    borderRadius: 22,
+    backgroundColor: C.coral,
+    borderColor: C.ink,
+    borderWidth: BORDER,
   },
-  activeTitle: { fontFamily: F.display, fontSize: 17, color: C.ink },
-  activeDetail: { fontFamily: F.medium, fontSize: 13, color: C.ink },
+  activeTitle: { fontFamily: F.displayBold, fontSize: 17, color: C.ink },
+  activeDetail: { fontFamily: F.semi, fontSize: 13, color: C.ink },
   health: { gap: 12 },
   healthHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  healthIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255, 255, 255, 0.1)', alignItems: 'center', justifyContent: 'center' },
-  healthTitle: { fontFamily: F.display, fontSize: 17, color: C.text },
-  healthNote: { fontFamily: F.semi, fontSize: 14, lineHeight: 20, color: C.lime },
+  healthIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.card, borderColor: C.ink, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  healthTitle: { fontFamily: F.displayBold, fontSize: 17, color: C.text },
+  healthNote: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.teal },
   healthLinks: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 8 },
   healthLink: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32 },
-  healthLinkText: { fontFamily: F.medium, fontSize: 13, color: C.dim },
+  healthLinkText: { fontFamily: F.bold, fontSize: 13, color: C.text, textDecorationLine: 'underline' },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 8 },
-  reset: { alignSelf: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+  reset: { alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16 },
 });

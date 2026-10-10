@@ -123,8 +123,12 @@ def finish_button() -> dict | None:
     """Il pulsante "Termina", riconosciuto dal colore invece che dal testo.
 
     Nella schermata del tragitto l'elenco degli elementi non è affidabile (vedi
-    nodes), ma il pulsante è l'unica grande area color corallo: si cerca quella
+    nodes), ma il pulsante è l'unica area color corallo larga: si cerca quella
     nella parte bassa dello schermo e se ne restituisce il centro.
+
+    Anche il pulsante tondo per iniziare un tragitto è corallo, ma è stretto
+    (circa un sesto dello schermo): per questo contano solo le righe in cui il
+    corallo copre almeno un quarto della larghezza, e ne servono parecchie.
     """
     raw = subprocess.run(["adb", "exec-out", "screencap"], capture_output=True, timeout=60).stdout
     if len(raw) < 16:
@@ -133,17 +137,23 @@ def finish_button() -> dict | None:
     header = len(raw) - width * height * 4
     if width <= 0 or height <= 0 or header < 12:
         return None
-    xs, ys = [], []
-    for y in range(int(height * 0.6), height, 12):
-        for x in range(0, width, 12):
+    step = 12
+    wide_row = (width // step) // 4
+    xs, ys, rows = [], [], 0
+    for y in range(int(height * 0.6), height, step):
+        row = []
+        for x in range(0, width, step):
             o = header + (y * width + x) * 4
             r, g, b = raw[o], raw[o + 1], raw[o + 2]
             # Corallo dell'app: #FF8A65.
             if r > 235 and 120 < g < 158 and 85 < b < 120:
-                xs.append(x)
-                ys.append(y)
-    # Un pulsante intero copre centinaia di punti della griglia.
-    if len(xs) < 150:
+                row.append(x)
+        if len(row) >= wide_row:
+            rows += 1
+            xs.extend(row)
+            ys.extend([y] * len(row))
+    # Un pulsante largo e alto: almeno sei righe della griglia.
+    if rows < 6:
         return None
     return {"center": (sum(xs) // len(xs), sum(ys) // len(ys))}
 

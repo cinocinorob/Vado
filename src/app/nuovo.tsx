@@ -1,14 +1,14 @@
 /** Schermata "Nuovo tragitto": scelta del mezzo e avvio. */
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getMode, type ModeId } from '../core/modes';
 import { COMMUTE_BONUS, TRIP_CAP } from '../core/scoring';
 import { startTracking } from '../tracking/tracker';
 import { CloseIcon, PlayIcon, ShieldIcon } from '../ui/Icons';
-import { Header, ModeGrid, Panel, PrimaryButton, Screen, text } from '../ui/parts';
+import { Header, ModeGrid, Panel, PrimaryButton, RoundButton, Screen, Toggle, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
 export default function NuovoTragitto() {
@@ -36,9 +36,9 @@ export default function NuovoTragitto() {
           caption="Scegli come ti muovi"
           title="Nuovo tragitto"
           left={
-            <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Chiudi" style={styles.close}>
+            <RoundButton onPress={() => router.back()} label="Chiudi">
               <CloseIcon size={20} />
-            </Pressable>
+            </RoundButton>
           }
         />
 
@@ -51,21 +51,11 @@ export default function NuovoTragitto() {
               {bonusPossible ? `Bonus +${COMMUTE_BONUS}, una volta al giorno` : "Nessun bonus con l'auto privata"}
             </Text>
           </View>
-          <Pressable
-            onPress={() => setCommute((v) => !v)}
-            disabled={!bonusPossible}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: commute && bonusPossible, disabled: !bonusPossible }}
-            accessibilityLabel="Tragitto casa-lavoro"
-            hitSlop={8}
-            style={[styles.switch, commute && bonusPossible ? styles.switchOn : styles.switchOff]}
-          >
-            <View style={[styles.knob, { backgroundColor: commute && bonusPossible ? C.ink : C.text }]} />
-          </Pressable>
+          <Toggle value={commute && bonusPossible} onChange={() => setCommute((v) => !v)} label="Tragitto casa-lavoro" disabled={!bonusPossible} />
         </Panel>
 
         <Panel style={styles.info}>
-          <ShieldIcon size={22} color={C.lime} />
+          <ShieldIcon size={22} color={C.teal} />
           <Text style={[text.small, { flex: 1, lineHeight: 18 }]}>
             {mode === 'piedi'
               ? 'A piedi i passi contati dal telefono confermano il tragitto.'
@@ -90,25 +80,10 @@ export default function NuovoTragitto() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 16, paddingBottom: 110 },
-  close: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
+  scroll: { gap: 16, paddingBottom: 116 },
   commute: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, paddingVertical: 12 },
-  commuteTitle: { fontFamily: F.semi, fontSize: 15, color: C.text },
-  switch: { width: 56, height: 32, borderRadius: 16, padding: 3, justifyContent: 'center' },
-  switchOn: { backgroundColor: C.lime, alignItems: 'flex-end' },
-  switchOff: { backgroundColor: C.faint, alignItems: 'flex-start' },
-  knob: { width: 26, height: 26, borderRadius: 13 },
-  info: { flexDirection: 'row', gap: 12, borderRadius: 20, paddingVertical: 12 },
-  problem: { fontFamily: F.semi, fontSize: 14, lineHeight: 20, color: C.coral },
+  commuteTitle: { fontFamily: F.bold, fontSize: 15, color: C.text },
+  info: { flexDirection: 'row', gap: 12, borderRadius: 20, paddingVertical: 12, backgroundColor: C.limeSoft },
+  problem: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.alert },
   cta: { position: 'absolute', left: 20, right: 20 },
 });

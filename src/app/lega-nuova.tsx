@@ -1,13 +1,13 @@
 /** Schermata "Nuova lega": crearne una oppure entrare con un codice. */
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 
 import { CODE_LENGTH } from '../core/social';
 import { social, type LeagueSummary, type Result } from '../social';
 import { leagueToOpen } from '../social/selection';
 import { CloseIcon } from '../ui/Icons';
-import { Header, Panel, PrimaryButton, Screen, text } from '../ui/parts';
+import { Header, PLACEHOLDER, Panel, PrimaryButton, RoundButton, Screen, input, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
 export default function NuovaLega() {
@@ -36,9 +36,9 @@ export default function NuovaLega() {
           caption="Con amici, colleghi, famiglia"
           title="Nuova lega"
           left={
-            <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Chiudi" style={styles.close}>
+            <RoundButton onPress={() => router.back()} label="Chiudi">
               <CloseIcon size={20} />
-            </Pressable>
+            </RoundButton>
           }
         />
 
@@ -54,12 +54,12 @@ export default function NuovaLega() {
               setCreateProblem(null);
             }}
             placeholder="Per esempio Colleghi"
-            placeholderTextColor="rgba(255, 255, 255, 0.45)"
+            placeholderTextColor={PLACEHOLDER}
             maxLength={24}
             autoCapitalize="sentences"
             returnKeyType="done"
             accessibilityLabel="Nome della lega"
-            style={styles.input}
+            style={input}
           />
           {createProblem ? (
             <Text style={styles.problem} accessibilityRole="alert">
@@ -81,13 +81,13 @@ export default function NuovaLega() {
               setJoinProblem(null);
             }}
             placeholder="ABC234"
-            placeholderTextColor="rgba(255, 255, 255, 0.45)"
+            placeholderTextColor={PLACEHOLDER}
             maxLength={CODE_LENGTH + 2}
             autoCapitalize="characters"
             autoCorrect={false}
             returnKeyType="done"
             accessibilityLabel="Codice d'invito"
-            style={[styles.input, styles.codeInput]}
+            style={[input, styles.codeInput]}
           />
           {joinProblem ? (
             <Text style={styles.problem} accessibilityRole="alert">
@@ -105,31 +105,9 @@ export default function NuovaLega() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 16, paddingBottom: 40 },
-  close: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
+  scroll: { gap: 18, paddingBottom: 40 },
   panel: { gap: 12 },
-  title: { fontFamily: F.display, fontSize: 18, color: C.text },
-  input: {
-    height: 56,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    fontFamily: F.semi,
-    fontSize: 17,
-    color: C.text,
-  },
+  title: { fontFamily: F.displayBold, fontSize: 18, color: C.text },
   codeInput: { fontFamily: F.display, fontSize: 22, letterSpacing: 4 },
-  problem: { fontFamily: F.semi, fontSize: 14, lineHeight: 20, color: C.coral },
+  problem: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.alert },
 });

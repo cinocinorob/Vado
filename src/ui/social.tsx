@@ -16,10 +16,10 @@ import {
   type Zone,
 } from '../core/social';
 import { CrownIcon, TrashIcon, TrendIcon } from './Icons';
-import { C, F } from './theme';
+import { BORDER, C, F, card, shadow } from './theme';
 
 /** Colori dei cerchi con le iniziali: fissi per nome, così ognuno resta riconoscibile. */
-const TONES = [C.teal, C.coral, '#3B6E82', '#8FB8C8', '#E0A458'] as const;
+const TONES = ['#A5DDEB', C.coral, '#FFD35C', C.coralSoft, '#D9CCFF'] as const;
 
 function toneFor(id: string): string {
   let sum = 0;
@@ -27,20 +27,14 @@ function toneFor(id: string): string {
   return TONES[sum % TONES.length];
 }
 
-export function Avatar({ id, name, me = false, size = 34, ring = false }: { id: string; name: string; me?: boolean; size?: number; ring?: boolean }) {
-  const background = me ? C.lime : toneFor(id);
-  const dark = me || background === C.coral || background === '#8FB8C8' || background === '#E0A458';
+export function Avatar({ id, name, me = false, size = 36 }: { id: string; name: string; me?: boolean; size?: number }) {
   return (
     <View
-      style={[
-        styles.avatar,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: background },
-        ring && { borderWidth: 3, borderColor: C.text },
-      ]}
+      style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: me ? C.lime : toneFor(id), borderWidth: size >= 50 ? BORDER : 2.5 }]}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Text style={[styles.avatarText, { fontSize: size * 0.36, color: dark ? C.ink : C.text }]}>{me ? 'TU' : initials(name)}</Text>
+      <Text style={[styles.avatarText, { fontSize: size * 0.36 }]}>{me ? 'TU' : initials(name)}</Text>
     </View>
   );
 }
@@ -75,10 +69,10 @@ export function Chip({ label, active, onPress, icon }: { label: string; active?:
       accessibilityRole="button"
       accessibilityState={{ selected: !!active }}
       accessibilityLabel={label}
-      style={[styles.chip, active && styles.chipActive]}
+      style={[styles.chip, active ? [styles.chipActive, shadow(3)] : null]}
     >
       {icon}
-      <Text style={[styles.chipText, active && { color: C.ink, fontFamily: F.bold }]} numberOfLines={1}>
+      <Text style={styles.chipText} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -95,7 +89,7 @@ const TIER_COLOR: Record<Tier, string> = {
 
 /** Scudetto del livello. */
 export function TierBadge({ tier, size = 18 }: { tier: Tier; size?: number }) {
-  return <View style={{ width: size, height: size, borderRadius: size / 3, backgroundColor: TIER_COLOR[tier], borderWidth: 2, borderColor: C.text, transform: [{ rotate: '45deg' }] }} />;
+  return <View style={{ width: size, height: size, borderRadius: size / 3, backgroundColor: TIER_COLOR[tier], borderWidth: 2.5, borderColor: C.ink, transform: [{ rotate: '45deg' }] }} />;
 }
 
 const PODIUM = [
@@ -120,15 +114,15 @@ export function Podium({ ranked }: { ranked: Ranked[] }) {
                 accessibilityLabel={`${entry.rank}º posto: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti`}
               >
                 {first ? <CrownIcon /> : null}
-                <Avatar id={entry.id} name={entry.name} me={entry.me} size={step.avatar} ring />
+                <Avatar id={entry.id} name={entry.name} me={entry.me} size={step.avatar} />
                 <Text style={styles.podiumName} numberOfLines={1}>
                   {entry.me ? 'Tu' : entry.name}
                 </Text>
-                <Text style={[styles.podiumPoints, first && { color: C.lime }]}>{entry.points}</Text>
+                <Text style={styles.podiumPoints}>{entry.points}</Text>
               </View>
             ) : null}
-            <View style={[styles.podiumStep, { height: step.height }]}>
-              <Text style={[styles.podiumNumber, { fontSize: step.number }, first && { color: C.lime, fontFamily: F.displayBold }]}>{step.place}</Text>
+            <View style={[styles.podiumStep, { height: step.height }, first && { backgroundColor: C.lime }]}>
+              <Text style={[styles.podiumNumber, { fontSize: step.number }]}>{step.place}</Text>
             </View>
           </View>
         );
@@ -138,6 +132,9 @@ export function Podium({ ranked }: { ranked: Ranked[] }) {
 }
 
 const ZONE_TEXT: Record<Exclude<Zone, 'resta'>, string> = { sale: 'Sale di livello', scende: 'Scende di livello' };
+/** Verde scuro e corallo scuro: si distinguono anche per luminosità, non solo per tinta. */
+export const ZONE_UP = '#1E7A41';
+export const ZONE_DOWN = C.alert;
 
 /** Una riga della classifica. */
 export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked[]; zone?: Zone }) {
@@ -149,19 +146,19 @@ export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked
       accessible
       accessibilityLabel={`${entry.rank}º: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti${zoneText ? `, ${zoneText.toLowerCase()}` : ''}`}
     >
-      <Text style={[styles.rowRank, entry.me && { color: C.lime }]}>{entry.rank}</Text>
+      <Text style={styles.rowRank}>{entry.rank}</Text>
       <Avatar id={entry.id} name={entry.name} me={entry.me} />
       <View style={styles.rowText}>
-        <Text style={[styles.rowName, entry.me && { fontFamily: F.bold }]} numberOfLines={1}>
+        <Text style={styles.rowName} numberOfLines={1}>
           {entry.me ? 'Tu' : entry.name}
         </Text>
-        <Text style={[styles.rowDetail, entry.me && { color: 'rgba(255, 255, 255, 0.8)' }]} numberOfLines={1}>
+        <Text style={[styles.rowDetail, entry.me && { color: C.ink }]} numberOfLines={1}>
           {detail}
         </Text>
       </View>
-      {zone === 'sale' ? <View style={[styles.zoneDot, { backgroundColor: C.lime }]} /> : null}
-      {zone === 'scende' ? <View style={[styles.zoneDot, { backgroundColor: C.coral }]} /> : null}
-      <Text style={[styles.rowPoints, entry.me && { color: C.lime }]}>{entry.points}</Text>
+      {zone === 'sale' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_UP }]} /> : null}
+      {zone === 'scende' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_DOWN }]} /> : null}
+      <Text style={styles.rowPoints}>{entry.points}</Text>
       <View style={styles.rowTrend}>{entry.trend ? <TrendIcon trend={entry.trend} /> : null}</View>
     </View>
   );
@@ -181,18 +178,18 @@ function Track({ ratio, id, name, me, label, points }: { ratio: number; id: stri
   return (
     <View style={styles.track} accessible accessibilityLabel={`${label}: ${points} punti`}>
       <View style={styles.trackHead}>
-        <Text style={[styles.trackName, me && { color: C.lime, fontFamily: F.bold }]} numberOfLines={1}>
+        <Text style={styles.trackName} numberOfLines={1}>
           {label}
         </Text>
-        <Text style={[styles.trackPoints, me && { color: C.lime }]}>{points}</Text>
+        <Text style={styles.trackPoints}>{points}</Text>
       </View>
       <View style={styles.trackLine}>
         <View style={styles.trackRail} />
-        <View style={[styles.trackFill, { width: `${percent}%`, backgroundColor: me ? C.lime : 'rgba(255, 255, 255, 0.45)' }]} />
+        <View style={[styles.trackFill, { right: `${100 - percent}%`, backgroundColor: me ? C.coral : '#A5DDEB' }]} />
         {/* Il cerchio resta dentro la corsia anche a 0% e a 100%. */}
         <View style={[styles.trackRunner, { left: `${percent}%` }]}>
           <View style={styles.trackRunnerInner}>
-            <Avatar id={id} name={name} me={me} size={26} ring />
+            <Avatar id={id} name={name} me={me} size={30} />
           </View>
         </View>
       </View>
@@ -215,7 +212,7 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
   else verdict = `${winnerNames.length === 1 ? 'Ha vinto' : 'Hanno vinto'} ${winnerNames.join(' e ')}`;
 
   return (
-    <View style={[styles.card, over && state.won && { borderColor: C.lime }]}>
+    <View style={[styles.card, over && state.won && { backgroundColor: C.lime }]}>
       <View style={styles.cardHead}>
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle} accessibilityRole="header">
@@ -225,7 +222,7 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
         </View>
         {onRemove && over ? (
           <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Elimina la sfida ${challenge.title}`} hitSlop={10} style={styles.cardRemove}>
-            <TrashIcon size={18} color={C.dim} />
+            <TrashIcon size={18} color={C.ink} />
           </Pressable>
         ) : null}
       </View>
@@ -247,86 +244,69 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
         })}
       </View>
 
-      <Text style={[styles.cardVerdict, over && state.won && { color: C.lime }]}>{verdict}</Text>
+      <Text style={styles.cardVerdict}>{verdict}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  avatar: { alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: F.display },
+  avatar: { alignItems: 'center', justifyContent: 'center', borderColor: C.ink },
+  avatarText: { fontFamily: F.displayBold, color: C.ink },
 
-  segmented: {
-    height: 52,
-    padding: 4,
-    borderRadius: 26,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
-  },
-  segment: { flex: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  segmentActive: { backgroundColor: C.lime },
-  segmentText: { fontFamily: F.semi, fontSize: 14, color: 'rgba(255, 255, 255, 0.85)' },
-  segmentTextActive: { fontFamily: F.bold, color: C.ink },
+  segmented: { ...card, height: 54, padding: 4, borderRadius: 27, flexDirection: 'row', gap: 4 },
+  segment: { flex: 1, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  segmentActive: { backgroundColor: C.ink },
+  segmentText: { fontFamily: F.bold, fontSize: 14, color: C.ink },
+  segmentTextActive: { color: C.lime },
 
   chip: {
+    ...card,
+    borderWidth: 2.5,
     height: 44,
     paddingHorizontal: 16,
     borderRadius: 22,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     maxWidth: 200,
+    marginBottom: 4,
   },
-  chipActive: { backgroundColor: C.lime, borderColor: C.lime },
-  chipText: { fontFamily: F.semi, fontSize: 14, color: C.text },
+  chipActive: { backgroundColor: C.lime },
+  chipText: { fontFamily: F.bold, fontSize: 14, color: C.ink },
 
-  podium: { height: 250, flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
+  podium: { height: 256, flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
   podiumColumn: { flex: 1, alignItems: 'center', gap: 6 },
   podiumPerson: { alignItems: 'center', gap: 4, alignSelf: 'stretch' },
-  podiumName: { fontFamily: F.semi, fontSize: 14, lineHeight: 18, color: C.text, maxWidth: '100%' },
-  podiumPoints: { fontFamily: F.display, fontSize: 18, lineHeight: 22, color: C.text },
-  podiumStep: {
-    alignSelf: 'stretch',
-    borderRadius: 18,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  podiumNumber: { fontFamily: F.display, color: C.text },
+  podiumName: { fontFamily: F.bold, fontSize: 14, lineHeight: 18, color: C.text, maxWidth: '100%' },
+  podiumPoints: { fontFamily: F.displayBold, fontSize: 18, lineHeight: 22, color: C.text },
+  podiumStep: { ...card, alignSelf: 'stretch', borderRadius: 18, alignItems: 'center', justifyContent: 'center', ...shadow(5) },
+  podiumNumber: { fontFamily: F.displayBold, color: C.text },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingHorizontal: 8, borderRadius: 14 },
-  rowMe: { backgroundColor: C.limeSoft },
-  rowRank: { width: 22, fontFamily: F.display, fontSize: 16, color: C.text, textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, paddingHorizontal: 8, borderRadius: 16 },
+  rowMe: { backgroundColor: C.lime, borderColor: C.ink, borderWidth: 2.5, marginVertical: 2 },
+  rowRank: { width: 22, fontFamily: F.displayBold, fontSize: 16, color: C.text, textAlign: 'center' },
   rowText: { flex: 1 },
-  rowName: { fontFamily: F.semi, fontSize: 15, lineHeight: 19, color: C.text },
-  rowDetail: { fontFamily: F.body, fontSize: 12.5, lineHeight: 16, color: C.dim },
-  rowPoints: { fontFamily: F.display, fontSize: 17, color: C.text, minWidth: 34, textAlign: 'right' },
+  rowName: { fontFamily: F.bold, fontSize: 15, lineHeight: 19, color: C.text },
+  rowDetail: { fontFamily: F.medium, fontSize: 12.5, lineHeight: 16, color: C.dim },
+  rowPoints: { fontFamily: F.displayBold, fontSize: 17, color: C.text, minWidth: 34, textAlign: 'right' },
   rowTrend: { width: 16, alignItems: 'center' },
-  zoneDot: { width: 8, height: 8, borderRadius: 4 },
+  zoneDot: { width: 10, height: 10, borderRadius: 5 },
 
-  card: { backgroundColor: C.panel, borderColor: C.panelBorder, borderWidth: 1, borderRadius: 24, padding: 16, gap: 14 },
+  card: { ...card, borderRadius: 24, padding: 16, gap: 14, ...shadow(5) },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  cardTitle: { fontFamily: F.display, fontSize: 18, lineHeight: 22, color: C.text },
-  cardRule: { fontFamily: F.body, fontSize: 13, lineHeight: 18, color: C.dim },
-  cardRemove: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.08)' },
-  cardVerdict: { fontFamily: F.semi, fontSize: 13.5, color: C.text },
+  cardTitle: { fontFamily: F.displayBold, fontSize: 18, lineHeight: 22, color: C.text },
+  cardRule: { fontFamily: F.medium, fontSize: 13, lineHeight: 18, color: C.dim },
+  cardRemove: { ...card, borderWidth: 2.5, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  cardVerdict: { fontFamily: F.bold, fontSize: 13.5, color: C.text },
 
   tracks: { gap: 12 },
   track: { gap: 6 },
   trackHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 },
-  trackName: { flex: 1, fontFamily: F.semi, fontSize: 13.5, color: C.text },
-  trackPoints: { fontFamily: F.display, fontSize: 15, color: C.text },
-  trackLine: { height: 26, justifyContent: 'center', marginHorizontal: 13 },
-  trackRail: { position: 'absolute', left: -13, right: -13, height: 8, borderRadius: 4, backgroundColor: C.faint },
-  trackFill: { position: 'absolute', left: -13, height: 8, borderRadius: 4, marginRight: 0 },
-  trackRunner: { position: 'absolute', width: 0, height: 26, alignItems: 'center' },
-  trackRunnerInner: { width: 26, height: 26 },
+  trackName: { flex: 1, fontFamily: F.bold, fontSize: 13.5, color: C.text },
+  trackPoints: { fontFamily: F.displayBold, fontSize: 15, color: C.text },
+  trackLine: { height: 30, justifyContent: 'center', marginHorizontal: 15 },
+  trackRail: { position: 'absolute', left: -15, right: -15, height: 14, borderRadius: 7, backgroundColor: C.card, borderColor: C.ink, borderWidth: 2.5 },
+  trackFill: { position: 'absolute', left: -15, height: 14, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, borderColor: C.ink, borderWidth: 2.5 },
+  trackRunner: { position: 'absolute', width: 0, height: 30, alignItems: 'center' },
+  trackRunnerInner: { width: 30, height: 30 },
 });

@@ -8,9 +8,10 @@ import { newlyUnlocked, type BadgeState } from '../core/badges';
 import { TRIP_CAP, type Trip } from '../core/scoring';
 import { loadTrips } from '../storage/trips';
 import { duration, km } from '../ui/format';
-import { Mascot } from '../ui/Mascot';
+import { HeroBlock } from '../ui/Hero';
+import { StickerMascot } from '../ui/Mascot';
 import { Medal } from '../ui/Medal';
-import { BonusRow, Divider, Header, LegRow, Panel, PrimaryButton, Screen, text } from '../ui/parts';
+import { BonusRow, Divider, GUTTER, Header, LegRow, Panel, PrimaryButton, Screen, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
 export default function Riepilogo() {
@@ -49,23 +50,24 @@ export default function Riepilogo() {
   const invalid = trip.legs.some((l) => l.status === 'anomalo');
 
   return (
-    <Screen>
+    <Screen bleed>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Header caption="Tragitto concluso" title="Riepilogo" />
-
-        <View style={styles.hero}>
-          <Mascot size={92} />
-          <View>
-            <View style={styles.heroLine}>
-              <Text style={styles.heroPoints}>+{trip.total}</Text>
-              <Text style={styles.heroLabel}>punti</Text>
+        <HeroBlock caption="Tragitto concluso" title="Riepilogo">
+          <View style={styles.hero}>
+            <View>
+              <View style={styles.heroLine}>
+                <Text style={styles.heroPoints}>+{trip.total}</Text>
+                <Text style={styles.heroLabel}>punti</Text>
+              </View>
+              <Text style={styles.heroDetail}>
+                {km(trip.meters)} in {duration(seconds)}
+              </Text>
             </View>
-            <Text style={text.small}>
-              {km(trip.meters)} · {duration(seconds)}
-            </Text>
+            <StickerMascot size={116} disc={C.coral} />
           </View>
-        </View>
+        </HeroBlock>
 
+        <View style={styles.body}>
         <Panel>
           {trip.legs.map((leg, i) => (
             <Fragment key={i}>
@@ -83,9 +85,11 @@ export default function Riepilogo() {
 
         {medals.map((medal) => (
           <Panel key={medal.id} style={styles.medal}>
-            <Medal id={medal.id} look="sbloccata" size={72} label={`Medaglia ${medal.name}`} />
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={styles.medalCaption}>Nuova medaglia</Text>
+            <Medal id={medal.id} look="sbloccata" size={76} label={`Medaglia ${medal.name}`} />
+            <View style={{ flex: 1, gap: 3, alignItems: 'flex-start' }}>
+              <View style={styles.medalChip}>
+                <Text style={styles.medalCaption}>Nuova medaglia</Text>
+              </View>
               <Text style={styles.medalName}>{medal.name}</Text>
               <Text style={text.small}>{medal.goal}</Text>
             </View>
@@ -99,7 +103,7 @@ export default function Riepilogo() {
           </Text>
         ) : null}
         {invalid ? (
-          <Text style={[text.body, { color: C.coral }]}>
+          <Text style={[text.body, { color: C.alert, fontFamily: F.bold }]}>
             Un tratto non è stato conteggiato perché i dati non corrispondono al mezzo scelto.
           </Text>
         ) : null}
@@ -108,6 +112,7 @@ export default function Riepilogo() {
             Il bonus casa-lavoro non è scattato: vale una volta al giorno, per tragitti di almeno 500 metri senza auto privata.
           </Text>
         ) : null}
+        </View>
       </ScrollView>
 
       <View style={[styles.cta, { bottom: insets.bottom + 16 }]}>
@@ -118,13 +123,16 @@ export default function Riepilogo() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 16, paddingBottom: 110 },
-  hero: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingVertical: 8 },
+  scroll: { paddingBottom: 116 },
+  body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 18 },
+  hero: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 10 },
   heroLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  heroPoints: { fontFamily: F.displayBold, fontSize: 72, lineHeight: 76, color: C.lime },
-  heroLabel: { fontFamily: F.semi, fontSize: 17, color: C.text },
-  medal: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.limeSoft, borderColor: C.lime },
-  medalCaption: { fontFamily: F.semi, fontSize: 12.5, color: C.lime },
-  medalName: { fontFamily: F.display, fontSize: 20, lineHeight: 24, color: C.text },
+  heroPoints: { fontFamily: F.displayBold, fontSize: 92, lineHeight: 94, letterSpacing: -2, color: C.ink },
+  heroLabel: { fontFamily: F.display, fontSize: 20, color: C.ink },
+  heroDetail: { fontFamily: F.bold, fontSize: 14, color: C.ink, marginBottom: 6 },
+  medal: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.lime, transform: [{ rotate: '-1.5deg' }] },
+  medalChip: { height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.ink, justifyContent: 'center' },
+  medalCaption: { fontFamily: F.bold, fontSize: 12, color: C.lime },
+  medalName: { fontFamily: F.displayBold, fontSize: 20, lineHeight: 24, color: C.text },
   cta: { position: 'absolute', left: 20, right: 20 },
 });

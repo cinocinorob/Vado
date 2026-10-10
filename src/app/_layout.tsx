@@ -27,7 +27,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade' }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="classifica" options={{ animation: 'none' }} />

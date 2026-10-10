@@ -4,12 +4,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HomeIcon, MedalIcon, PlayIcon, TrophyIcon } from './Icons';
-import { C, F } from './theme';
+import { BORDER, C, F, card, shadow } from './theme';
 
 export type Section = 'oggi' | 'classifica' | 'medaglie';
 
 /** Spazio da lasciare in fondo alle schermate che mostrano la barra. */
-export const NAV_SPACE = 120;
+export const NAV_SPACE = 126;
 
 export function BottomNav({ current, tripActive }: { current: Section; tripActive: boolean }) {
   const insets = useSafeAreaInsets();
@@ -34,7 +34,7 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
         onPress={() => router.push(tripActive ? '/in-corso' : '/nuovo')}
         accessibilityRole="button"
         accessibilityLabel={tripActive ? 'Riapri il tragitto in corso' : 'Inizia un tragitto'}
-        style={({ pressed }) => [styles.play, { opacity: pressed ? 0.85 : 1 }]}
+        style={({ pressed }) => [styles.play, pressed ? [shadow(1), { transform: [{ translateY: 4 }] }] : shadow(5)]}
       >
         <PlayIcon size={26} />
       </Pressable>
@@ -43,7 +43,7 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
 }
 
 function Tab({ label, active, onPress, icon }: { label: string; active: boolean; onPress: () => void; icon: (color: string) => React.ReactNode }) {
-  const color = active ? C.lime : 'rgba(255, 255, 255, 0.8)';
+  const color = active ? C.lime : C.ink;
   return (
     <Pressable
       onPress={onPress}
@@ -60,19 +60,18 @@ function Tab({ label, active, onPress, icon }: { label: string; active: boolean;
 
 const styles = StyleSheet.create({
   nav: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pill: {
-    flex: 1,
-    height: 64,
-    padding: 6,
-    borderRadius: 32,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 4,
+  pill: { ...card, flex: 1, height: 66, padding: 5, borderRadius: 33, flexDirection: 'row', gap: 4, ...shadow(5) },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 26 },
+  tabActive: { backgroundColor: C.ink },
+  tabLabel: { fontFamily: F.bold, fontSize: 11.5 },
+  play: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: C.coral,
+    borderColor: C.ink,
+    borderWidth: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 26 },
-  tabActive: { backgroundColor: C.limeSoft },
-  tabLabel: { fontFamily: F.semi, fontSize: 11.5 },
-  play: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.lime, alignItems: 'center', justifyContent: 'center' },
 });

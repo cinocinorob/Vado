@@ -5,7 +5,7 @@ import type { ModeId } from '../core/modes';
 
 type IconProps = { size?: number; color?: string };
 
-function Stroke({ size = 24, color = '#FFFFFF', width = 2, children }: IconProps & { width?: number; children: React.ReactNode }) {
+function Stroke({ size = 24, color = '#0B1F2A', width = 2.2, children }: IconProps & { width?: number; children: React.ReactNode }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
       {children}
@@ -97,7 +97,7 @@ export function PlayIcon({ size = 24, color = '#0B1F2A' }: IconProps) {
   );
 }
 
-export function PauseIcon({ size = 18, color = '#FFFFFF' }: IconProps) {
+export function PauseIcon({ size = 18, color = '#0B1F2A' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={6} y={5} width={4} height={14} rx={1.5} />
@@ -216,13 +216,13 @@ export function TrophyIcon(props: IconProps) {
 export function TrendIcon({ trend, size = 16 }: { trend: 'su' | 'giu' | 'stabile'; size?: number }) {
   if (trend === 'stabile') {
     return (
-      <Stroke size={size} color="rgba(255, 255, 255, 0.5)" width={2.4}>
+      <Stroke size={size} color="rgba(11, 31, 42, 0.45)" width={2.6}>
         <Path d="M6 12h12" />
       </Stroke>
     );
   }
   return (
-    <Stroke size={size} color={trend === 'su' ? '#C8F560' : '#FF8A65'} width={2.4}>
+    <Stroke size={size} color={trend === 'su' ? '#1E7A41' : '#B83A17'} width={2.8}>
       <Path d={trend === 'su' ? 'M12 19V6M6.5 11.5L12 6l5.5 5.5' : 'M12 5v13M6.5 12.5L12 18l5.5-5.5'} />
     </Stroke>
   );
@@ -246,10 +246,10 @@ export function ShareIcon(props: IconProps) {
   );
 }
 
-export function CrownIcon({ size = 26, color = '#C8F560' }: IconProps) {
+export function CrownIcon({ size = 30, color = '#FFD35C' }: IconProps) {
   return (
-    <Svg width={size} height={size * 0.75} viewBox="0 0 32 24" fill={color}>
-      <Path d="M3 21l-2-14 8 6 7-11 7 11 8-6-2 14z" />
+    <Svg width={size} height={size * 0.8} viewBox="0 0 34 27" fill={color} stroke="#0B1F2A" strokeWidth={2.6} strokeLinejoin="round">
+      <Path d="M5 24L3 9l8 6 6-11 6 11 8-6-2 15z" />
     </Svg>
   );
 }

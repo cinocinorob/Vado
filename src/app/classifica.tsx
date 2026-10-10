@@ -20,9 +20,10 @@ import { useActiveTrip } from '../tracking/store';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PlusIcon, ShareIcon } from '../ui/Icons';
 import { Mascot } from '../ui/Mascot';
-import { Divider, GhostButton, Header, Panel, PrimaryButton, ProgressBar, Screen, text } from '../ui/parts';
-import { ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, zonesFor } from '../ui/social';
-import { C, F } from '../ui/theme';
+import { HeroBlock } from '../ui/Hero';
+import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, ProgressBar, Screen, input, text } from '../ui/parts';
+import { ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
+import { C, F, card, shadow } from '../ui/theme';
 
 type Section = 'leghe' | 'sfide';
 
@@ -116,8 +117,8 @@ export default function Classifica() {
 
   if (!loaded) {
     return (
-      <Screen>
-        <Header caption={weekLabel(now)} title="Classifica" />
+      <Screen bleed>
+        <HeroBlock caption={weekLabel(now)} title="Classifica" />
         <BottomNav current="classifica" tripActive={!!active} />
       </Screen>
     );
@@ -125,10 +126,12 @@ export default function Classifica() {
 
   if (!profile) {
     return (
-      <Screen>
+      <Screen bleed>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Header caption={weekLabel(now)} title="Classifica" />
-          <Nickname onDone={() => refresh(null)} />
+          <HeroBlock caption={weekLabel(now)} title="Classifica" />
+          <View style={styles.body}>
+            <Nickname onDone={() => refresh(null)} />
+          </View>
         </ScrollView>
         <BottomNav current="classifica" tripActive={!!active} />
       </Screen>
@@ -142,21 +145,39 @@ export default function Classifica() {
   const lowerTier = board?.tier ? TIERS[Math.max(0, TIERS.indexOf(board.tier) - 1)] : null;
 
   return (
-    <Screen>
+    <Screen bleed>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Header
+        <HeroBlock
           caption={weekLabel(now)}
           title="Classifica"
           right={
             section === 'leghe' && board?.kind === 'invito' ? (
-              <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel="Invita con il codice della lega" style={styles.invite}>
+              <Pressable
+                onPress={invite}
+                accessibilityRole="button"
+                accessibilityLabel="Invita con il codice della lega"
+                style={({ pressed }) => [styles.invite, pressed ? [shadow(1), { transform: [{ translateY: 2 }] }] : shadow(3)]}
+              >
                 <ShareIcon size={18} />
                 <Text style={styles.inviteText}>Invita</Text>
               </Pressable>
             ) : null
           }
-        />
+        >
+          <View style={styles.sections}>
+            <Segmented
+              label="Sezione"
+              value={section}
+              onChange={setSection}
+              options={[
+                { id: 'leghe', label: 'Leghe' },
+                { id: 'sfide', label: 'Sfide' },
+              ]}
+            />
+          </View>
+        </HeroBlock>
 
+        <View style={styles.body}>
         {social.demo ? (
           <View style={styles.demo} accessibilityRole="alert">
             <Text style={styles.demoText}>
@@ -165,16 +186,6 @@ export default function Classifica() {
             </Text>
           </View>
         ) : null}
-
-        <Segmented
-          label="Sezione"
-          value={section}
-          onChange={setSection}
-          options={[
-            { id: 'leghe', label: 'Leghe' },
-            { id: 'sfide', label: 'Sfide' },
-          ]}
-        />
 
         {section === 'leghe' ? (
           <>
@@ -209,7 +220,7 @@ export default function Classifica() {
                   {lowerTier && lowerTier !== board.tier ? `Gli ultimi ${RELEGATED} scendono in ${lowerTier}.` : 'Dal Bronzo non si scende.'}
                 </Text>
                 {board.outcome ? (
-                  <Text style={[text.small, { color: C.lime, fontFamily: F.semi }]}>
+                  <Text style={[text.small, { color: C.teal, fontFamily: F.bold }]}>
                     {OUTCOME_TEXT[board.outcome.zone](board.outcome.from, board.tier)} Eri {board.outcome.rank}º.
                   </Text>
                 ) : null}
@@ -247,7 +258,7 @@ export default function Classifica() {
                 </Text>
                 <GhostButton label="Condividi il codice" onPress={invite} icon={<ShareIcon size={18} />} />
                 <Pressable onPress={leave} accessibilityRole="button" style={styles.leave} hitSlop={6}>
-                  <Text style={[text.small, confirmLeave && { color: C.coral }]}>{confirmLeave ? 'Tocca di nuovo per uscire dalla lega' : 'Esci dalla lega'}</Text>
+                  <Text style={[text.small, confirmLeave && { color: C.alert, fontFamily: F.bold }]}>{confirmLeave ? 'Tocca di nuovo per uscire dalla lega' : 'Esci dalla lega'}</Text>
                 </Pressable>
               </Panel>
             ) : null}
@@ -257,7 +268,7 @@ export default function Classifica() {
             {monthly ? (
               <Panel style={styles.monthly}>
                 <View style={styles.monthlyHead}>
-                  <Mascot size={56} />
+                  <Mascot size={60} tilt={-6} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.tierTitle} accessibilityRole="header">
                       {monthly.title}
@@ -290,6 +301,7 @@ export default function Classifica() {
             <PrimaryButton label="Nuova sfida" onPress={() => router.push('/sfida-nuova')} icon={<PlusIcon size={20} color={C.ink} />} />
           </>
         )}
+        </View>
       </ScrollView>
 
       <BottomNav current="classifica" tripActive={!!active} />
@@ -312,11 +324,11 @@ function ZoneLegend() {
   return (
     <View style={styles.legend}>
       <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: C.lime }]} />
+        <View style={[styles.legendDot, { backgroundColor: ZONE_UP }]} />
         <Text style={text.small}>Sale di livello</Text>
       </View>
       <View style={styles.legendItem}>
-        <View style={[styles.legendDot, { backgroundColor: C.coral }]} />
+        <View style={[styles.legendDot, { backgroundColor: ZONE_DOWN }]} />
         <Text style={text.small}>Scende di livello</Text>
       </View>
     </View>
@@ -340,7 +352,7 @@ function Nickname({ onDone }: { onDone: () => void }) {
   return (
     <Panel style={styles.nickname}>
       <View style={styles.monthlyHead}>
-        <Mascot size={64} />
+        <Mascot size={68} tilt={-6} />
         <View style={{ flex: 1 }}>
           <Text style={styles.tierTitle} accessibilityRole="header">
             Scegli un soprannome
@@ -355,14 +367,14 @@ function Nickname({ onDone }: { onDone: () => void }) {
           setProblem(null);
         }}
         placeholder="Per esempio Robbie"
-        placeholderTextColor="rgba(255, 255, 255, 0.45)"
+        placeholderTextColor={PLACEHOLDER}
         maxLength={20}
         autoCapitalize="words"
         autoCorrect={false}
         returnKeyType="done"
         onSubmitEditing={save}
         accessibilityLabel="Soprannome"
-        style={styles.input}
+        style={input}
       />
       {problem ? (
         <Text style={styles.problem} accessibilityRole="alert">
@@ -379,47 +391,27 @@ function Nickname({ onDone }: { onDone: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 16, paddingBottom: NAV_SPACE },
-  invite: {
-    height: 44,
-    paddingLeft: 12,
-    paddingRight: 16,
-    borderRadius: 22,
-    backgroundColor: C.panel,
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  inviteText: { fontFamily: F.semi, fontSize: 14, color: C.text },
-  demo: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.coralSoft, borderColor: 'rgba(255, 138, 101, 0.5)', borderWidth: 1 },
-  demoText: { fontFamily: F.medium, fontSize: 12.5, lineHeight: 18, color: C.text },
-  chipsBleed: { marginHorizontal: -20, flexGrow: 0 },
-  chips: { gap: 8, paddingHorizontal: 20 },
-  tier: { gap: 10, borderRadius: 20 },
+  scroll: { paddingBottom: NAV_SPACE },
+  body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 18 },
+  sections: { marginTop: 14 },
+  invite: { ...card, height: 44, paddingLeft: 12, paddingRight: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  inviteText: { fontFamily: F.bold, fontSize: 14, color: C.text },
+  demo: { borderRadius: 18, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.coralSoft, borderColor: C.ink, borderWidth: 2.5 },
+  demoText: { fontFamily: F.semi, fontSize: 12.5, lineHeight: 18, color: C.text },
+  chipsBleed: { marginHorizontal: -GUTTER, flexGrow: 0 },
+  chips: { gap: 8, paddingHorizontal: GUTTER, paddingBottom: 4 },
+  tier: { gap: 10, borderRadius: 22 },
   tierHead: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 4 },
-  tierTitle: { fontFamily: F.display, fontSize: 18, lineHeight: 22, color: C.text },
+  tierTitle: { fontFamily: F.displayBold, fontSize: 18, lineHeight: 22, color: C.text },
   list: { paddingVertical: 10, paddingHorizontal: 8 },
   legend: { flexDirection: 'row', justifyContent: 'center', gap: 20 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
   code: { gap: 10, alignItems: 'stretch' },
-  codeValue: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, letterSpacing: 6, color: C.lime },
+  codeValue: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, letterSpacing: 6, color: C.ink },
   leave: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12 },
   monthly: { gap: 12 },
   monthlyHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   nickname: { gap: 14 },
-  input: {
-    height: 56,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: C.panelBorder,
-    borderWidth: 1,
-    fontFamily: F.semi,
-    fontSize: 17,
-    color: C.text,
-  },
-  problem: { fontFamily: F.semi, fontSize: 14, lineHeight: 20, color: C.coral },
+  problem: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.alert },
 });
