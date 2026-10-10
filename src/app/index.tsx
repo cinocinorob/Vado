@@ -9,6 +9,7 @@ import { getMode } from '../core/modes';
 import { DAILY_GOAL, dayKey, streak, summarizeDay, type Trip } from '../core/scoring';
 import { connectHealth, forgetImportedBefore, refreshHealth, type HealthState } from '../health/sync';
 import { openHealthSettings } from '../health/connect';
+import { resetDemo } from '../social';
 import { clearTrips, loadTrips } from '../storage/trips';
 import { useActiveTrip } from '../tracking/store';
 import { restoreTracking } from '../tracking/tracker';
@@ -101,6 +102,8 @@ export default function Oggi() {
     await clearTrips();
     // Le attività già importate non devono rientrare alla prossima lettura.
     await forgetImportedBefore(Date.now());
+    // Anche soprannome, leghe e sfide dell'anteprima.
+    await resetDemo();
     setTrips([]);
     setHealthNote(null);
     setConfirmReset(false);

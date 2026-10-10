@@ -199,3 +199,75 @@ export function ChevronIcon(props: IconProps) {
     </Stroke>
   );
 }
+
+export function TrophyIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Path d="M8 4h8v5a4 4 0 0 1-8 0V4z" />
+      <Path d="M8 6H5a3 3 0 0 0 3 4" />
+      <Path d="M16 6h3a3 3 0 0 1-3 4" />
+      <Path d="M12 13v4" />
+      <Path d="M8 20h8" />
+    </Stroke>
+  );
+}
+
+/** Freccia di tendenza: su, giù o stabile. */
+export function TrendIcon({ trend, size = 16 }: { trend: 'su' | 'giu' | 'stabile'; size?: number }) {
+  if (trend === 'stabile') {
+    return (
+      <Stroke size={size} color="rgba(255, 255, 255, 0.5)" width={2.4}>
+        <Path d="M6 12h12" />
+      </Stroke>
+    );
+  }
+  return (
+    <Stroke size={size} color={trend === 'su' ? '#C8F560' : '#FF8A65'} width={2.4}>
+      <Path d={trend === 'su' ? 'M12 19V6M6.5 11.5L12 6l5.5 5.5' : 'M12 5v13M6.5 12.5L12 18l5.5-5.5'} />
+    </Stroke>
+  );
+}
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <Stroke width={2.4} {...props}>
+      <Path d="M12 5v14M5 12h14" />
+    </Stroke>
+  );
+}
+
+export function ShareIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Path d="M12 15V4" />
+      <Path d="M8 8l4-4 4 4" />
+      <Path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+    </Stroke>
+  );
+}
+
+export function CrownIcon({ size = 26, color = '#C8F560' }: IconProps) {
+  return (
+    <Svg width={size} height={size * 0.75} viewBox="0 0 32 24" fill={color}>
+      <Path d="M3 21l-2-14 8 6 7-11 7 11 8-6-2 14z" />
+    </Svg>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Stroke width={2.6} {...props}>
+      <Path d="M5 12.5l4.5 4.5L19 7.5" />
+    </Stroke>
+  );
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Path d="M5 7h14" />
+      <Path d="M9 7V4.5h6V7" />
+      <Path d="M7 7l1 13h8l1-13" />
+    </Stroke>
+  );
+}

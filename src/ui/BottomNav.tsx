@@ -3,10 +3,10 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HomeIcon, MedalIcon, PlayIcon } from './Icons';
+import { HomeIcon, MedalIcon, PlayIcon, TrophyIcon } from './Icons';
 import { C, F } from './theme';
 
-export type Section = 'oggi' | 'medaglie';
+export type Section = 'oggi' | 'classifica' | 'medaglie';
 
 /** Spazio da lasciare in fondo alle schermate che mostrano la barra. */
 export const NAV_SPACE = 120;
@@ -18,13 +18,16 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
     if (section === current) return;
     // "Oggi" è la base: le altre sezioni le stanno sopra e si chiudono tornando.
     if (section === 'oggi') router.dismissTo('/');
-    else router.push('/medaglie');
+    // Da una sezione all'altra si sostituisce, così "indietro" torna sempre a Oggi.
+    else if (current === 'oggi') router.push(`/${section}`);
+    else router.replace(`/${section}`);
   }
 
   return (
     <View style={[styles.nav, { bottom: insets.bottom + 16 }]} accessibilityRole="tablist">
       <View style={styles.pill}>
         <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
+        <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
         <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
       </View>
       <Pressable

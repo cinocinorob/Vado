@@ -321,6 +321,44 @@ def summary_distance() -> float | None:
     return None
 
 
+def check_leaderboard() -> str:
+    """Apre la classifica, sceglie un soprannome, guarda leghe e sfide, torna a Oggi."""
+    log("apro la classifica")
+    tap_label("Classifica")
+    field = wait_for("Soprannome", 30, "aprendo la classifica", exact=True, required=False)
+    if not field:
+        screenshot("classifica-senza-soprannome")
+        return "campo del soprannome non trovato: " + visible_text()[:300]
+    tap(field)
+    time.sleep(1.5)
+    adb("shell", "input", "text", "Prova")
+    time.sleep(1)
+    # Invio dalla tastiera: equivale a "Entra in classifica" anche se la tastiera copre il pulsante.
+    adb("shell", "input", "keyevent", "66")
+    league = wait_for("Lega Bronzo", 40, "dopo il soprannome", required=False)
+    check_alive("dopo il soprannome")
+    screenshot("classifica-leghe")
+    if not league:
+        return "la lega a livelli non compare: " + visible_text()[:300]
+    board_text = visible_text()
+    log(f"classifica: {board_text[:700]}")
+    if "Anteprima" not in board_text:
+        return "manca l'avviso che i partecipanti sono di esempio"
+
+    tap(wait_for("Sfide", 20, "aprendo le sfide", exact=True))
+    time.sleep(2)
+    challenges = wait_for("Sfida di", 30, "aprendo le sfide", required=False)
+    check_alive("aprendo le sfide")
+    screenshot("classifica-sfide")
+    if not challenges:
+        return "la sfida del mese non compare: " + visible_text()[:300]
+    log(f"sfide: {visible_text()[:700]}")
+
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dalla classifica")
+    return "ok"
+
+
 def connect_health() -> str:
     """Collega Connessione Salute dalla schermata Oggi e legge i passi di oggi."""
     log("collego Connessione Salute")
@@ -449,6 +487,7 @@ def main() -> None:
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
 
+    board = check_leaderboard()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
 
@@ -472,8 +511,10 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; Connessione Salute: {health}"
+        f"permessi: {answered}; classifica: {board}; Connessione Salute: {health}"
     )
+    if board != "ok":
+        problems.append(f"classifica: {board}")
     if WITH_HEALTH and health != "collegata":
         problems.append(f"Connessione Salute non collegata: {health}")
     if problems:

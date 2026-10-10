@@ -10,12 +10,13 @@ decise insieme. Tutti i dati restano sul telefono.
 
 | C'è | Manca |
 |---|---|
-| Schermata Oggi: punti, obiettivo da 80, serie di giorni, tragitti | Classifica (servono account e un server) |
-| Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | Mappa vera sotto il percorso |
-| Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | CO₂ evitata (servono fattori di emissione con fonte) |
-| Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Trasparenze sfocate del mockup |
-| Medaglie: nove, con avanzamento | Riconoscimento automatico del mezzo |
+| Schermata Oggi: punti, obiettivo da 80, serie di giorni, tragitti | Mappa vera sotto il percorso |
+| Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | CO₂ evitata (servono fattori di emissione con fonte) |
+| Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Trasparenze sfocate del mockup |
+| Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Riconoscimento automatico del mezzo |
+| Medaglie: nove, con avanzamento | |
 | Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
+| Classifica, leghe e sfide **in anteprima**, con partecipanti di esempio | Server: senza, in classifica non ci sono persone vere |
 | Rilevamento a schermo spento, con notifica fissa | |
 | Controlli anti-imbroglio di base | |
 | Schermata Riservatezza | |
@@ -38,7 +39,7 @@ verde riuscita, croce rossa fallita.
 
 Prima di pubblicare, GitHub **prova l'app su un telefono Android simulato** (Android 16): la apre, avvia un
 tragitto a piedi concedendo i permessi dalle finestre di sistema, simula una camminata di 210 metri di cui 84 ad
-app nascosta, termina, apre le medaglie e collega Connessione Salute. Se l'app si chiude da sola o la distanza
+app nascosta, termina, apre le medaglie, entra in classifica con un soprannome e collega Connessione Salute. Se l'app si chiude da sola o la distanza
 misurata è sbagliata, la versione non viene pubblicata. Le schermate dell'ultima prova stanno nel ramo
 `diagnostica` del repository. La prova è in `scripts/prova_emulatore.py`.
 
@@ -109,6 +110,35 @@ salvato che possa andare fuori sincronia.
 Contano solo i tratti validi. Per le medaglie a numero di tragitti il tratto con quel mezzo deve essere di almeno
 500 m, altrimenti basterebbe premere Avvia e Termina dieci volte.
 
+## Classifica, leghe e sfide (anteprima)
+
+Si gareggia sui punti. Le regole stanno in `src/core/social.ts`:
+
+- **Classifica settimanale**, dal lunedì alla domenica. A parità di punti la posizione è la stessa.
+- **Lega a livelli:** Bronzo, Argento, Oro, Platino, Diamante. Gruppi da 20. A fine settimana i primi 5 con almeno
+  un punto salgono, gli ultimi 5 scendono; dal Bronzo non si scende.
+- **Leghe con invito:** chi crea la lega riceve un codice di 6 caratteri (senza O, 0, I, 1, che si confondono) da
+  mandare agli altri.
+- **Sfide**, sul modello di Samsung Health: "Primo al traguardo" (100, 250 o 500 punti; vince chi arriva per primo)
+  e "Chi fa di più" (3, 7 o 14 giorni; vince chi ha più punti), individuali o a due squadre, fino a 10 persone.
+  In più la sfida del mese: 600 punti entro fine mese.
+- **Accesso:** solo un soprannome, nessuna registrazione.
+
+**Oggi è un'anteprima.** Gli altri partecipanti sono inventati (`src/social/bots.ts`): nomi di fantasia con punti
+calcolati da una formula fissa, e l'app lo dice in ogni schermata. I punti dell'utente sono quelli veri. Tutto
+resta sul telefono e da qui non parte nessun dato.
+
+Per avere persone vere serve un server. Le schermate parlano con la sorgente dei dati attraverso un contratto
+(`src/social/types.ts`): basta scrivere una seconda sorgente che lo rispetti e cambiare una riga in
+`src/social/index.ts`. Cose da decidere a quel punto:
+
+- I punti sono calcolati sul telefono: un'app modificata può dichiararne di falsi. Il server può rifiutare i
+  valori impossibili (più di 60 punti per tragitto, tragitti sovrapposti), non riconoscere quelli falsi ma
+  plausibili.
+- Soprannome, punti e appartenenza alle leghe usciranno dal telefono: vanno aggiornate la schermata Riservatezza,
+  l'informativa e il modulo "Sicurezza dei dati" del Play Store.
+- Con il solo soprannome, chi cambia telefono perde il profilo.
+
 ## Connessione Salute
 
 Connessione Salute (Health Connect) è il deposito di Android in cui le app di salute e fitness mettono i propri
@@ -148,7 +178,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (101 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (136 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti
@@ -228,12 +258,13 @@ Riferimenti:
 ## Cartelle
 
 ```
-src/core/       regole pure: mezzi, punteggio, medaglie, filtro GPS, Connessione Salute, simulatore per i test
+src/core/       regole pure: mezzi, punteggio, medaglie, classifica e sfide, filtro GPS, Connessione Salute
 src/tracking/   tragitto in corso: stato, sensori, bozza su disco
 src/health/     lettura da Connessione Salute e importazione delle attività
+src/social/     sorgente dei dati di classifica, leghe e sfide (oggi di esempio)
 src/storage/    storico dei tragitti e impostazioni, sul telefono
 src/ui/         colori, caratteri, icone, mascotte, medaglie, componenti
-src/app/        le schermate: Oggi, Nuovo tragitto, In corso, Riepilogo, Medaglie, Riservatezza
+src/app/        le schermate: Oggi, Nuovo tragitto, In corso, Riepilogo, Classifica, Medaglie, Riservatezza…
 scripts/        la prova automatica su telefono simulato
 .github/        la ricetta con cui GitHub costruisce, prova e pubblica l'app
 ```
