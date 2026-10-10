@@ -335,6 +335,15 @@ def connect_health() -> str:
     screenshot("salute-permessi")
     log(f"schermata dei permessi: {visible_text()[:600]}")
 
+    # La prima volta Connessione Salute si presenta: si prosegue.
+    intro = wait_for("Get started", 8, "nella presentazione di Connessione Salute", exact=True, required=False)
+    if intro:
+        tap(intro)
+        time.sleep(3)
+        check_alive("dopo la presentazione di Connessione Salute")
+        screenshot("salute-permessi")
+        log(f"dopo la presentazione: {visible_text()[:600]}")
+
     # Schermata di sistema: prima "Consenti tutto", poi "Consenti".
     everything = wait_for("Allow all", 20, "nei permessi di Connessione Salute", required=False)
     if everything:
