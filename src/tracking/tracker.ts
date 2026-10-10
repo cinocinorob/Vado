@@ -287,7 +287,14 @@ export async function discardTracking(): Promise<void> {
 export async function restoreTracking(): Promise<boolean> {
   if (activeTripStore.get()) return true;
   const draft = await activeTripStore.loadDraft();
-  if (!draft) return false;
+  if (activeTripStore.get()) return true;
+  if (!draft) {
+    // Nessun tragitto aperto: se un rilevamento è rimasto registrato (app
+    // chiusa a forza, telefono riavviato) lo si spegne. Nessuna posizione
+    // viene raccolta fuori da un tragitto.
+    await stopSensors();
+    return false;
+  }
 
   const gpsUsable = draft.gpsUsable && (await Location.getForegroundPermissionsAsync().catch(() => null))?.granted === true;
   let background = false;

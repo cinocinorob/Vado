@@ -298,6 +298,15 @@ def main() -> None:
     tap_label("Fine")
     wait_for("Inizia un tragitto", 30, "tornando a Oggi")
     screenshot("oggi-dopo")
+
+    log("apro le medaglie")
+    tap_label("Medaglie")
+    wait_for("sbloccate", 30, "aprendo le medaglie")
+    screenshot("medaglie")
+    medals = visible_text()
+    log(f"medaglie: {medals}")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
     check_alive("alla fine")
 
     (out / "logcat.txt").write_text(adb("logcat", "-d", check=False))

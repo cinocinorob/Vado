@@ -2,7 +2,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { getMode } from '../core/modes';
@@ -12,22 +11,24 @@ import { useActiveTrip } from '../tracking/store';
 import { restoreTracking } from '../tracking/tracker';
 import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer, km } from '../ui/format';
-import { FlameIcon, ModeIcon, PlayIcon } from '../ui/Icons';
+import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
+import { FlameIcon, ModeIcon } from '../ui/Icons';
 import { Mascot } from '../ui/Mascot';
-import { BonusRow, Divider, Header, LegRow, Panel, PrimaryButton, ProgressBar, Screen, text } from '../ui/parts';
+import { BonusRow, Divider, Header, LegRow, Panel, ProgressBar, Screen, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
 export default function Oggi() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [confirmReset, setConfirmReset] = useState(false);
   const active = useActiveTrip();
-  const insets = useSafeAreaInsets();
-  const now = Date.now();
+  // L'ora si aggiorna a ogni ritorno sulla schermata, non a ogni ridisegno.
+  const [now, setNow] = useState(() => Date.now());
 
   // Ricarica lo storico ogni volta che si torna su questa schermata.
   useFocusEffect(
     useCallback(() => {
       let alive = true;
+      setNow(Date.now());
       loadTrips().then((loaded) => {
         if (alive) setTrips(loaded);
       });
@@ -115,7 +116,7 @@ export default function Oggi() {
             <View style={styles.empty}>
               <Mascot size={84} />
               <Text style={[text.body, { textAlign: 'center' }]}>
-                Ancora nessun tragitto. Scegli come ti muovi e premi Avvia: i punti arrivano a fine percorso.
+                Ancora nessun tragitto. Tocca il pulsante verde, scegli come ti muovi e premi Avvia: i punti arrivano a fine percorso.
               </Text>
             </View>
           ) : (
@@ -137,11 +138,7 @@ export default function Oggi() {
         ) : null}
       </ScrollView>
 
-      {active ? null : (
-        <View style={[styles.cta, { bottom: insets.bottom + 16 }]}>
-          <PrimaryButton label="Inizia un tragitto" icon={<PlayIcon size={22} />} onPress={() => router.push('/nuovo')} />
-        </View>
-      )}
+      <BottomNav current="oggi" tripActive={!!active} />
     </Screen>
   );
 }
@@ -160,7 +157,7 @@ function RouteDecoration() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { gap: 16, paddingBottom: 110 },
+  scroll: { gap: 16, paddingBottom: NAV_SPACE },
   decoration: { position: 'absolute', right: 6, top: 0 },
   streak: {
     height: 36,
@@ -194,5 +191,4 @@ const styles = StyleSheet.create({
   activeDetail: { fontFamily: F.medium, fontSize: 13, color: C.ink },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 8 },
   reset: { alignSelf: 'center', paddingVertical: 14, paddingHorizontal: 16 },
-  cta: { position: 'absolute', left: 20, right: 20 },
 });

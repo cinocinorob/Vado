@@ -95,7 +95,7 @@ export default function InCorso() {
 
       {trip.gpsUsable && !trip.background ? (
         <Text style={styles.notice}>
-          Versione di prova: tieni l'app aperta, lo schermo resta acceso. A schermo spento la distanza non viene misurata.
+          {"Tieni l'app aperta: su questo telefono la distanza non viene misurata a schermo spento, quindi lo schermo resta acceso."}
         </Text>
       ) : null}
 

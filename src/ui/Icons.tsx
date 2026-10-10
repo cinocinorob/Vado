@@ -164,3 +164,38 @@ export function FlameIcon({ size = 18, color = '#FF8A65' }: IconProps) {
     </Svg>
   );
 }
+
+export function HomeIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z" />
+    </Stroke>
+  );
+}
+
+export function MedalIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Circle cx={12} cy={15} r={5} />
+      <Path d="M8.5 3l2.2 7.2M15.5 3l-2.2 7.2" />
+      <Path d="M7 3h10" />
+    </Stroke>
+  );
+}
+
+export function HeartIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+      <Path d="M7.5 12.5h2.5l1.5-2.5 2 4.5 1.2-2h1.8" />
+    </Stroke>
+  );
+}
+
+export function ChevronIcon(props: IconProps) {
+  return (
+    <Stroke width={2.2} {...props}>
+      <Path d="M9 6l6 6-6 6" />
+    </Stroke>
+  );
+}

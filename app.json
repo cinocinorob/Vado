@@ -29,7 +29,8 @@
         "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "permissions": [
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
       ]
     },
     "web": {

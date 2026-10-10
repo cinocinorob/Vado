@@ -4,10 +4,12 @@ import { Fragment, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { newlyUnlocked, type BadgeState } from '../core/badges';
 import { TRIP_CAP, type Trip } from '../core/scoring';
-import { getTrip } from '../storage/trips';
+import { loadTrips } from '../storage/trips';
 import { duration, km } from '../ui/format';
 import { Mascot } from '../ui/Mascot';
+import { Medal } from '../ui/Medal';
 import { BonusRow, Divider, Header, LegRow, Panel, PrimaryButton, Screen, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
@@ -15,11 +17,16 @@ export default function Riepilogo() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const insets = useSafeAreaInsets();
   const [trip, setTrip] = useState<Trip | null | undefined>(undefined);
+  const [medals, setMedals] = useState<BadgeState[]>([]);
 
   useEffect(() => {
     let alive = true;
-    getTrip(id ?? '').then((found) => {
-      if (alive) setTrip(found);
+    loadTrips().then((all) => {
+      if (!alive) return;
+      const found = all.find((t) => t.id === id) ?? null;
+      setTrip(found);
+      // Le medaglie che questo tragitto ha fatto scattare.
+      if (found) setMedals(newlyUnlocked(all.filter((t) => t.id !== found.id), [found], found.endedAt));
     });
     return () => {
       alive = false;
@@ -74,6 +81,17 @@ export default function Riepilogo() {
           ) : null}
         </Panel>
 
+        {medals.map((medal) => (
+          <Panel key={medal.id} style={styles.medal}>
+            <Medal id={medal.id} look="sbloccata" size={72} label={`Medaglia ${medal.name}`} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={styles.medalCaption}>Nuova medaglia</Text>
+              <Text style={styles.medalName}>{medal.name}</Text>
+              <Text style={text.small}>{medal.goal}</Text>
+            </View>
+          </Panel>
+        ))}
+
         {capped ? (
           <Text style={text.body}>
             Hai raggiunto il tetto di {TRIP_CAP} punti per tragitto
@@ -105,5 +123,8 @@ const styles = StyleSheet.create({
   heroLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
   heroPoints: { fontFamily: F.displayBold, fontSize: 72, lineHeight: 76, color: C.lime },
   heroLabel: { fontFamily: F.semi, fontSize: 17, color: C.text },
+  medal: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.limeSoft, borderColor: C.lime },
+  medalCaption: { fontFamily: F.semi, fontSize: 12.5, color: C.lime },
+  medalName: { fontFamily: F.display, fontSize: 20, lineHeight: 24, color: C.text },
   cta: { position: 'absolute', left: 20, right: 20 },
 });

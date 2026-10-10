@@ -30,6 +30,7 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade' }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="medaglie" options={{ animation: 'none' }} />
         <Stack.Screen name="nuovo" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="in-corso" options={{ gestureEnabled: false }} />
         <Stack.Screen name="riepilogo" />
