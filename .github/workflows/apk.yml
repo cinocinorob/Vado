@@ -1,4 +1,5 @@
-# Costruisce l'app Android a ogni modifica e la pubblica come file scaricabile.
+# Costruisce l'app Android a ogni modifica, la prova su un telefono simulato e,
+# solo se la prova riesce, la pubblica come file scaricabile.
 #
 # Risultato: una pagina "Releases" del repository con il file vado.apk, da
 # aprire e installare direttamente dal telefono. Non serve un PC.
@@ -21,7 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  apk:
+  costruzione:
+    name: Costruzione
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -44,7 +46,7 @@ jobs:
       - name: Installa le dipendenze
         run: npm ci
 
-      - name: Controlli automatici (regole del punteggio, filtro GPS, tipi)
+      - name: Controlli automatici (regole, filtro GPS, tipi)
         run: |
           npm test
           npm run typecheck
@@ -59,10 +61,11 @@ jobs:
           sed -i "s/versionCode [0-9]\+/versionCode ${{ github.run_number }}/" android/app/build.gradle
           grep -n "versionCode" android/app/build.gradle
 
-      # Solo l'architettura dei telefoni moderni (arm64): dimezza i tempi.
+      # arm64 è l'architettura dei telefoni; x86_64 serve al telefono simulato
+      # della prova. Un solo file per entrambi: quello provato è quello pubblicato.
       - name: Compila
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
 
       - name: Prepara il file
         run: cp android/app/build/outputs/apk/release/app-release.apk vado.apk
@@ -72,12 +75,63 @@ jobs:
           name: vado-apk
           path: vado.apk
 
+  prova:
+    name: Prova su telefono simulato
+    needs: costruzione
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: vado-apk
+
+      # Senza accelerazione il telefono simulato è troppo lento per essere usabile.
+      - name: Attiva l'accelerazione
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Android 16, la stessa versione richiesta dal Play Store e montata sui Pixel recenti.
+      - name: Apre l'app, avvia un tragitto, cammina, termina
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python3 scripts/prova_emulatore.py vado.apk prova-risultati
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: prova-risultati
+          path: prova-risultati
+          if-no-files-found: ignore
+
+  pubblicazione:
+    name: Pubblicazione
+    needs: [costruzione, prova]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: vado-apk
+
       - name: Pubblica come ultima versione
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release delete ultima --yes --cleanup-tag || true
           gh release create ultima vado.apk \
             --target "${{ github.sha }}" \
             --title "Versione di prova n. ${{ github.run_number }}" \
-            --notes "Scarica vado.apk dal telefono e aprilo per installare. Firmata con una chiave di prova: va bene per provare, non per il Play Store."
+            --notes "Scarica vado.apk dal telefono e aprilo per installare. Questa versione ha superato la prova automatica su un telefono simulato. Firmata con una chiave di prova: va bene per provare, non per il Play Store."
