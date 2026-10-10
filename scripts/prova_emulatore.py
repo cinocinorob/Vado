@@ -36,6 +36,31 @@ out.mkdir(parents=True, exist_ok=True)
 shots = 0
 
 
+class Tee:
+    """Scrive sia sullo schermo sia nel registro salvato tra i risultati."""
+
+    def __init__(self, stream, path: Path):
+        self.stream = stream
+        self.file = open(path, "w", buffering=1)
+
+    def write(self, data: str) -> int:
+        self.file.write(data)
+        return self.stream.write(data)
+
+    def flush(self) -> None:
+        self.file.flush()
+        self.stream.flush()
+
+
+sys.stdout = Tee(sys.stdout, out / "registro.txt")
+
+
+def annotate(level: str, message: str) -> None:
+    """Riga che GitHub mostra in evidenza nella pagina dell'esecuzione."""
+    flat = message.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+    print(f"::{level}::{flat}", flush=True)
+
+
 def adb(*args: str, check: bool = True, timeout: int = 120) -> str:
     result = subprocess.run(["adb", *args], capture_output=True, text=True, timeout=timeout)
     if check and result.returncode != 0:
@@ -112,6 +137,7 @@ def fail(reason: str) -> None:
     log(f"FALLITA: {reason}")
     screenshot("errore")
     crash = adb("logcat", "-b", "crash", "-d", check=False)
+    annotate("error", f"Prova fallita: {reason}\n{crash[-3500:]}")
     print("----- registro degli arresti -----")
     print(crash[-12000:] or "(vuoto)")
     print("----- ultimi errori dell'app -----")
@@ -285,11 +311,14 @@ def main() -> None:
         problems.append(f"la distanza non è cresciuta ad app nascosta: {first} → {second} m")
     if second is not None and second > walked * 1.3:
         problems.append(f"distanza gonfiata: {second} m su {walked:.0f} m veri")
+    measured = f"percorsi {walked:.0f} m; app aperta {first} m, dopo il secondo piano {second} m; permessi: {answered}"
     if problems:
         for problem in problems:
             log(f"PROBLEMA: {problem}")
+        annotate("error", "Prova fallita: " + "; ".join(problems) + "\n" + measured)
         sys.exit(1)
     log("RIUSCITA: nessuna chiusura, distanza misurata con app aperta e nascosta")
+    annotate("notice", "Prova riuscita: " + measured)
 
 
 if __name__ == "__main__":

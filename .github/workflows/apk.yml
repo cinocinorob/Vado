@@ -33,30 +33,45 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Se il codice dell'app non è cambiato (per esempio è cambiata solo la
+      # prova) si riusa il file già costruito, risparmiando una ventina di minuti.
+      - name: File già costruito per questo codice?
+        id: pronto
+        uses: actions/cache@v5
+        with:
+          path: vado.apk
+          key: apk-v1-${{ hashFiles('src/**', 'assets/**', 'plugins/**', 'app.json', 'package.json', 'package-lock.json', 'tsconfig.json') }}
+
       - uses: actions/setup-node@v7
+        if: steps.pronto.outputs.cache-hit != 'true'
         with:
           node-version: 22
           cache: npm
 
       - uses: actions/setup-java@v6
+        if: steps.pronto.outputs.cache-hit != 'true'
         with:
           distribution: temurin
           java-version: 17
 
       - name: Installa le dipendenze
+        if: steps.pronto.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Controlli automatici (regole, filtro GPS, tipi)
+        if: steps.pronto.outputs.cache-hit != 'true'
         run: |
           npm test
           npm run typecheck
 
       - name: Genera il progetto Android
+        if: steps.pronto.outputs.cache-hit != 'true'
         run: npx expo prebuild --platform android --no-install
 
       # Ogni build ha un numero di versione più alto della precedente, così il
       # telefono la accetta come aggiornamento senza disinstallare.
       - name: Numero di versione
+        if: steps.pronto.outputs.cache-hit != 'true'
         run: |
           sed -i "s/versionCode [0-9]\+/versionCode ${{ github.run_number }}/" android/app/build.gradle
           grep -n "versionCode" android/app/build.gradle
@@ -64,10 +79,12 @@ jobs:
       # arm64 è l'architettura dei telefoni; x86_64 serve al telefono simulato
       # della prova. Un solo file per entrambi: quello provato è quello pubblicato.
       - name: Compila
+        if: steps.pronto.outputs.cache-hit != 'true'
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,x86_64
 
       - name: Prepara il file
+        if: steps.pronto.outputs.cache-hit != 'true'
         run: cp android/app/build/outputs/apk/release/app-release.apk vado.apk
 
       - uses: actions/upload-artifact@v7
@@ -113,6 +130,21 @@ jobs:
           name: prova-risultati
           path: prova-risultati
           if-no-files-found: ignore
+
+      # Schermate e registro dell'ultima prova finiscono anche nel ramo
+      # "diagnostica" del repository, sovrascritto ogni volta.
+      - name: Conserva i risultati della prova
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ -d prova-risultati ] || exit 0
+          cd prova-risultati
+          git init -q -b diagnostica
+          git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" \
+            commit -q -m "Risultati della prova n. ${{ github.run_number }} (${{ github.sha }})"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" diagnostica
 
   pubblicazione:
     name: Pubblicazione
