@@ -2,6 +2,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { HomeIcon, MedalIcon, PlayIcon, TrophyIcon } from './Icons';
 import { BORDER, C, F, card, shadow } from './theme';
@@ -24,21 +25,36 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
   }
 
   return (
-    <View style={[styles.nav, { bottom: insets.bottom + 16 }]} accessibilityRole="tablist">
-      <View style={styles.pill}>
-        <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
-        <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
-        <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
+    <>
+      {/* Il contenuto che scorre sfuma nel fondo prima di arrivare sotto la barra. */}
+      <View pointerEvents="none" style={[styles.fade, { height: insets.bottom + 16 + 66 + 44 }]}>
+        <Svg width="100%" height="100%">
+          <Defs>
+            <LinearGradient id={`sfumatura-${current}`} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={C.bg} stopOpacity={0} />
+              <Stop offset="0.5" stopColor={C.bg} stopOpacity={0.9} />
+              <Stop offset="1" stopColor={C.bg} stopOpacity={1} />
+            </LinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#sfumatura-${current})`} />
+        </Svg>
       </View>
-      <Pressable
-        onPress={() => router.push(tripActive ? '/in-corso' : '/nuovo')}
-        accessibilityRole="button"
-        accessibilityLabel={tripActive ? 'Riapri il tragitto in corso' : 'Inizia un tragitto'}
-        style={({ pressed }) => [styles.play, pressed ? [shadow(1), { transform: [{ translateY: 4 }] }] : shadow(5)]}
-      >
-        <PlayIcon size={26} />
-      </Pressable>
-    </View>
+      <View style={[styles.nav, { bottom: insets.bottom + 16 }]} accessibilityRole="tablist">
+        <View style={styles.pill}>
+          <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
+          <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
+          <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
+        </View>
+        <Pressable
+          onPress={() => router.push(tripActive ? '/in-corso' : '/nuovo')}
+          accessibilityRole="button"
+          accessibilityLabel={tripActive ? 'Riapri il tragitto in corso' : 'Inizia un tragitto'}
+          style={({ pressed }) => [styles.play, pressed ? [shadow(1), { transform: [{ translateY: 4 }] }] : shadow(5)]}
+        >
+          <PlayIcon size={26} />
+        </Pressable>
+      </View>
+    </>
   );
 }
 
@@ -59,6 +75,7 @@ function Tab({ label, active, onPress, icon }: { label: string; active: boolean;
 }
 
 const styles = StyleSheet.create({
+  fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   nav: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', gap: 12 },
   pill: { ...card, flex: 1, height: 66, padding: 5, borderRadius: 33, flexDirection: 'row', gap: 4, ...shadow(5) },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 26 },

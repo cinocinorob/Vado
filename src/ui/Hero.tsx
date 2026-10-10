@@ -11,17 +11,21 @@ import { BORDER, C, F } from './theme';
 export function HeroBlock({ caption, title, right, children }: { caption: string; title: string; right?: ReactNode; children?: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.block, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.caption}>{caption}</Text>
-          <Text style={styles.title} accessibilityRole="header">
-            {title}
-          </Text>
+    // Il bordo in basso è una sagoma a inchiostro uguale al blocco, che sporge di poco:
+    // così segue gli angoli tondi allo stesso modo su Android e nel browser.
+    <View style={styles.edge}>
+      <View style={[styles.block, { paddingTop: insets.top + 12 }]}>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.caption}>{caption}</Text>
+            <Text style={styles.title} accessibilityRole="header">
+              {title}
+            </Text>
+          </View>
+          {right}
         </View>
-        {right}
+        {children}
       </View>
-      {children}
     </View>
   );
 }
@@ -38,10 +42,9 @@ export function StickerChip({ children, label, tilt = 3 }: { children: ReactNode
 export const chipText = { fontFamily: F.bold, fontSize: 13, color: C.onInk } as const;
 
 const styles = StyleSheet.create({
+  edge: { backgroundColor: C.ink, borderBottomLeftRadius: 40, borderBottomRightRadius: 40, paddingBottom: BORDER + 2 },
   block: {
     backgroundColor: C.lime,
-    borderBottomWidth: BORDER,
-    borderColor: C.ink,
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
     paddingHorizontal: 20,

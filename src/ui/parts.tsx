@@ -16,7 +16,11 @@ import { BORDER, C, F, card, shadow } from './theme';
 export function Screen({ children, style, bleed = false }: { children: ReactNode; style?: StyleProp<ViewStyle>; bleed?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.screen, bleed ? styles.bleed : { paddingTop: insets.top + 12 }, { paddingBottom: insets.bottom }, style]}>{children}</View>
+    <View style={[styles.screen, bleed ? styles.bleed : { paddingTop: insets.top + 12 }, { paddingBottom: insets.bottom }, style]}>
+      {children}
+      {/* Striscia lime fissa dietro l'ora e le icone di sistema: scorrendo, il contenuto non ci passa sotto. */}
+      {bleed && <View pointerEvents="none" style={[styles.statusStrip, { height: insets.top }]} />}
+    </View>
   );
 }
 
@@ -261,6 +265,7 @@ export const input = {
 export const PLACEHOLDER = 'rgba(11, 31, 42, 0.5)';
 
 const styles = StyleSheet.create({
+  statusStrip: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.lime },
   screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20 },
   bleed: { paddingHorizontal: 0 },
   panel: { ...card, borderRadius: 24, padding: 16, ...shadow(5) },
