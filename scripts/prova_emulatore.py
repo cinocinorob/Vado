@@ -11,7 +11,7 @@ Se l'app si chiude da sola in un punto qualsiasi la prova fallisce, e la nuova
 versione non viene pubblicata. Schermate e registro di sistema finiscono nella
 cartella indicata, per capire cosa è successo.
 
-Uso: prova_emulatore.py <file.apk> <cartella-risultati>
+Uso: prova_emulatore.py <file.apk> <cartella-risultati> [salute]
 """
 import math
 import re
@@ -32,6 +32,8 @@ WALK_MS = 1.4
 
 apk = sys.argv[1]
 out = Path(sys.argv[2])
+# Terzo argomento "salute": prova anche il collegamento a Connessione Salute.
+WITH_HEALTH = len(sys.argv) > 3 and sys.argv[3] == "salute"
 out.mkdir(parents=True, exist_ok=True)
 shots = 0
 
@@ -80,15 +82,22 @@ def screenshot(name: str) -> None:
         subprocess.run(["adb", "exec-out", "screencap", "-p"], stdout=handle, timeout=60)
 
 
-def nodes() -> list[dict]:
-    """Elementi visibili sullo schermo, con testo e posizione."""
-    for _ in range(5):
+def nodes(attempts: int = 3) -> list[dict]:
+    """Elementi visibili sullo schermo, con testo e posizione.
+
+    Lo strumento di Android che elenca gli elementi aspetta che lo schermo
+    stia fermo per un secondo. Nella schermata del tragitto il cronometro
+    cambia ogni secondo, quindi lì la lettura riesce solo ogni tanto: in quel
+    caso si restituisce un elenco vuoto, mai il risultato di una lettura
+    precedente.
+    """
+    for _ in range(attempts):
+        adb("shell", "rm", "-f", "/sdcard/ui.xml", check=False)
         adb("shell", "uiautomator", "dump", "/sdcard/ui.xml", check=False)
         xml = adb("exec-out", "cat", "/sdcard/ui.xml", check=False)
         try:
             root = ET.fromstring(xml)
         except ET.ParseError:
-            time.sleep(1)
             continue
         found = []
         for node in root.iter("node"):
@@ -158,16 +167,29 @@ def check_alive(where: str) -> None:
         fail(f"l'app non è più in esecuzione ({where})")
 
 
-def wait_for(label: str, seconds: int = 60, where: str = "") -> dict:
+def wait_for(label: str, seconds: int = 60, where: str = "", exact: bool = False, required: bool = True) -> dict | None:
     deadline = time.time() + seconds
     while time.time() < deadline:
-        node = find(label)
+        node = find(label, exact)
         if node:
             return node
         check_alive(where or f"aspettando «{label}»")
         time.sleep(1)
-    fail(f"«{label}» non è comparso entro {seconds} s")
-    raise AssertionError
+    if required:
+        fail(f"«{label}» non è comparso entro {seconds} s")
+    return None
+
+
+def scroll_to(label: str, exact: bool = False, swipes: int = 6) -> dict | None:
+    """Scorre la schermata verso il basso finché l'elemento non è visibile."""
+    for _ in range(swipes):
+        node = find(label, exact)
+        # Sotto questa altezza l'elemento è coperto dalla barra in basso.
+        if node and node["center"][1] < 1900:
+            return node
+        adb("shell", "input", "swipe", "540", "1500", "540", "900", "400")
+        time.sleep(1.5)
+    return find(label, exact)
 
 
 def tap(node: dict) -> None:
@@ -226,21 +248,78 @@ def walk(seconds: int) -> None:
         time.sleep(1)
 
 
-def shown_distance() -> float | None:
-    """Distanza mostrata nella schermata del tragitto, in metri.
-
-    È il numero scritto subito sopra l'etichetta "Distanza". Non basta cercare
-    un testo che somigli a una distanza: sotto questa schermata resta aperta
-    "Oggi", con i suoi chilometri.
-    """
-    texts = [n["text"] or n["desc"] for n in nodes() if n["text"] or n["desc"]]
+def distance_near(texts: list[str], label: str) -> float | None:
+    """Il numero scritto subito prima di `label`, in metri ("205 m", "1,2 km")."""
     for i, value in enumerate(texts):
-        if value == "Distanza" and i > 0:
+        if value == label and i > 0:
             match = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s(km|m)", texts[i - 1].strip())
             if match:
                 number = float(match.group(1).replace(",", "."))
                 return number * 1000 if match.group(2) == "km" else number
     return None
+
+
+def shown_distance() -> float | None:
+    """Distanza mostrata nella schermata del tragitto; None se la lettura non riesce."""
+    texts = [n["text"] or n["desc"] for n in nodes() if n["text"] or n["desc"]]
+    return distance_near(texts, "Distanza")
+
+
+def summary_distance() -> float | None:
+    """Distanza del tratto nella schermata di riepilogo ("205 m · 4 min")."""
+    for node in nodes():
+        for value in (node["text"], node["desc"]):
+            match = re.match(r"(\d+(?:[.,]\d+)?)\s(km|m) · ", value)
+            if match:
+                number = float(match.group(1).replace(",", "."))
+                meters = number * 1000 if match.group(2) == "km" else number
+                # La riga del tratto è in metri sotto il chilometro: è la più precisa.
+                if match.group(2) == "m" or meters >= 1000:
+                    return meters
+    return None
+
+
+def connect_health() -> str:
+    """Collega Connessione Salute dalla schermata Oggi e legge i passi di oggi."""
+    log("collego Connessione Salute")
+    button = scroll_to("Collega", exact=True)
+    if not button:
+        screenshot("salute-assente")
+        return "riquadro non trovato: " + visible_text()[:300]
+    screenshot("salute-prima")
+    tap(button)
+    time.sleep(3)
+    check_alive("aprendo i permessi di Connessione Salute")
+    screenshot("salute-permessi")
+    log(f"schermata dei permessi: {visible_text()[:600]}")
+
+    # Schermata di sistema: prima "Consenti tutto", poi "Consenti".
+    everything = wait_for("Allow all", 20, "nei permessi di Connessione Salute", required=False)
+    if everything:
+        tap(everything)
+        time.sleep(1.5)
+    allow = wait_for("Allow", 10, "nei permessi di Connessione Salute", exact=True, required=False)
+    if not allow:
+        screenshot("salute-senza-consenti")
+        return "pulsante Consenti non trovato"
+    tap(allow)
+    time.sleep(3)
+    check_alive("dopo aver concesso i permessi di Connessione Salute")
+
+    connected = wait_for("Collegata", 40, "dopo il collegamento", required=False)
+    scroll_to("Gestisci i permessi")
+    screenshot("salute-dopo")
+    log(f"dopo il collegamento: {visible_text()[:900]}")
+    if not connected:
+        return "permessi concessi ma il riquadro non dice Collegata"
+    # Il conteggio dei passi sta in alto: si torna su prima di cercarlo.
+    for _ in range(4):
+        if find("passi oggi"):
+            return "collegata"
+        adb("shell", "input", "swipe", "540", "900", "540", "1500", "400")
+        time.sleep(1.5)
+    screenshot("salute-senza-passi")
+    return "collegata, ma manca il conteggio dei passi di oggi"
 
 
 def main() -> None:
@@ -266,7 +345,9 @@ def main() -> None:
     answered = answer_permission_dialogs()
     log(f"permessi concessi: {len(answered)}")
     check_alive("dopo i permessi")
-    wait_for("Termina", 40, "dopo i permessi")
+    # Da qui il cronometro cambia ogni secondo e leggere lo schermo riesce
+    # solo ogni tanto: si annota dove sta "Termina" appena lo si vede.
+    finish = wait_for("Termina", 90, "dopo i permessi")
     screenshot("in-corso")
 
     log("cammino per 90 secondi con l'app aperta")
@@ -288,18 +369,20 @@ def main() -> None:
 
     log("riapro l'app")
     adb("shell", "monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
-    wait_for("Termina", 40, "al rientro")
-    time.sleep(3)
+    time.sleep(6)
+    check_alive("al rientro")
     screenshot("rientro")
     second = shown_distance()
     log(f"percorsi davvero {walked:.0f} m, l'app ne mostra {second}")
 
     log("termino il tragitto")
-    tap_label("Termina")
-    wait_for("Riepilogo", 40, "alla chiusura")
+    tap(find("Termina") or finish)
+    wait_for("Riepilogo", 60, "alla chiusura")
+    time.sleep(1)
     screenshot("riepilogo")
+    total = summary_distance()
     summary = visible_text()
-    log(f"riepilogo: {summary}")
+    log(f"riepilogo: distanza {total} m | {summary}")
 
     tap_label("Fine")
     wait_for("Inizia un tragitto", 30, "tornando a Oggi")
@@ -313,6 +396,8 @@ def main() -> None:
     log(f"medaglie: {medals}")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
+
+    health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
 
     (out / "logcat.txt").write_text(adb("logcat", "-d", check=False))
@@ -320,19 +405,31 @@ def main() -> None:
     problems = []
     if not foreground:
         problems.append("il servizio in primo piano non risultava attivo ad app nascosta")
-    if first is None or first < walked * 0.25:
-        problems.append(f"distanza con app aperta troppo bassa: {first} m")
-    if second is None or first is None or second <= first:
+    if total is None:
+        problems.append("distanza non trovata nel riepilogo")
+    else:
+        # 60 dei 150 secondi di camminata sono ad app nascosta: se in quel
+        # tempo non si misurasse nulla, il totale non supererebbe il 60%.
+        if total < walked * 0.75:
+            problems.append(f"distanza troppo bassa: {total:.0f} m su {walked:.0f} m veri (ad app nascosta non si misura?)")
+        if total > walked * 1.25:
+            problems.append(f"distanza gonfiata: {total:.0f} m su {walked:.0f} m veri")
+    if first is not None and second is not None and second <= first:
         problems.append(f"la distanza non è cresciuta ad app nascosta: {first} → {second} m")
-    if second is not None and second > walked * 1.3:
-        problems.append(f"distanza gonfiata: {second} m su {walked:.0f} m veri")
-    measured = f"percorsi {walked:.0f} m; app aperta {first} m, dopo il secondo piano {second} m; permessi: {answered}"
+    if "Primo passo" not in medals or "1 di 9" not in medals:
+        problems.append("la medaglia Primo passo non risulta sbloccata")
+    measured = (
+        f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
+        f"permessi: {answered}; Connessione Salute: {health}"
+    )
+    if WITH_HEALTH and health != "collegata":
+        problems.append(f"Connessione Salute non collegata: {health}")
     if problems:
         for problem in problems:
             log(f"PROBLEMA: {problem}")
         annotate("error", "Prova fallita: " + "; ".join(problems) + "\n" + measured)
         sys.exit(1)
-    log("RIUSCITA: nessuna chiusura, distanza misurata con app aperta e nascosta")
+    log("RIUSCITA: " + measured)
     annotate("notice", "Prova riuscita: " + measured)
 
 
