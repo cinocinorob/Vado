@@ -15,6 +15,7 @@ Uso: prova_emulatore.py <file.apk> <cartella-risultati> [salute]
 """
 import math
 import re
+import struct
 import subprocess
 import sys
 import time
@@ -116,6 +117,47 @@ def nodes(attempts: int = 3) -> list[dict]:
             )
         return found
     return []
+
+
+def finish_button() -> dict | None:
+    """Il pulsante "Termina", riconosciuto dal colore invece che dal testo.
+
+    Nella schermata del tragitto l'elenco degli elementi non è affidabile (vedi
+    nodes), ma il pulsante è l'unica grande area color corallo: si cerca quella
+    nella parte bassa dello schermo e se ne restituisce il centro.
+    """
+    raw = subprocess.run(["adb", "exec-out", "screencap"], capture_output=True, timeout=60).stdout
+    if len(raw) < 16:
+        return None
+    width, height = struct.unpack_from("<II", raw, 0)
+    header = len(raw) - width * height * 4
+    if width <= 0 or height <= 0 or header < 12:
+        return None
+    xs, ys = [], []
+    for y in range(int(height * 0.6), height, 12):
+        for x in range(0, width, 12):
+            o = header + (y * width + x) * 4
+            r, g, b = raw[o], raw[o + 1], raw[o + 2]
+            # Corallo dell'app: #FF8A65.
+            if r > 235 and 120 < g < 158 and 85 < b < 120:
+                xs.append(x)
+                ys.append(y)
+    # Un pulsante intero copre centinaia di punti della griglia.
+    if len(xs) < 150:
+        return None
+    return {"center": (sum(xs) // len(xs), sum(ys) // len(ys))}
+
+
+def wait_for_trip_screen(seconds: int, where: str) -> dict:
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        button = finish_button()
+        if button:
+            return button
+        check_alive(where)
+        time.sleep(2)
+    fail(f"la schermata del tragitto non è comparsa entro {seconds} s ({where})")
+    raise AssertionError
 
 
 def find(label: str, exact: bool = False) -> dict | None:
@@ -261,7 +303,7 @@ def distance_near(texts: list[str], label: str) -> float | None:
 
 def shown_distance() -> float | None:
     """Distanza mostrata nella schermata del tragitto; None se la lettura non riesce."""
-    texts = [n["text"] or n["desc"] for n in nodes() if n["text"] or n["desc"]]
+    texts = [n["text"] or n["desc"] for n in nodes(attempts=1) if n["text"] or n["desc"]]
     return distance_near(texts, "Distanza")
 
 
@@ -345,9 +387,9 @@ def main() -> None:
     answered = answer_permission_dialogs()
     log(f"permessi concessi: {len(answered)}")
     check_alive("dopo i permessi")
-    # Da qui il cronometro cambia ogni secondo e leggere lo schermo riesce
-    # solo ogni tanto: si annota dove sta "Termina" appena lo si vede.
-    finish = wait_for("Termina", 90, "dopo i permessi")
+    # Da qui il cronometro cambia ogni secondo e l'elenco degli elementi non è
+    # affidabile: la schermata si riconosce dal pulsante "Termina".
+    wait_for_trip_screen(60, "dopo i permessi")
     screenshot("in-corso")
 
     log("cammino per 90 secondi con l'app aperta")
@@ -369,14 +411,15 @@ def main() -> None:
 
     log("riapro l'app")
     adb("shell", "monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
-    time.sleep(6)
+    finish = wait_for_trip_screen(40, "al rientro")
+    time.sleep(4)
     check_alive("al rientro")
     screenshot("rientro")
     second = shown_distance()
     log(f"percorsi davvero {walked:.0f} m, l'app ne mostra {second}")
 
     log("termino il tragitto")
-    tap(find("Termina") or finish)
+    tap(finish)
     wait_for("Riepilogo", 60, "alla chiusura")
     time.sleep(1)
     screenshot("riepilogo")
