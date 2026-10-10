@@ -227,10 +227,16 @@ def walk(seconds: int) -> None:
 
 
 def shown_distance() -> float | None:
-    """Distanza mostrata nella schermata del tragitto, in metri."""
-    for node in nodes():
-        for value in (node["text"], node["desc"]):
-            match = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s(km|m)", value.strip())
+    """Distanza mostrata nella schermata del tragitto, in metri.
+
+    È il numero scritto subito sopra l'etichetta "Distanza". Non basta cercare
+    un testo che somigli a una distanza: sotto questa schermata resta aperta
+    "Oggi", con i suoi chilometri.
+    """
+    texts = [n["text"] or n["desc"] for n in nodes() if n["text"] or n["desc"]]
+    for i, value in enumerate(texts):
+        if value == "Distanza" and i > 0:
+            match = re.fullmatch(r"(\d+(?:[.,]\d+)?)\s(km|m)", texts[i - 1].strip())
             if match:
                 number = float(match.group(1).replace(",", "."))
                 return number * 1000 if match.group(2) == "km" else number
