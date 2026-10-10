@@ -34,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="nuovo" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="in-corso" options={{ gestureEnabled: false }} />
         <Stack.Screen name="riepilogo" />
+        <Stack.Screen name="riservatezza" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

@@ -68,7 +68,7 @@ export function StatusChip({ status }: { status: LegStatus }) {
 }
 
 /** Una riga per tratto: mezzo, distanza, stato e punti. */
-export function LegRow({ leg, showStatus = false }: { leg: LegResult; showStatus?: boolean }) {
+export function LegRow({ leg, showStatus = false, caption }: { leg: LegResult; showStatus?: boolean; caption?: string }) {
   const mode = getMode(leg.mode);
   const detail = [distance(leg.meters), duration(leg.seconds), leg.steps != null && leg.mode === 'piedi' ? `${leg.steps} passi` : null]
     .filter(Boolean)
@@ -81,6 +81,7 @@ export function LegRow({ leg, showStatus = false }: { leg: LegResult; showStatus
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{mode.short}</Text>
         <Text style={styles.rowDetail}>{detail}</Text>
+        {caption ? <Text style={styles.rowDetail}>{caption}</Text> : null}
         {showStatus ? <StatusChip status={leg.status} /> : null}
         {showStatus && leg.note ? <Text style={styles.rowDetail}>{leg.note}</Text> : null}
       </View>

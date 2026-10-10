@@ -204,6 +204,10 @@ export type Trip = TripScore & {
   startedAt: number;
   endedAt: number;
   commute: boolean;
+  /** Presente se il tragitto non è stato misurato dall'app ma importato da Connessione Salute. */
+  source?: 'salute';
+  /** App che aveva registrato l'attività importata. */
+  sourceApp?: string;
 };
 
 /**

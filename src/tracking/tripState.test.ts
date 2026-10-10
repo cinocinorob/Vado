@@ -12,6 +12,7 @@ import {
   currentLeg,
   enterBackground,
   forDraft,
+  legSpans,
   legSteps,
   pauseTrip,
   resumeTrip,
@@ -218,4 +219,31 @@ test('il percorso da disegnare non cresce senza limite', () => {
   trip = sim.move(trip, 200_000, 40);
   assert.ok(trip.path.length <= 400, String(trip.path.length));
   assert.ok(trip.path.length > 100, String(trip.path.length));
+});
+
+test('gli intervalli di movimento di un tratto escludono le pause e si chiudono al cambio di mezzo', () => {
+  const t0 = 1_000_000;
+  let trip = startTrip({ mode: 'piedi', commute: false, now: t0, stepsUsable: false, gpsUsable: true, background: true });
+  assert.deepEqual(legSpans(currentLeg(trip), t0 + 60_000), [[t0, t0 + 60_000]]);
+
+  trip = pauseTrip(trip, t0 + 60_000);
+  assert.deepEqual(legSpans(currentLeg(trip), t0 + 90_000), [[t0, t0 + 60_000]]);
+
+  trip = resumeTrip(trip, t0 + 120_000);
+  trip = switchMode(trip, 'tpl', t0 + 180_000);
+  assert.deepEqual(legSpans(trip.legs[0], t0 + 999_000), [
+    [t0, t0 + 60_000],
+    [t0 + 120_000, t0 + 180_000],
+  ]);
+  assert.deepEqual(legSpans(currentLeg(trip), t0 + 200_000), [[t0 + 180_000, t0 + 200_000]]);
+});
+
+test('dopo un riavvio il tempo ad app chiusa resta fuori dagli intervalli', () => {
+  const t0 = 1_000_000;
+  let trip = startTrip({ mode: 'piedi', commute: false, now: t0, stepsUsable: false, gpsUsable: true, background: true });
+  trip = afterRestart(forDraft(trip, t0 + 30_000), t0 + 600_000);
+  assert.deepEqual(legSpans(currentLeg(trip), t0 + 660_000), [
+    [t0, t0 + 30_000],
+    [t0 + 600_000, t0 + 660_000],
+  ]);
 });

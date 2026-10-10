@@ -35,6 +35,11 @@ export type ActiveLeg = {
    * quel tempo i passi non vengono contati, quindi il conteggio è un minimo.
    */
   backgrounded: boolean;
+  /**
+   * Intervalli di movimento già conclusi (inizio, fine), pause escluse.
+   * Servono a chiedere a Connessione Salute i passi fatti proprio in quei minuti.
+   */
+  spans?: [number, number][];
 };
 
 export type PathPoint = { lat: number; lon: number };
@@ -130,6 +135,12 @@ export function legElapsedMs(leg: ActiveLeg, now: number): number {
   return leg.accumMs + (leg.runningSince != null ? Math.max(0, now - leg.runningSince) : 0);
 }
 
+/** Intervalli di movimento del tratto fino a `now`, compreso quello ancora aperto. */
+export function legSpans(leg: ActiveLeg, now: number): [number, number][] {
+  const done = leg.spans ?? [];
+  return leg.runningSince != null && now > leg.runningSince ? [...done, [leg.runningSince, now]] : done;
+}
+
 /** Nuove posizioni dal GPS. In pausa vengono ignorate. */
 export function applyFixes(trip: ActiveTrip, fixes: Fix[]): ActiveTrip {
   if (trip.paused || fixes.length === 0) return trip;
@@ -173,6 +184,7 @@ function closeLeg(trip: ActiveTrip, leg: ActiveLeg, now: number): ActiveLeg {
     ...leg,
     track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs),
     accumMs: legElapsedMs(leg, now),
+    spans: legSpans(leg, now),
     runningSince: null,
     finalSteps: legSteps(trip, leg),
     closed: true,
@@ -203,6 +215,7 @@ export function pauseTrip(trip: ActiveTrip, now: number): ActiveTrip {
       // L'ultimo pezzo fatto prima della pausa viene accreditato adesso.
       track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs),
       accumMs: legElapsedMs(leg, now),
+      spans: legSpans(leg, now),
       runningSince: null,
     }),
     paused: true,
@@ -261,6 +274,7 @@ export function afterRestart(trip: ActiveTrip, now: number): ActiveTrip {
     ...replaceCurrent(trip, {
       ...leg,
       accumMs: leg.accumMs + ranMs,
+      spans: legSpans(leg, until),
       runningSince: trip.paused ? null : now,
       track: breakTrack(leg.track),
     }),

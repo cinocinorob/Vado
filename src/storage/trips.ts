@@ -26,6 +26,14 @@ export async function saveTrip(trip: Trip): Promise<void> {
   await AsyncStorage.setItem(KEY, JSON.stringify([...trips.filter((t) => t.id !== trip.id), trip]));
 }
 
+/** Aggiunge più tragitti in una volta (per esempio quelli importati). */
+export async function saveTrips(added: Trip[]): Promise<void> {
+  if (added.length === 0) return;
+  const ids = new Set(added.map((t) => t.id));
+  const trips = await loadTrips();
+  await AsyncStorage.setItem(KEY, JSON.stringify([...trips.filter((t) => !ids.has(t.id)), ...added]));
+}
+
 export async function getTrip(id: string): Promise<Trip | null> {
   return (await loadTrips()).find((t) => t.id === id) ?? null;
 }

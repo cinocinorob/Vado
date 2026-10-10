@@ -30,7 +30,10 @@
       ],
       "permissions": [
         "android.permission.POST_NOTIFICATIONS",
-        "android.permission.RECEIVE_BOOT_COMPLETED"
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_EXERCISE",
+        "android.permission.health.READ_DISTANCE"
       ]
     },
     "web": {
@@ -53,6 +56,15 @@
         "expo-sensors",
         {
           "motionPermission": "Vado usa i dati di movimento per contare i passi durante un tragitto."
+        }
+      ],
+      "react-native-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
         }
       ]
     ]

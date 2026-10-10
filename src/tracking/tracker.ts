@@ -25,6 +25,7 @@ import { AppState, PermissionsAndroid, Platform, type NativeEventSubscription } 
 import type { Fix } from '../core/geo';
 import type { ModeId } from '../core/modes';
 import { capUsedBefore, dayKey, scoreTrip, summarizeDay, type Trip } from '../core/scoring';
+import { withHealthSteps } from '../health/sync';
 import { loadTrips, saveTrip } from '../storage/trips';
 import { activeTripStore } from './store';
 import {
@@ -254,7 +255,10 @@ export async function finishTracking(): Promise<Trip | null> {
   const now = Date.now();
   const trips = await loadTrips();
   const day = dayKey(now);
-  const score = scoreTrip(toLegInputs(active, now, true), {
+  // Se Connessione Salute è collegata, i suoi passi possono confermare i
+  // tratti a piedi che il contapassi dell'app non ha coperto.
+  const inputs = await withHealthSteps(active, toLegInputs(active, now, true), now);
+  const score = scoreTrip(inputs, {
     commute: active.commute,
     bonusAlreadyToday: summarizeDay(trips, day).bonusAwarded,
     capUsed: capUsedBefore(trips, active.startedAt),
