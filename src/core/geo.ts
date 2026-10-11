@@ -58,7 +58,23 @@ export type TrackState = {
   accepted: number;
   /** Numero di posizioni simulate ricevute. */
   mocked: number;
+  /**
+   * Tratti in cui la distanza non viene dalla linea d'aria tra due posizioni
+   * ma da un calcolo esterno (per esempio la rete della metro). Solo nomi e
+   * metri, nessuna coordinata. I metri sono già compresi in distanceM.
+   */
+  hops?: TrackHop[];
 };
+
+export type TrackHop = { label: string; lines: string; meters: number };
+
+/**
+ * Chiamata quando due posizioni confermate di fila sono lontane tra loro:
+ * può dire che quel tratto vale una distanza diversa dalla linea d'aria
+ * (sottoterra il GPS non arriva, ma la rete della metro si conosce).
+ * Null per lasciare la linea d'aria.
+ */
+export type Bridge = (from: Fix, to: Fix, straightM: number) => TrackHop | null;
 
 export const EMPTY_TRACK: TrackState = {
   distanceM: 0,
@@ -139,12 +155,14 @@ function smooth(previous: Estimate | null, fix: Fix, accuracy: number, maxSegmen
 /**
  * Aggiunge una posizione al tracciato.
  * @param maxSegmentMs velocità massima credibile per il mezzo, in m/s
+ * @param bridge se presente, decide quanto vale un tratto senza posizioni in mezzo
  * @returns il nuovo stato e il punto appena accreditato, se c'è (per il disegno)
  */
 export function addFix(
   state: TrackState,
   raw: Fix,
   maxSegmentMs: number,
+  bridge?: Bridge,
 ): { state: TrackState; credited: Fix | null } {
   if (raw.mocked) {
     return { state: { ...state, mocked: state.mocked + 1 }, credited: null };
@@ -210,6 +228,13 @@ export function addFix(
   }
   if (speed > maxSegmentMs) {
     return { state: { ...next, rejectedM: state.rejectedM + d }, credited: null };
+  }
+  const hop = bridge ? bridge(base.last, confirmed, d) : null;
+  if (hop && dt > 0 && hop.meters / dt <= maxSegmentMs) {
+    return {
+      state: { ...next, distanceM: state.distanceM + hop.meters, hops: [...(state.hops ?? []), hop] },
+      credited: confirmed,
+    };
   }
   return { state: { ...next, distanceM: state.distanceM + d }, credited: confirmed };
 }

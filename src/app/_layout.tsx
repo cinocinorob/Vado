@@ -35,6 +35,7 @@ export default function RootLayout() {
         <Stack.Screen name="lega-nuova" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="sfida-nuova" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="nuovo" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="metro" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="in-corso" options={{ gestureEnabled: false }} />
         <Stack.Screen name="riepilogo" />
         <Stack.Screen name="riservatezza" options={{ animation: 'slide_from_bottom' }} />

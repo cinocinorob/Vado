@@ -11,11 +11,14 @@ import {
   breakTrack,
   closeTrack,
   withoutCoordinates,
+  type Bridge,
   type Fix,
   type TrackState,
 } from '../core/geo';
+import { metroHop } from '../core/metro';
 import { getMode, type ModeId } from '../core/modes';
 import type { LegInput } from '../core/scoring';
+import { ROMA } from '../data/metro';
 
 export type ActiveLeg = {
   mode: ModeId;
@@ -141,15 +144,22 @@ export function legSpans(leg: ActiveLeg, now: number): [number, number][] {
   return leg.runningSince != null && now > leg.runningSince ? [...done, [leg.runningSince, now]] : done;
 }
 
+/**
+ * Con i mezzi pubblici, quando le posizioni spariscono tra due stazioni della
+ * metro la distanza viene dalla rete invece che dalla linea d'aria.
+ */
+const metroBridge: Bridge = (from, to, straightM) => metroHop(ROMA, from, to, straightM);
+
 /** Nuove posizioni dal GPS. In pausa vengono ignorate. */
 export function applyFixes(trip: ActiveTrip, fixes: Fix[]): ActiveTrip {
   if (trip.paused || fixes.length === 0) return trip;
   const leg = currentLeg(trip);
   const maxMs = getMode(leg.mode).maxSegmentMs;
+  const bridge = leg.mode === 'tpl' ? metroBridge : undefined;
   let track = leg.track;
   let path = trip.path;
   for (const fix of fixes) {
-    const result = addFix(track, fix, maxMs);
+    const result = addFix(track, fix, maxMs, bridge);
     track = result.state;
     if (result.credited) {
       path = [...path, { lat: result.credited.lat, lon: result.credited.lon }];
@@ -256,6 +266,7 @@ export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegIn
       steps: legSteps(trip, leg),
       stepsComplete: !leg.backgrounded,
       mocked: track.mocked,
+      hops: track.hops,
     };
   });
 }

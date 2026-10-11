@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MODES, getMode, type ModeId } from '../core/modes';
 import type { LegResult, LegStatus } from '../core/scoring';
+import { ROMA } from '../data/metro';
 import { distance, duration } from './format';
 import { AlertIcon, ModeIcon, ShieldIcon, StarIcon } from './Icons';
 import { BORDER, C, F, card, shadow } from './theme';
@@ -124,6 +125,22 @@ export function PointsChip({ points, invalid = false }: { points: number; invali
 }
 
 /** Una riga per tratto: mezzo, distanza, stato e punti. */
+/** Il bollino di una linea della metro, con il suo colore ufficiale. */
+export function LineBadge({ line, size = 30 }: { line: string; size?: number }) {
+  const color = ROMA.data.lines.find((l) => l.id === line)?.color ?? C.teal;
+  // Testo scuro sui colori chiari, bianco sugli altri (luminanza percepita).
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));
+  const light = 0.299 * r + 0.587 * g + 0.114 * b > 150;
+  return (
+    <View
+      style={[styles.lineBadge, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}
+      accessibilityLabel={`Linea ${line}`}
+    >
+      <Text style={[styles.lineBadgeText, { fontSize: size * (line.length > 1 ? 0.4 : 0.5), color: light ? C.ink : C.onInk }]}>{line}</Text>
+    </View>
+  );
+}
+
 export function LegRow({ leg, showStatus = false, caption }: { leg: LegResult; showStatus?: boolean; caption?: string }) {
   const mode = getMode(leg.mode);
   const detail = [distance(leg.meters), duration(leg.seconds), leg.steps != null && leg.mode === 'piedi' ? `${leg.steps} passi` : null]
@@ -133,7 +150,8 @@ export function LegRow({ leg, showStatus = false, caption }: { leg: LegResult; s
     <View style={styles.row}>
       <ModeBadge mode={leg.mode} />
       <View style={styles.rowText}>
-        <Text style={styles.rowTitle}>{mode.short}</Text>
+        <Text style={styles.rowTitle}>{leg.route ? 'Metro' : mode.short}</Text>
+        {leg.route ? <Text style={styles.rowRoute}>{leg.route}</Text> : null}
         <Text style={styles.rowDetail}>{detail}</Text>
         {caption ? <Text style={styles.rowDetail}>{caption}</Text> : null}
         {showStatus ? <StatusChip status={leg.status} /> : null}
@@ -288,6 +306,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, paddingVertical: 7 },
   rowText: { flex: 1 },
   rowTitle: { fontFamily: F.bold, fontSize: 15, color: C.text },
+  rowRoute: { fontFamily: F.semi, fontSize: 13, lineHeight: 18, color: C.text },
+  lineBadge: { borderWidth: 2, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  lineBadgeText: { fontFamily: F.displayBold },
   rowDetail: { fontFamily: F.medium, fontSize: 12.5, lineHeight: 17, color: C.dim },
   divider: { height: 2, borderRadius: 1, backgroundColor: C.line },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

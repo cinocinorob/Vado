@@ -6,7 +6,8 @@
 # src/data/metro-roma.json. Non modifica mai il ramo principale da solo.
 #
 # Si lancia a mano dalla scheda Actions ("Run workflow"), quando ATAC cambia
-# la rete (una stazione nuova, un prolungamento).
+# la rete (una stazione nuova, un prolungamento). Parte anche da sola a ogni
+# invio sul ramo "rete", usato per mettere a punto lo script.
 
 name: Aggiorna la rete della metro
 

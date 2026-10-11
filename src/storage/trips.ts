@@ -2,8 +2,10 @@
  * Storico dei tragitti conclusi, salvato solo sul telefono.
  *
  * Si salvano distanza, tempo, passi, mezzo e punti. Le coordinate del
- * percorso non vengono mai scritte: da questi dati non si ricava né dove
- * abiti né dove lavori.
+ * percorso non vengono mai scritte. Per i viaggi in metro si salvano anche i
+ * nomi delle stazioni di ingresso e di uscita, mostrati nel riepilogo: è
+ * l'unico dato sui luoghi che resta scritto, ed è spiegato nella schermata
+ * Riservatezza.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

@@ -88,7 +88,8 @@ export default function Oggi() {
       key: `${trip.id}-${i}`,
       leg,
       bonus: 0,
-      caption: trip.source === 'salute' ? `Registrato da ${appName(trip.sourceApp)}` : undefined,
+      caption:
+        trip.source === 'salute' ? `Registrato da ${appName(trip.sourceApp)}` : trip.source === 'metro' ? 'Registrato a posteriori' : undefined,
     })),
     ...(trip.bonus > 0 ? [{ key: `${trip.id}-bonus`, leg: null, bonus: trip.bonus, caption: undefined }] : []),
   ]);
@@ -159,6 +160,22 @@ export default function Oggi() {
                 <Text style={styles.activeTitle}>Tragitto in corso</Text>
                 <Text style={styles.activeDetail}>{getMode(currentLeg(active).mode).label}: tocca per riaprirlo</Text>
               </View>
+            </Pressable>
+          ) : null}
+
+          {!active ? (
+            <Pressable
+              onPress={() => router.push('/metro')}
+              accessibilityRole="button"
+              accessibilityLabel="Ho preso la metro"
+              style={({ pressed }) => [styles.metro, pressed ? [shadow(1), { transform: [{ translateY: 3 }] }] : shadow(4)]}
+            >
+              <ModeBadge mode="tpl" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.metroTitle}>Ho preso la metro</Text>
+                <Text style={text.small}>Dimenticato di avviare? Registrala all&apos;uscita.</Text>
+              </View>
+              <ChevronIcon size={18} color={C.ink} />
             </Pressable>
           ) : null}
 
@@ -278,6 +295,18 @@ const styles = StyleSheet.create({
     borderColor: C.ink,
     borderWidth: BORDER,
   },
+  metro: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 22,
+    backgroundColor: C.card,
+    borderColor: C.ink,
+    borderWidth: BORDER,
+  },
+  metroTitle: { fontFamily: F.displayBold, fontSize: 17, color: C.text },
   activeTitle: { fontFamily: F.displayBold, fontSize: 17, color: C.ink },
   activeDetail: { fontFamily: F.semi, fontSize: 13, color: C.ink },
   health: { gap: 12 },

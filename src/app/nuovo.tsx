@@ -59,7 +59,9 @@ export default function NuovoTragitto() {
           <Text style={[text.small, { flex: 1, lineHeight: 18 }]}>
             {mode === 'piedi'
               ? 'A piedi i passi contati dal telefono confermano il tragitto.'
-              : 'Per questo mezzo vale la tua dichiarazione: controlliamo solo che la velocità sia compatibile.'}{' '}
+              : mode === 'tpl'
+                ? 'In metro il GPS non arriva: la distanza viene calcolata sulla rete, dalla stazione dove scendi sottoterra a quella dove risali. Su bus e tram viene misurata.'
+                : 'Per questo mezzo vale la tua dichiarazione: controlliamo solo che la velocità sia compatibile.'}{' '}
             Massimo {TRIP_CAP} punti per tragitto. La posizione viene usata solo durante il tragitto, anche a schermo
             spento, per misurare la distanza. Il percorso non viene salvato.
           </Text>

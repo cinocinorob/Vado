@@ -51,6 +51,13 @@ export type LegInput = {
   stepsComplete?: boolean;
   /** Posizioni simulate da un'altra app ricevute nel tratto. */
   mocked?: number;
+  /**
+   * Viaggi in metro riconosciuti nel tratto: la loro distanza viene dalla rete
+   * ed è già compresa in gpsM.
+   */
+  hops?: { label: string; lines: string; meters: number }[];
+  /** Il tratto non è stato misurato: la partenza è stata dichiarata a posteriori. */
+  declared?: boolean;
 };
 
 export type LegResult = {
@@ -62,6 +69,8 @@ export type LegResult = {
   status: LegStatus;
   /** Spiegazione leggibile dello stato, vuota se non serve. */
   note: string;
+  /** Viaggio in metro compreso nel tratto, per esempio "Flaminio → EUR Fermi". Solo nomi di stazioni. */
+  route?: string;
   /** Punti prima del tetto. */
   rawPoints: number;
   /** Punti assegnati dopo il tetto del tragitto. */
@@ -76,8 +85,10 @@ type Evaluated = Omit<LegResult, 'points'> & {
 /**
  * Valuta un singolo tratto: distanza valida, stato e punti prima del tetto.
  *
- * La distanza viene sempre e solo dal GPS. I passi servono a confermarla o a
- * limitarla, mai a crearla: altrimenti basterebbe agitare il telefono.
+ * La distanza viene dal GPS, tranne in metro dove il GPS non arriva: lì vale
+ * quella lungo la rete tra la stazione di ingresso e quella di uscita. I passi
+ * servono a confermarla o a limitarla, mai a crearla: altrimenti basterebbe
+ * agitare il telefono.
  */
 export function evaluateLeg(input: LegInput): Evaluated {
   const mode = getMode(input.mode);
@@ -127,8 +138,21 @@ export function evaluateLeg(input: LegInput): Evaluated {
     }
   }
 
+  // Metro: i nomi delle stazioni spiegano da dove viene la distanza.
+  const hops = input.hops ?? [];
+  const route = hops.length > 0 ? hops.map((hop) => hop.label).join(', ') : undefined;
+  if (input.declared) {
+    note = 'Arrivo verificato dalla posizione, partenza dichiarata';
+  } else if (hops.length > 0 && meters > 0) {
+    const onNetwork = hops.reduce((sum, hop) => sum + hop.meters, 0);
+    // Posizioni sparite a una stazione e ricomparse a un'altra, in un tempo da
+    // treno: è una conferma del mezzo, se copre almeno metà del tratto.
+    if (onNetwork >= meters / 2) status = 'verificato';
+    note = `${hops.map((hop) => hop.lines).join(', ')}: distanza lungo la rete della metro`;
+  }
+
   const exactPoints = (meters / 1000) * mode.ptPerKm;
-  return { ...base, meters, status, note, exactPoints, rawPoints: Math.floor(exactPoints + 1e-9) };
+  return { ...base, meters, status, note, ...(route ? { route } : {}), exactPoints, rawPoints: Math.floor(exactPoints + 1e-9) };
 }
 
 export type TripScore = {
@@ -204,8 +228,12 @@ export type Trip = TripScore & {
   startedAt: number;
   endedAt: number;
   commute: boolean;
-  /** Presente se il tragitto non è stato misurato dall'app ma importato da Connessione Salute. */
-  source?: 'salute';
+  /**
+   * Presente se il tragitto non è stato misurato dall'app: 'salute' se è
+   * importato da Connessione Salute, 'metro' se è un viaggio in metro
+   * registrato a posteriori.
+   */
+  source?: 'salute' | 'metro';
   /** App che aveva registrato l'attività importata. */
   sourceApp?: string;
 };

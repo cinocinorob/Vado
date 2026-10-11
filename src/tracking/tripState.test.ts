@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Fix } from '../core/geo';
+import { routeBetween } from '../core/metro';
 import type { ModeId } from '../core/modes';
 import { scoreTrip } from '../core/scoring';
+import { ROMA } from '../data/metro';
 import {
   afterRestart,
   applyFixes,
@@ -246,4 +248,55 @@ test('dopo un riavvio il tempo ad app chiusa resta fuori dagli intervalli', () =
     [t0, t0 + 30_000],
     [t0 + 600_000, t0 + 660_000],
   ]);
+});
+
+// --- Metro: il GPS sparisce tra due stazioni ---
+
+const T0 = 1_000_000;
+
+function atStation(id: string, offsetM: number, t: number): Fix {
+  const s = ROMA.stations.get(id);
+  assert.ok(s, id);
+  return { lat: s.lat + offsetM / 111_195, lon: s.lon, t, accuracy: 10, speed: 0 };
+}
+
+/** Fermo all'ingresso di una stazione, poi niente per `minutes`, poi fermo all'uscita di un'altra. */
+function underground(from: string, to: string, minutes: number): Fix[] {
+  return [
+    ...Array.from({ length: 5 }, (_, i) => atStation(from, 40, T0 + i * 3000)),
+    ...Array.from({ length: 5 }, (_, i) => atStation(to, -50, T0 + minutes * 60_000 + i * 3000)),
+  ];
+}
+
+test('con i mezzi pubblici il tratto sottoterra vale i metri della rete ed è verificato', () => {
+  const route = routeBetween(ROMA, 'flaminio', 'eur-fermi');
+  assert.ok(route);
+  const end = T0 + 26 * 60_000;
+  const trip = applyFixes(startTrip({ mode: 'tpl', commute: false, now: T0, stepsUsable: false, gpsUsable: true, background: true }), underground('flaminio', 'eur-fermi', 25));
+  const [input] = toLegInputs(trip, end, true);
+  assert.equal(Math.round(input.gpsM), route.meters);
+  assert.deepEqual(input.hops?.map((h) => h.label), ['Flaminio → EUR Fermi']);
+
+  const score = scoreTrip([input], { commute: false, bonusAlreadyToday: false });
+  assert.equal(score.legs[0].status, 'verificato');
+  assert.equal(score.legs[0].route, 'Flaminio → EUR Fermi');
+  assert.match(score.legs[0].note, /Linea A, cambio a Termini, linea B/);
+  assert.equal(score.total, Math.floor((route.meters / 1000) * 4));
+});
+
+test('con un altro mezzo lo stesso buco resta in linea d’aria', () => {
+  const route = routeBetween(ROMA, 'flaminio', 'eur-fermi');
+  assert.ok(route);
+  const trip = applyFixes(startTrip({ mode: 'carsharing', commute: false, now: T0, stepsUsable: false, gpsUsable: true, background: true }), underground('flaminio', 'eur-fermi', 25));
+  const [input] = toLegInputs(trip, T0 + 26 * 60_000, true);
+  assert.equal(input.hops, undefined);
+  assert.ok(input.gpsM < route.meters - 1000);
+});
+
+test('i nomi delle stazioni restano nella bozza su disco, le coordinate no', () => {
+  const trip = applyFixes(startTrip({ mode: 'tpl', commute: false, now: T0, stepsUsable: false, gpsUsable: true, background: true }), underground('termini', 'laurentina', 25));
+  const draft = forDraft(trip, T0 + 26 * 60_000);
+  const text = JSON.stringify(draft);
+  assert.match(text, /Termini → Laurentina/);
+  assert.doesNotMatch(text, /41\.\d{3}|12\.\d{3}/);
 });

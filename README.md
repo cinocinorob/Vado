@@ -15,6 +15,7 @@ decise insieme. Tutti i dati restano sul telefono.
 | Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Tema scuro (la grafica è solo chiara) |
 | Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Riconoscimento automatico del mezzo |
 | Medaglie: nove, con avanzamento | |
+| Metro di Roma: distanza calcolata sulla rete, anche registrata a posteriori | Metro di altre città; bus e treni in galleria |
 | Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
 | Classifica, leghe e sfide **in anteprima**, con partecipanti di esempio | Server: senza, in classifica non ci sono persone vere |
 | Rilevamento a schermo spento, con notifica fissa | |
@@ -57,7 +58,7 @@ strada e importazione delle attività si verificano solo sul telefono.
 
 ## Come fare la prova
 
-Sei prove brevi. Per ognuna annota il valore dell'app e quello reale.
+Otto prove brevi. Per ognuna annota il valore dell'app e quello reale.
 
 1. **Camminata su distanza nota, telefono in mano.** Misura circa 1 km su una mappa e percorrilo. Atteso: distanza
    tra il 90% e il 105% di quella vera, stato "Verificato".
@@ -72,6 +73,14 @@ Sei prove brevi. Per ognuna annota il valore dell'app e quello reale.
    "Collegata" e compare il numero dei passi di oggi. Se usi un'app che registra le attività (Strava, Fitbit,
    Garmin…) e l'hai collegata a Connessione Salute, le camminate e le corse degli ultimi 7 giorni compaiono come
    tragitti "Registrato da …". Annota quante ne arrivano e quante te ne aspettavi.
+
+7. **Metro con il tragitto avviato.** Prima di scendere scegli "Metro, bus, tram" e premi Avvia; termina quando
+   sei risalito e hai fatto qualche passo all'aperto. Atteso: nel riepilogo una riga "Metro" con le due stazioni
+   giuste e i chilometri della rete. Se invece compare "Mezzi pubblici" senza stazioni, annota a che distanza
+   dall'ingresso hai avviato e dopo quanto tempo dall'uscita hai terminato.
+8. **Metro a posteriori.** Fai un viaggio senza avviare nulla. All'uscita apri Vado, tocca "Ho preso la metro" e
+   scegli la stazione di partenza. Atteso: la stazione di arrivo è quella giusta. Annota quanti secondi ci mette a
+   riconoscerla e se sbaglia stazione.
 
 Se un risultato è lontano dall'atteso, quello è il dato utile: dice quale soglia va corretta.
 
@@ -176,6 +185,31 @@ Limiti:
 - Le attività arrivano se l'app che le registra (Strava, Fitbit, Garmin, Samsung Health…) è a sua volta collegata
   a Connessione Salute e scrive anche la distanza.
 
+## Metro
+
+Sottoterra il GPS non arriva, quindi la distanza di un viaggio in metro non si può misurare: si calcola sulla rete,
+dalla stazione di ingresso a quella di uscita, cambi di linea compresi. Due modi:
+
+1. **Dentro un tragitto avviato** con "Metro, bus, tram". Quando le posizioni spariscono vicino a una stazione
+   (entro 300 m) e ricompaiono vicino a un'altra, dopo almeno 45 secondi e a una velocità da treno (al massimo
+   80 km/h), quel tratto vale i metri della rete invece della linea d'aria. Nel riepilogo compare come "Metro",
+   con i nomi delle due stazioni, e risulta "Verificato" se copre almeno metà del tratto. Se una delle condizioni
+   manca, resta la linea d'aria come prima. Nessun limite al numero di viaggi.
+2. **A posteriori**, con "Ho preso la metro" nella schermata Oggi, per chi ha dimenticato di avviare. La stazione
+   di arrivo è quella dove ci si trova (entro 400 m, letta una volta dalla posizione), quella di partenza si
+   sceglie dall'elenco. Poiché la partenza è solo dichiarata: al massimo **2 viaggi al giorno**, niente
+   registrazione nei 10 minuti dopo un tragitto con i mezzi pubblici già contato, e il tratto resta "Dichiarato".
+   Punti pieni, con il tetto di 60 per tragitto.
+
+La rete (74 stazioni, linee A, B, B1 e C, distanze lungo il tracciato) sta in `src/data/metro-roma.json` e viene
+dai dati aperti di Roma Servizi per la Mobilità. Si rigenera lanciando a mano "Aggiorna la rete della metro" dalla
+scheda Actions: lo script `scripts/rete_metro.py` scarica i dati, estrae le linee di metropolitana e lascia il
+risultato e un rapporto nel ramo `dati-rete`, da controllare e copiare. Le lunghezze ottenute corrispondono a quelle
+pubblicate (A 18,4 km, B 18,1 km).
+
+Non ancora verificato su strada: quanto spesso il telefono dà una posizione valida entro 300 m dalla stazione
+subito prima di scendere e subito dopo essere risaliti. Le soglie sono in `src/core/metro.ts`.
+
 ## Come viene misurata la distanza
 
 Il GPS oscilla anche da fermi e in città si sposta di lato per i riflessi sui palazzi. Il filtro in
@@ -187,7 +221,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (136 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (159 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti
@@ -199,8 +233,12 @@ comunque prima di costruire l'app, e si ferma se falliscono.
   di lavoro, cosa che per ora si è scelto di non fare.
 - **Passi a schermo spento:** dipende dal telefono. Se non vengono contati, il tratto a piedi resta "Dichiarato"
   invece che "Verificato", ma i punti ci sono.
-- **Metro in galleria:** sotto terra il GPS non funziona. Il tratto senza segnale viene contato in linea retta tra
-  l'ultimo punto prima e il primo dopo, quindi sottostimato.
+- **Metro:** la distanza viene dalla rete solo a Roma e solo se le posizioni prima e dopo sono vicine a una
+  stazione (vedi "Metro"). Altrimenti il tratto senza segnale viene contato in linea retta, quindi sottostimato.
+  Due stazioni a meno di 400 m in linea d'aria (per esempio Termini e Repubblica) restano in linea retta.
+- **Metro registrata a posteriori:** la stazione di partenza è una dichiarazione. Il limite di due al giorno
+  contiene l'abuso, non lo impedisce.
+- **Linea C in superficie:** nel tratto esterno il GPS funziona e la distanza viene misurata, non calcolata.
 - **Soste lunghe con segnale scarso:** il GPS può aggiungere qualche decina di metri. A piedi lo impediscono i passi.
 - **Se chiudi l'app dall'elenco delle app recenti** il rilevamento si ferma. Alla riapertura il tragitto viene
   recuperato, ma la strada fatta nel frattempo non è contata.
@@ -210,7 +248,9 @@ comunque prima di costruire l'app, e si ferma se falliscono.
 ## Riservatezza
 
 - Nello storico finiscono solo distanza, tempo, passi, mezzo e punti. Per le attività importate anche il nome
-  dell'app che le aveva registrate.
+  dell'app che le aveva registrate. Per i viaggi in metro anche i nomi delle stazioni di ingresso e di uscita: è
+  l'unico dato sui luoghi che resta scritto.
+- "Ho preso la metro" legge la posizione una volta sola, per riconoscere la stazione, e non la salva.
 - Le coordinate esistono solo in memoria mentre il tragitto è aperto: non vengono mai scritte sul telefono, nemmeno
   nella bozza che serve a recuperare un tragitto interrotto.
 - Il percorso è disegnato senza mappa, quindi nessun servizio esterno riceve la posizione.
@@ -255,6 +295,10 @@ Da fare prima del primo caricamento:
 8. **Modulo "Sicurezza dei dati":** oggi nessun dato lascia il telefono. Andrà aggiornato quando arriveranno
    account e classifica.
 9. **Scheda dello store:** icona, schermate, descrizione. Verificare che il nome scelto sia libero.
+10. **Condizioni d'uso dei dati della metro.** La pagina dei dati aperti di Roma Servizi per la Mobilità non indica
+    una licenza: dice che i dati vanno usati "a titolo di supporto al viaggio". Prima di pubblicare va chiesto per
+    iscritto se l'uso in un'app come questa è ammesso e come citare la fonte. L'app la cita già nella schermata
+    Riservatezza.
 
 Riferimenti:
 - [Livello API richiesto da Google Play](https://developer.android.com/google/play/requirements/target-sdk)
@@ -263,11 +307,14 @@ Riferimenti:
 - [Posizione in background: quando serve la dichiarazione](https://support.google.com/googleplay/android-developer/answer/9799150)
 - [Connessione Salute: requisiti di Google Play](https://support.google.com/googleplay/android-developer/answer/12991134)
 - [Connessione Salute: conteggio dei passi del telefono](https://developer.android.com/health-and-fitness/health-connect/features/steps)
+- [Roma Servizi per la Mobilità: dati aperti](https://romamobilita.it/it/tecnologie/open-data)
 
 ## Cartelle
 
 ```
-src/core/       regole pure: mezzi, punteggio, medaglie, classifica e sfide, filtro GPS, Connessione Salute
+src/core/       regole pure: mezzi, punteggio, medaglie, classifica e sfide, filtro GPS, metro, Connessione Salute
+src/data/       la rete della metro di Roma
+src/metro/      lettura della posizione per "Ho preso la metro"
 src/tracking/   tragitto in corso: stato, sensori, bozza su disco
 src/health/     lettura da Connessione Salute e importazione delle attività
 src/social/     sorgente dei dati di classifica, leghe e sfide (oggi di esempio)

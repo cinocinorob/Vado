@@ -13,6 +13,7 @@ cartella indicata, per capire cosa è successo.
 
 Uso: prova_emulatore.py <file.apk> <cartella-risultati> [salute]
 """
+import json
 import math
 import re
 import struct
@@ -421,6 +422,92 @@ def connect_health() -> str:
     return "collegata, ma manca il conteggio dei passi di oggi"
 
 
+def station_fix(station_id: str, north_m: float = 0.0) -> None:
+    """Mette il telefono simulato a una stazione della metro (o poco più a nord)."""
+    network = json.loads(Path("src/data/metro-roma.json").read_text(encoding="utf-8"))
+    station = next(s for s in network["stations"] if s["id"] == station_id)
+    lat = station["lat"] + north_m / 111195.0
+    adb("emu", "geo", "fix", f"{station['lon']:.7f}", f"{lat:.7f}", "20", "12", "0", check=False)
+
+
+def check_metro() -> str:
+    """La metro, nei due modi: registrata a posteriori e riconosciuta dentro un tragitto avviato."""
+    log("metro a posteriori: sono all'uscita di EUR Fermi")
+    for _ in range(4):
+        station_fix("eur-fermi", 60)
+        time.sleep(1)
+    button = scroll_to("Ho preso la metro")
+    if not button:
+        screenshot("metro-senza-pulsante")
+        return "pulsante Ho preso la metro non trovato: " + visible_text()[:300]
+    tap(button)
+    arrived = wait_for("EUR Fermi", 45, "cercando la stazione di arrivo", required=False)
+    check_alive("cercando la stazione di arrivo")
+    screenshot("metro-arrivo")
+    if not arrived:
+        return "stazione di arrivo non riconosciuta: " + visible_text()[:400]
+    line = wait_for("Linea A", 15, "scegliendo la linea", exact=True, required=False)
+    if not line:
+        return "linee non trovate: " + visible_text()[:300]
+    tap(line)
+    time.sleep(1.5)
+    departure = scroll_to("Flaminio", exact=True, swipes=10)
+    if not departure:
+        screenshot("metro-senza-partenza")
+        return "stazione di partenza non trovata: " + visible_text()[:400]
+    tap(departure)
+    time.sleep(2.5)
+    save = wait_for("Registra il viaggio", 20, "dopo la scelta della partenza", required=False)
+    screenshot("metro-scelta")
+    if not save:
+        return "pulsante Registra il viaggio non trovato: " + visible_text()[:400]
+    tap(save)
+    wait_for("Riepilogo", 40, "registrando il viaggio in metro")
+    time.sleep(1)
+    declared = visible_text()
+    screenshot("metro-dichiarato")
+    log(f"metro a posteriori: {declared[:500]}")
+    if "Flaminio → EUR Fermi" not in declared:
+        return "il riepilogo non riporta Flaminio → EUR Fermi"
+    if "partenza dichiarata" not in declared:
+        return "il riepilogo non dice che la partenza è dichiarata"
+    tap_label("Fine")
+    wait_for("Inizia un tragitto", 30, "tornando a Oggi dopo la metro")
+
+    log("metro dentro un tragitto: entro a Termini, esco al Colosseo")
+    for _ in range(3):
+        station_fix("termini", 40)
+        time.sleep(1)
+    tap_label("Inizia un tragitto")
+    wait_for("Avvia", 30)
+    tap(wait_for("Metro, bus, tram", 15, "scegliendo i mezzi pubblici"))
+    time.sleep(1)
+    tap_label("Avvia")
+    wait_for_trip_screen(60, "avviando il tragitto in metro")
+    for _ in range(8):
+        station_fix("termini", 40)
+        time.sleep(1)
+    # Sottoterra: per cento secondi non arriva nessuna posizione nuova.
+    time.sleep(100)
+    check_alive("sottoterra")
+    for _ in range(12):
+        station_fix("colosseo", -40)
+        time.sleep(1)
+    finish = wait_for_trip_screen(30, "all'uscita dalla metro")
+    screenshot("metro-in-corso")
+    tap(finish)
+    wait_for("Riepilogo", 60, "chiudendo il tragitto in metro")
+    time.sleep(1)
+    tracked = visible_text()
+    screenshot("metro-avviato")
+    log(f"metro dentro un tragitto: {tracked[:500]}")
+    if "Termini → Colosseo" not in tracked:
+        return "il tragitto avviato non riporta Termini → Colosseo: " + tracked[:300]
+    tap_label("Fine")
+    wait_for("Inizia un tragitto", 30, "tornando a Oggi dopo il tragitto in metro")
+    return "ok"
+
+
 def main() -> None:
     log("installo l'app")
     adb("install", "-r", apk, timeout=300)
@@ -498,6 +585,7 @@ def main() -> None:
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
 
     board = check_leaderboard()
+    metro = check_metro()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
 
@@ -521,10 +609,12 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; classifica: {board}; Connessione Salute: {health}"
+        f"permessi: {answered}; classifica: {board}; metro: {metro}; Connessione Salute: {health}"
     )
     if board != "ok":
         problems.append(f"classifica: {board}")
+    if metro != "ok":
+        problems.append(f"metro: {metro}")
     if WITH_HEALTH and health != "collegata":
         problems.append(f"Connessione Salute non collegata: {health}")
     if problems:

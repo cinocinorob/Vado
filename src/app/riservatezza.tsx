@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { IMPORT_DAYS } from '../core/health';
+import { ROMA } from '../data/metro';
 import { CloseIcon } from '../ui/Icons';
 import { Header, Panel, RoundButton, Screen, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
@@ -15,6 +16,15 @@ const SECTIONS: { title: string; body: string }[] = [
     title: 'Posizione',
     body:
       'Usata solo mentre un tragitto è aperto, anche a schermo spento, per misurare la distanza. Le coordinate restano in memoria finché il tragitto è in corso e non vengono mai salvate: nello storico finiscono solo distanza, tempo, passi, mezzo e punti.',
+  },
+  {
+    title: 'Metro',
+    body:
+      'Sottoterra il GPS non arriva: la distanza viene calcolata sulla rete tra la stazione di ingresso e quella di uscita. Per i viaggi in metro nello storico restano scritti i nomi delle due stazioni, che servono a mostrarti da dove viene la distanza. Con "Ho preso la metro" la posizione viene letta una volta sola, per riconoscere la stazione dove ti trovi, e non viene salvata.',
+  },
+  {
+    title: 'Da dove vengono i dati della metro',
+    body: `Stazioni e tracciati vengono dai dati aperti di ${ROMA.data.source}, scaricati il ${ROMA.data.downloaded.split('-').reverse().join('/')}. Stanno dentro l'app: per usarli non serve la connessione.`,
   },
   {
     title: 'Passi del telefono',
