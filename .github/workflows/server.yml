@@ -76,7 +76,7 @@ jobs:
       - name: Quattro persone simulate
         env:
           VADO_TEST_SERVER: http://localhost:3000
-        run: npx tsx --test src/social/remote.server.test.ts
+        run: scripts/prova_server.sh "banco di prova"
 
       - name: Registro del servizio, se qualcosa è andato storto
         if: failure()
@@ -100,4 +100,4 @@ jobs:
           export VADO_TEST_SERVER=$(sed -n "s/.*rest: '\(.*\)',/\1/p" src/social/config.ts)
           export VADO_TEST_KEY=$(sed -n "s/.*key: '\(.*\)',/\1/p" src/social/config.ts)
           test -n "$VADO_TEST_SERVER" && test -n "$VADO_TEST_KEY"
-          npx tsx --test src/social/remote.server.test.ts
+          scripts/prova_server.sh "progetto vero"
