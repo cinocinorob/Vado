@@ -142,3 +142,29 @@ test('lo stato senza coordinate conserva i totali', () => {
   assert.equal(stripped.distanceM, state.distanceM);
   assert.equal(JSON.stringify(stripped).includes('lat'), false);
 });
+
+// --- Prima posizione vecchia, tenuta in memoria dal telefono ---
+
+test('la prima posizione è una vecchia copia: non diventa il punto di partenza', () => {
+  const now = 10_000_000;
+  // Consegnata all'avvio, ma misurata un minuto prima e a 4 km di distanza.
+  const stale: Fix = { lat: LAT - 4000 / M_PER_DEG_LAT, lon: LON, t: now - 60_000, accuracy: 8, speed: 0, seenAt: now };
+  const fresh = line(60, 1.4, { t0: now + 3000 }).map((fix) => ({ ...fix, seenAt: fix.t + 300 }));
+  const state = run([stale, ...fresh], TRANSIT);
+  assert.equal(state.rejectedM, 0);
+  assert.ok(state.distanceM > 40 && state.distanceM < 70, String(state.distanceM));
+});
+
+test('senza questa difesa la stessa sequenza verrebbe scartata come troppo veloce', () => {
+  const now = 10_000_000;
+  const stale: Fix = { lat: LAT - 4000 / M_PER_DEG_LAT, lon: LON, t: now - 60_000, accuracy: 8, speed: 0 };
+  const state = run([stale, ...line(60, 1.4, { t0: now + 3000 })], TRANSIT);
+  assert.ok(state.rejectedM > 3500, String(state.rejectedM));
+});
+
+test('una consegna in ritardo delle posizioni successive non azzera il punto di partenza', () => {
+  const now = 10_000_000;
+  const fixes = line(120, 1.4, { t0: now }).map((fix, i) => ({ ...fix, seenAt: i === 0 ? fix.t + 200 : fix.t + 45_000 }));
+  const state = run(fixes, WALK);
+  assert.ok(state.distanceM > 100 && state.distanceM < 130, String(state.distanceM));
+});

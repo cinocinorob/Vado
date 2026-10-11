@@ -218,12 +218,16 @@ Il GPS oscilla anche da fermi e in città si sposta di lato per i riflessi sui p
 `src/core/geo.ts` liscia le posizioni, conta uno spostamento solo se supera l'incertezza dichiarata e se è
 confermato dalla lettura successiva, e chiede un indizio di movimento vero (la velocità misurata dal ricevitore).
 
+All'avvio di un tragitto il telefono può consegnare per prima una posizione vecchia, tenuta in memoria da prima.
+Se la successiva risulta più fresca di almeno 20 secondi, la prima viene scartata e non diventa il punto di
+partenza: altrimenti la strada tra le due verrebbe contata, o farebbe scartare il tratto per velocità eccessiva.
+
 Le soglie sono state scelte con un simulatore (`src/core/testing/gpsSimulator.ts`), non su strada. Su percorsi
 simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati, perché taglia gli angoli, e non ha
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (163 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (166 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

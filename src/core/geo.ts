@@ -35,6 +35,8 @@ export type Fix = {
   speed?: number | null;
   /** Posizione generata da un'app di simulazione (solo Android). */
   mocked?: boolean;
+  /** Istante in cui l'app ha ricevuto la posizione, secondo l'orologio del telefono. */
+  seenAt?: number;
 };
 
 type Estimate = { lat: number; lon: number; variance: number; t: number };
@@ -106,6 +108,13 @@ export const CLOSE_MIN_M = 5;
  */
 export const TELEPORT_MS = 75;
 
+/**
+ * All'avvio il telefono può consegnare per prima una posizione vecchia, tenuta
+ * in memoria da prima: se la successiva arriva "più fresca" di almeno questo
+ * tempo, la prima era una copia e non il punto di partenza.
+ */
+export const STALE_FIRST_MS = 20_000;
+
 const R = 6371008.8;
 const M_PER_DEG_LAT = 111_195;
 const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -117,6 +126,17 @@ export function haversineM(a: { lat: number; lon: number }, b: { lat: number; lo
   const h =
     Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * La prima posizione era vecchia? Si confronta quanto tempo è passato, per
+ * ognuna, tra la misura e la consegna all'app: così non serve che l'orologio
+ * del telefono sia giusto, basta che sia lo stesso per entrambe. Una consegna
+ * in ritardo della seconda (app in secondo piano) non fa scattare nulla.
+ */
+function firstWasStale(first: Fix, next: Fix): boolean {
+  if (first.seenAt == null || next.seenAt == null) return false;
+  return first.seenAt - first.t - (next.seenAt - next.t) > STALE_FIRST_MS;
 }
 
 const knownSpeed = (fix: Fix) => (fix.speed != null && fix.speed > 0 ? fix.speed : null);
@@ -171,6 +191,12 @@ export function addFix(
     return { state, credited: null };
   }
   if (state.estimate && raw.t <= state.estimate.t) return { state, credited: null };
+
+  // Il riferimento è ancora la primissima posizione ricevuta, e si scopre che
+  // era vecchia: si riparte da questa, senza contare la strada tra le due.
+  if (state.last && state.lastRaw && state.last.t === state.lastRaw.t && firstWasStale(state.lastRaw, raw)) {
+    state = { ...state, last: null, pending: null, estimate: null, lastRaw: null, suspect: null };
+  }
 
   // Cancello: fin dove ci si può essere spostati, al massimo, dall'ultima posizione?
   // Il limite non dipende dal mezzo dichiarato: serve a scartare gli errori del

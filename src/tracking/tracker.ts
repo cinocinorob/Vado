@@ -57,6 +57,7 @@ function toFix(location: Location.LocationObject): Fix {
     accuracy: location.coords.accuracy,
     speed: location.coords.speed,
     mocked: location.mocked === true,
+    seenAt: Date.now(),
   };
 }
 
