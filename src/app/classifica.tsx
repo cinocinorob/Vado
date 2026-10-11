@@ -232,7 +232,9 @@ export default function Classifica() {
                 <Text style={[text.body, { textAlign: 'center' }]}>
                   Creane una e manda il codice a chi vuoi sfidare, oppure entra in quella di un amico con il suo codice.
                 </Text>
-                <PrimaryButton label="Crea o entra in una lega" onPress={() => router.push('/lega-nuova')} icon={<PlusIcon size={20} color={C.ink} />} />
+                <View style={{ alignSelf: 'stretch' }}>
+                  <PrimaryButton label="Crea o entra in una lega" onPress={() => router.push('/lega-nuova')} />
+                </View>
               </Panel>
             ) : null}
 

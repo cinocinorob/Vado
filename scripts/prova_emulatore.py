@@ -16,10 +16,12 @@ Uso: prova_emulatore.py <file.apk> <cartella-risultati> [salute]
 import json
 import math
 import re
+import secrets
 import struct
 import subprocess
 import sys
 import time
+import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -341,8 +343,28 @@ def summary_distance() -> float | None:
     return None
 
 
+def server(function: str, params: dict) -> object:
+    """Chiama una funzione del server della classifica, come farebbe un altro telefono."""
+    config = Path("src/social/config.ts").read_text(encoding="utf-8")
+    rest = re.search(r"rest: '([^']+)'", config).group(1)
+    key = re.search(r"key: '([^']+)'", config).group(1)
+    request = urllib.request.Request(
+        f"{rest}/rpc/{function}",
+        data=json.dumps(params).encode("utf-8"),
+        headers={"Content-Type": "application/json", "apikey": key},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        text = response.read().decode("utf-8")
+    return json.loads(text) if text else None
+
+
+# Chiave segreta del secondo partecipante, simulato da qui: serve a cancellarlo alla fine.
+friend_secret = secrets.token_hex(32)
+
+
 def check_leaderboard() -> str:
-    """Apre la classifica, sceglie un soprannome, guarda leghe e sfide, torna a Oggi."""
+    """Classifica vera: soprannome, lega creata dall'app, un'altra persona che entra con il codice."""
     log("apro la classifica")
     tap_label("Classifica")
     field = wait_for("Soprannome", 30, "aprendo la classifica", exact=True, required=False)
@@ -351,19 +373,67 @@ def check_leaderboard() -> str:
         return "campo del soprannome non trovato: " + visible_text()[:300]
     tap(field)
     time.sleep(1.5)
-    adb("shell", "input", "text", "Prova")
+    adb("shell", "input", "text", "ProvaCI")
     time.sleep(1)
     # Invio dalla tastiera: equivale a "Entra in classifica" anche se la tastiera copre il pulsante.
     adb("shell", "input", "keyevent", "66")
-    league = wait_for("Lega Bronzo", 40, "dopo il soprannome", required=False)
+    empty = wait_for("Ancora nessuna lega", 40, "dopo il soprannome", required=False)
     check_alive("dopo il soprannome")
-    screenshot("classifica-leghe")
-    if not league:
-        return "la lega a livelli non compare: " + visible_text()[:300]
+    screenshot("classifica-vuota")
+    if not empty:
+        return "dopo il soprannome non compare la classifica vuota: " + visible_text()[:400]
+
+    log("creo una lega")
+    tap(wait_for("Crea o entra in una lega", 15, "aprendo Nuova lega"))
+    name = wait_for("Nome della lega", 20, "in Nuova lega", exact=True, required=False)
+    if not name:
+        return "campo del nome della lega non trovato: " + visible_text()[:300]
+    tap(name)
+    time.sleep(1.5)
+    adb("shell", "input", "text", "ProvaCI")
+    time.sleep(1)
+    # Il pulsante sta nella metà alta dello schermo: resta sopra la tastiera.
+    tap(wait_for("Crea la lega", 15, "creando la lega", exact=True))
+    invite = wait_for("Codice d'invito", 40, "dopo la creazione della lega", required=False)
+    check_alive("dopo la creazione della lega")
+    if not invite:
+        screenshot("classifica-senza-lega")
+        return "la lega creata non compare: " + visible_text()[:400]
+    code = next((n["text"] for n in nodes() if re.fullmatch(r"[A-HJ-NP-Z2-9]{6}", n["text"])), None)
+    for _ in range(3):
+        if code:
+            break
+        adb("shell", "input", "swipe", "540", "1500", "540", "900", "400")
+        time.sleep(1.5)
+        code = next((n["text"] for n in nodes() if re.fullmatch(r"[A-HJ-NP-Z2-9]{6}", n["text"])), None)
+    screenshot("classifica-lega-creata")
+    if not code:
+        return "codice d'invito non trovato sullo schermo: " + visible_text()[:400]
+    log(f"lega creata, codice {code}")
+
+    log("un'altra persona entra con il codice e fa 37 punti")
+    try:
+        server("vado_register", {"p_secret": friend_secret, "p_nickname": "AmicaCI"})
+        server("vado_join_league", {"p_secret": friend_secret, "p_code": code})
+        ended = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 30))
+        server("vado_push_scores", {"p_secret": friend_secret, "p_scores": [{"id": "prova-ci", "at": ended, "points": 37, "mode": "bici"}]})
+    except Exception as error:  # la rete o il server: va riportato, non nascosto
+        return f"il server non ha accettato il secondo partecipante: {error}"
+
+    # Si torna in cima e si trascina verso il basso: è il gesto per aggiornare.
+    for _ in range(3):
+        adb("shell", "input", "swipe", "540", "900", "540", "1500", "300")
+        time.sleep(1)
+    adb("shell", "input", "swipe", "540", "700", "540", "1700", "600")
+    friend = wait_for("AmicaCI", 40, "dopo l'ingresso dell'altra persona", required=False)
+    check_alive("dopo l'ingresso dell'altra persona")
+    screenshot("classifica-in-due")
     board_text = visible_text()
-    log(f"classifica: {board_text[:700]}")
-    if "Anteprima" not in board_text:
-        return "manca l'avviso che i partecipanti sono di esempio"
+    log(f"classifica: {board_text[:900]}")
+    if not friend:
+        return "l'altra persona non compare in classifica: " + board_text[:400]
+    if "37" not in board_text:
+        return "i punti dell'altra persona non compaiono: " + board_text[:400]
 
     tap(wait_for("Sfide", 20, "aprendo le sfide", exact=True))
     time.sleep(2)
@@ -377,6 +447,30 @@ def check_leaderboard() -> str:
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalla classifica")
     return "ok"
+
+
+def clean_server() -> str:
+    """Toglie dal server ciò che la prova ha creato: il profilo dell'app e quello dell'altra persona."""
+    notes = []
+    try:
+        server("vado_delete_account", {"p_secret": friend_secret})
+    except Exception as error:
+        notes.append(f"secondo partecipante non cancellato ({error})")
+    for _ in range(4):
+        adb("shell", "input", "swipe", "540", "900", "540", "1500", "300")
+        time.sleep(0.5)
+    reset = scroll_to("Azzera i dati di prova", swipes=10)
+    if not reset:
+        notes.append("pulsante Azzera non trovato: il profilo ProvaCI resta sul server")
+    else:
+        tap(reset)
+        again = wait_for("Tocca di nuovo", 10, "azzerando i dati", required=False)
+        if again:
+            tap(again)
+            time.sleep(4)
+        else:
+            notes.append("conferma di Azzera non comparsa: il profilo ProvaCI resta sul server")
+    return "; ".join(notes) or "ok"
 
 
 def connect_health() -> str:
@@ -599,6 +693,8 @@ def main() -> None:
     metro = check_metro()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
+    cleaned = clean_server()
+    log(f"pulizia del server: {cleaned}")
 
     (out / "logcat.txt").write_text(adb("logcat", "-d", check=False))
 

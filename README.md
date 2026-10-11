@@ -4,7 +4,7 @@ App che premia gli spostamenti sostenibili: scegli il mezzo, avvii il tragitto, 
 "Vado" è un nome provvisorio.
 
 Questa versione misura davvero: distanza dal GPS, passi dal sensore del telefono, punti calcolati con le regole
-decise insieme. Tutti i dati restano sul telefono.
+decise insieme. Tragitti e posizioni restano sul telefono; al server va solo ciò che serve alla classifica.
 
 ## Cosa c'è e cosa manca
 
@@ -17,7 +17,7 @@ decise insieme. Tutti i dati restano sul telefono.
 | Medaglie: nove, con avanzamento | |
 | Metro di Roma: distanza calcolata sulla rete, anche registrata a posteriori | Metro di altre città; bus e treni in galleria |
 | Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
-| Classifica, leghe e sfide **in anteprima**, con partecipanti di esempio | Server: senza, in classifica non ci sono persone vere |
+| Classifica, leghe con invito e sfide tra persone vere | Lega a livelli automatica; segnalazione di soprannomi e nomi offensivi |
 | Rilevamento a schermo spento, con notifica fissa | |
 | Controlli anti-imbroglio di base | |
 | Schermata Riservatezza | |
@@ -128,34 +128,53 @@ salvato che possa andare fuori sincronia.
 Contano solo i tratti validi. Per le medaglie a numero di tragitti il tratto con quel mezzo deve essere di almeno
 500 m, altrimenti basterebbe premere Avvia e Termina dieci volte.
 
-## Classifica, leghe e sfide (anteprima)
+## Classifica, leghe e sfide
 
-Si gareggia sui punti. Le regole stanno in `src/core/social.ts`:
+Si gareggia sui punti, tra persone vere. Le regole stanno in `src/core/social.ts`:
 
 - **Classifica settimanale**, dal lunedì alla domenica. A parità di punti la posizione è la stessa.
-- **Lega a livelli:** Bronzo, Argento, Oro, Platino, Diamante. Gruppi da 20. A fine settimana i primi 5 con almeno
-  un punto salgono, gli ultimi 5 scendono; dal Bronzo non si scende.
 - **Leghe con invito:** chi crea la lega riceve un codice di 6 caratteri (senza O, 0, I, 1, che si confondono) da
-  mandare agli altri.
+  mandare agli altri, che lo inseriscono da "Nuova lega". Fino a 50 persone per lega, 8 leghe a testa.
 - **Sfide**, sul modello di Samsung Health: "Primo al traguardo" (100, 250 o 500 punti; vince chi arriva per primo)
-  e "Chi fa di più" (3, 7 o 14 giorni; vince chi ha più punti), individuali o a due squadre, fino a 10 persone.
-  In più la sfida del mese: 600 punti entro fine mese.
+  e "Chi fa di più" (3, 7 o 14 giorni; vince chi ha più punti), individuali o a due squadre, fino a 10 persone,
+  solo tra compagni di lega. In più la sfida del mese: 600 punti entro fine mese.
 - **Accesso:** solo un soprannome, nessuna registrazione.
+- **Lega a livelli** (Bronzo … Diamante, gruppi da 20, primi 5 su e ultimi 5 giù): le regole ci sono e sono
+  provate, ma non è accesa. Con poche persone i gruppi resterebbero vuoti; si riaccende quando gli utenti bastano.
 
-**Oggi è un'anteprima.** Gli altri partecipanti sono inventati (`src/social/bots.ts`): nomi di fantasia con punti
-calcolati da una formula fissa, e l'app lo dice in ogni schermata. I punti dell'utente sono quelli veri. Tutto
-resta sul telefono e da qui non parte nessun dato.
+### Il server
 
-Per avere persone vere serve un server. Le schermate parlano con la sorgente dei dati attraverso un contratto
-(`src/social/types.ts`): basta scrivere una seconda sorgente che lo rispetti e cambiare una riga in
-`src/social/index.ts`. Cose da decidere a quel punto:
+Un progetto [Supabase](https://supabase.com). Tutto ciò che serve a crearlo è in `supabase/schema.sql`: si incolla
+nel pannello di Supabase (SQL Editor → Run) e si può rilanciare senza perdere dati.
 
-- I punti sono calcolati sul telefono: un'app modificata può dichiararne di falsi. Il server può rifiutare i
-  valori impossibili (più di 60 punti per tragitto, tragitti sovrapposti), non riconoscere quelli falsi ma
-  plausibili.
-- Soprannome, punti e appartenenza alle leghe usciranno dal telefono: vanno aggiornate la schermata Riservatezza,
-  l'informativa e il modulo "Sicurezza dei dati" del Play Store.
-- Con il solo soprannome, chi cambia telefono perde il profilo.
+- Le tabelle stanno in uno schema non raggiungibile da fuori. L'app chiama solo le funzioni `vado_...`, che
+  riconoscono il telefono da una chiave segreta casuale (creata alla scelta del soprannome, mai mostrata; sul
+  server se ne conserva solo l'impronta) e restituiscono solo le leghe e le sfide di chi chiama.
+- **Cosa arriva al server:** soprannome, leghe, sfide e, per ogni tragitto che ha dato punti, l'ora di fine, i
+  punti e il mezzo principale. Mai posizioni, distanze o nomi di stazioni. I compagni di lega vedono il totale,
+  non i singoli tragitti.
+- Indirizzo e chiave pubblica del progetto sono in `src/social/config.ts`. La chiave pubblica è fatta per stare
+  dentro un'app; quella segreta del progetto non va mai messa nel codice.
+- L'app parla con il server in `src/social/remote.ts`. Se la rete manca mostra gli ultimi dati buoni con un
+  avviso; i punti dei tragitti nuovi partono quando si apre l'app o la classifica.
+- La sorgente di esempio con i partecipanti inventati (`src/social/demo.ts`, `bots.ts`) resta nel codice per le
+  prove delle schermate, ma l'app non la usa più.
+
+Prove: `src/social/remote.server.test.ts` fa creare leghe, entrare con il codice, fare punti e sfidarsi a quattro
+persone simulate. "Prova del server" (scheda Actions) la lancia su un banco di prova, cioè un database e un
+servizio avviati apposta, a ogni modifica; spuntando "reale" la lancia anche sul progetto vero, e alla fine
+cancella i profili che ha creato. Anche la prova sul telefono simulato usa il progetto vero: crea il profilo
+"ProvaCI" e una lega, fa entrare "AmicaCI" e poi cancella tutto.
+
+Limiti da conoscere:
+
+- **Punti dichiarati dal telefono.** Un'app modificata può mandarne di falsi. Il server rifiuta quelli
+  impossibili (più di 70 per tragitto, tragitti nel futuro), non quelli falsi ma plausibili.
+- **Cambio telefono o disinstallazione:** con il solo soprannome il profilo si perde.
+- **Piano gratuito di Supabase:** il progetto può essere messo in pausa dopo una settimana di attività scarsa e
+  va riattivato a mano dal pannello.
+- **Contenuti scritti dagli utenti** (soprannomi, nomi di leghe e sfide): per il Play Store servono un modo per
+  segnalarli e uno per bloccare chi li scrive. Non ci sono ancora.
 
 ## Connessione Salute
 
@@ -227,7 +246,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (166 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (173 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti
@@ -262,7 +281,9 @@ comunque prima di costruire l'app, e si ferma se falliscono.
 - Il percorso è disegnato senza mappa, quindi nessun servizio esterno riceve la posizione.
 - Da Connessione Salute si leggono passi, attività e distanza; nessun dato di salute viene copiato fuori dal
   telefono.
-- Nessun dato lascia il telefono. La schermata Riservatezza dell'app dice le stesse cose all'utente.
+- Lasciano il telefono solo i dati della classifica, e solo dopo aver scelto un soprannome: vedi "Il server".
+  Dalla schermata Riservatezza si può cancellare il profilo dal server.
+- La schermata Riservatezza dell'app dice le stesse cose all'utente.
 
 ## Verso il Play Store
 
@@ -298,8 +319,9 @@ Da fare prima del primo caricamento:
 7. **Collegamento dall'informativa di Connessione Salute.** Quando l'utente tocca "informativa sulla privacy"
    nella schermata dei permessi di Connessione Salute, Android apre l'app: oggi si apre su Oggi, deve aprirsi
    sulla schermata Riservatezza. Serve un piccolo componente nativo, non ancora scritto.
-8. **Modulo "Sicurezza dei dati":** oggi nessun dato lascia il telefono. Andrà aggiornato quando arriveranno
-   account e classifica.
+8. **Modulo "Sicurezza dei dati":** va dichiarato ciò che la classifica manda al server (soprannome, punti e ora
+   dei tragitti con punti, leghe e sfide), che è cifrato in transito e che si può cancellare dall'app. Google
+   chiede anche un indirizzo web da cui chiedere la cancellazione senza reinstallare l'app.
 9. **Scheda dello store:** icona, schermate, descrizione. Verificare che il nome scelto sia libero.
 10. **Condizioni d'uso dei dati della metro.** La pagina dei dati aperti di Roma Servizi per la Mobilità non indica
     una licenza: dice che i dati vanno usati "a titolo di supporto al viaggio". Prima di pubblicare va chiesto per
@@ -323,7 +345,8 @@ src/data/       la rete della metro di Roma
 src/metro/      lettura della posizione per "Ho preso la metro"
 src/tracking/   tragitto in corso: stato, sensori, bozza su disco
 src/health/     lettura da Connessione Salute e importazione delle attività
-src/social/     sorgente dei dati di classifica, leghe e sfide (oggi di esempio)
+src/social/     classifica, leghe e sfide: collegamento al server (e sorgente di esempio per le prove)
+supabase/       istruzioni che creano tabelle e funzioni del server
 src/storage/    storico dei tragitti e impostazioni, sul telefono
 src/ui/         colori, caratteri, icone, mascotte, medaglie, componenti
 src/app/        le schermate: Oggi, Nuovo tragitto, In corso, Riepilogo, Classifica, Medaglie, Riservatezza…
