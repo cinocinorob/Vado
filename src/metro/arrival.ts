@@ -40,7 +40,9 @@ export async function locateArrival(): Promise<Arrival> {
   let location: Location.LocationObject | null = null;
   try {
     location = await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+      // Senza la finestra di sistema che invita ad attivare la "Precisione della
+      // posizione" di Google: qui basta il GPS, e se è spento lo diciamo noi.
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High, mayShowUserSettingsDialog: false }),
       timeout<Location.LocationObject>(WAIT_MS),
     ]);
   } catch {
