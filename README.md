@@ -144,7 +144,7 @@ Si gareggia sui punti, tra persone vere. Le regole stanno in `src/core/social.ts
 
 ### Il server
 
-Un progetto [Supabase](https://supabase.com). Tutto ciò che serve a crearlo è in `supabase/schema.sql`: si incolla
+Un progetto [Supabase](https://supabase.com) nella regione `eu-central-1` (Francoforte, Unione Europea). Tutto ciò che serve a crearlo è in `supabase/schema.sql`: si incolla
 nel pannello di Supabase (SQL Editor → Run) e si può rilanciare senza perdere dati.
 
 - Le tabelle stanno in uno schema non raggiungibile da fuori. L'app chiama solo le funzioni `vado_...`, che

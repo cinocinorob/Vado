@@ -44,7 +44,7 @@ const SECTIONS: { title: string; body: string }[] = [
   {
     title: 'Dove restano i dati',
     body:
-      "Tragitti, passi e dati di Connessione Salute restano su questo telefono. Lasciano il telefono solo i dati della classifica descritti qui sopra, conservati su un server gestito da Supabase. Nessun dato viene venduto, usato per la pubblicità o condiviso con altri. Se disinstalli l'app, i dati sul telefono vengono cancellati con lei.",
+      "Tragitti, passi e dati di Connessione Salute restano su questo telefono. Lasciano il telefono solo i dati della classifica descritti qui sopra, conservati in Germania (Francoforte), nell'Unione Europea, su un server gestito da Supabase. Nessun dato viene venduto, usato per la pubblicità o condiviso con altri. Se disinstalli l'app, i dati sul telefono vengono cancellati con lei.",
   },
 
   {
