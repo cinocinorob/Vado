@@ -24,6 +24,7 @@ Solo libreria standard di Python: gira ovunque senza installare nulla.
 from __future__ import annotations
 
 import csv
+from datetime import datetime, timezone
 import io
 import json
 import math
@@ -89,6 +90,28 @@ def pretty(text: str) -> str:
         else:
             words.append("-".join(part.capitalize() for part in word.split("-")))
     return " ".join(words)
+
+
+# Nomi che nei dati di Roma sono abbreviati o scritti senza accenti. La chiave
+# è il nome ripulito (vedi `plain`), il valore quello da mostrare.
+NAMES = {
+    "CINECITTA": "Cinecittà",
+    "SAN GIOVANNI": "San Giovanni",
+    "SAN AGNESE ANNIBALIANO": "Sant'Agnese - Annibaliano",
+    "CONCA D ORO": "Conca d'Oro",
+    "SAN M DEL SOCCORSO": "Santa Maria del Soccorso",
+    "TIBURTINA F SAN": "Tiburtina",
+    "METRONIA": "Porta Metronia",
+    "PORTA METRONIA": "Porta Metronia",
+    "COLOSSEO FORI IMPERIALI": "Colosseo",
+    "EUR MAGLIANA": "EUR Magliana",
+    "EUR PALASPORT": "EUR Palasport",
+    "EUR FERMI": "EUR Fermi",
+}
+
+
+def display(text: str) -> str:
+    return NAMES.get(plain(text)) or pretty(text)
 
 
 def slug(text: str) -> str:
@@ -240,7 +263,7 @@ def main() -> None:
     station_of: dict[str, str] = {}
     stations: dict[str, dict] = {}
     for members in groups.values():
-        names = Counter(pretty(stops[m]["stop_name"]) for m in members)
+        names = Counter(display(stops[m]["stop_name"]) for m in members)
         name = names.most_common(1)[0][0]
         station_id = slug(name)
         suffix = 2
@@ -330,9 +353,7 @@ def main() -> None:
     result = {
         "source": feed.get("feed_publisher_name") or "Roma Servizi per la Mobilità",
         "sourceUrl": feed.get("feed_publisher_url") or "https://romamobilita.it/it/tecnologie/open-data",
-        "feedVersion": feed.get("feed_version", ""),
-        "validFrom": feed.get("feed_start_date", ""),
-        "validTo": feed.get("feed_end_date", ""),
+        "downloaded": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "lines": lines,
         "stations": station_list,
         "edges": edges,
