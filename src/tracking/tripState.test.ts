@@ -300,3 +300,106 @@ test('i nomi delle stazioni restano nella bozza su disco, le coordinate no', () 
   assert.match(text, /Termini → Laurentina/);
   assert.doesNotMatch(text, /41\.\d{3}|12\.\d{3}/);
 });
+
+/** Una camminata verso nord a partire da una stazione, una posizione ogni tre secondi. */
+function walkFrom(id: string, startM: number, meters: number, t0: number): Fix[] {
+  const s = ROMA.stations.get(id);
+  assert.ok(s, id);
+  const n = Math.round(meters / 4.2);
+  return Array.from({ length: n + 1 }, (_, i) => ({
+    lat: s.lat + (startM + i * 4.2) / 111_195,
+    lon: s.lon,
+    t: t0 + i * 3000,
+    accuracy: 8,
+    speed: 1.4,
+  }));
+}
+
+const START = { commute: false, stepsUsable: false, gpsUsable: true, background: true };
+
+test('uscito dalla metro, una sola posizione e subito Termina: vale comunque la rete', () => {
+  const route = routeBetween(ROMA, 'termini', 'colosseo');
+  assert.ok(route);
+  let trip = startTrip({ ...START, mode: 'tpl', now: T0 });
+  trip = applyFixes(trip, [atStation('termini', 40, T0), atStation('termini', 41, T0 + 3000)]);
+  // Cento secondi senza posizioni, poi una sola lettura all'uscita.
+  trip = applyFixes(trip, [atStation('colosseo', -40, T0 + 110_000)]);
+  assert.equal(currentLeg(trip).track.distanceM, 0);
+
+  const [input] = toLegInputs(trip, T0 + 112_000, true);
+  assert.deepEqual(input.hops?.map((h) => h.label), ['Termini → Colosseo']);
+  // Mai meno della linea d'aria tra le due posizioni, che qui supera di poco la rete.
+  assert.ok(input.gpsM >= route.meters && input.gpsM < route.meters + 100, String(input.gpsM));
+});
+
+test('a piedi, metro, a piedi, cambiando mezzo sottoterra: la metro va al tratto dei mezzi', () => {
+  const route = routeBetween(ROMA, 'flaminio', 'eur-fermi');
+  assert.ok(route);
+  const ride = 25 * 60_000;
+
+  // Cammino fino all'ingresso di Flaminio.
+  let trip = startTrip({ ...START, mode: 'piedi', now: T0 });
+  const approach = walkFrom('flaminio', -260, 220, T0);
+  trip = applyFixes(trip, approach);
+  const enter = approach[approach.length - 1].t + 20_000;
+  // Sulla banchina, senza segnale, passo ai mezzi pubblici.
+  trip = switchMode(trip, 'tpl', enter);
+  // Un minuto prima di uscire, ancora sottoterra, torno "a piedi".
+  const leave = enter + ride - 60_000;
+  trip = switchMode(trip, 'piedi', leave);
+  assert.equal(currentLeg(trip).handover, true);
+  // Fuori da EUR Fermi cammino per 300 metri.
+  const after = walkFrom('eur-fermi', 30, 300, enter + ride);
+  trip = applyFixes(trip, after);
+  const end = after[after.length - 1].t + 2000;
+
+  assert.equal(currentLeg(trip).handover, false);
+  const [walkIn, metro, walkOut] = toLegInputs(trip, end, true);
+  assert.ok(walkIn.gpsM > 180 && walkIn.gpsM < 240, String(walkIn.gpsM));
+  assert.deepEqual(metro.hops?.map((h) => h.label), ['Flaminio → EUR Fermi']);
+  assert.ok(metro.gpsM >= route.meters && metro.gpsM < route.meters + 100, String(metro.gpsM));
+  // Il tempo del viaggio sta sul tratto della metro: la velocità media resta da treno.
+  assert.ok(metro.seconds > 24 * 60 && metro.seconds < 27 * 60, String(metro.seconds));
+  // La camminata dopo l'uscita non eredita il salto: niente metri scartati.
+  assert.equal(walkOut.rejectedM, 0);
+  assert.ok(walkOut.gpsM > 250 && walkOut.gpsM < 320, String(walkOut.gpsM));
+  assert.ok(walkOut.seconds < 5 * 60, String(walkOut.seconds));
+
+  const score = scoreTrip([walkIn, metro, walkOut], { commute: false, bonusAlreadyToday: false });
+  assert.deepEqual(score.legs.map((l) => l.status === 'anomalo'), [false, false, false]);
+  assert.equal(score.legs[1].route, 'Flaminio → EUR Fermi');
+  assert.equal(score.legs[1].status, 'verificato');
+});
+
+test('cambio di mezzo in superficie, con il segnale: nessun passaggio di consegne', () => {
+  let trip = startTrip({ ...START, mode: 'tpl', now: T0 });
+  const ride = walkFrom('termini', 0, 120, T0);
+  trip = applyFixes(trip, ride);
+  const change = ride[ride.length - 1].t + 1000;
+  trip = switchMode(trip, 'piedi', change);
+  const walk = walkFrom('termini', 124, 200, change + 2000);
+  trip = applyFixes(trip, walk);
+
+  assert.equal(currentLeg(trip).handover, false);
+  const [before, after] = toLegInputs(trip, walk[walk.length - 1].t + 1000, true);
+  assert.equal(before.hops, undefined);
+  assert.ok(before.gpsM > 90 && before.gpsM < 130, String(before.gpsM));
+  assert.ok(after.gpsM > 170 && after.gpsM < 215, String(after.gpsM));
+});
+
+test('cambio sottoterra e uscita lontano dalle stazioni: linea d’aria ai mezzi, camminata pulita', () => {
+  let trip = startTrip({ ...START, mode: 'tpl', now: T0 });
+  trip = applyFixes(trip, [atStation('termini', 40, T0), atStation('termini', 41, T0 + 3000)]);
+  trip = switchMode(trip, 'piedi', T0 + 60_000);
+  // Ricompaio dieci minuti dopo a 3 km, lontano da ogni stazione (in bus, per esempio).
+  const s = ROMA.stations.get('termini');
+  assert.ok(s);
+  const far = Array.from({ length: 12 }, (_, i) => ({ lat: s.lat + (3000 + i * 4.2) / 111_195, lon: s.lon + 0.03, t: T0 + 600_000 + i * 3000, accuracy: 8, speed: 1.4 }));
+  trip = applyFixes(trip, far);
+
+  const [transit, walk] = toLegInputs(trip, T0 + 640_000, true);
+  assert.equal(transit.hops, undefined);
+  assert.ok(transit.gpsM > 3000, String(transit.gpsM));
+  assert.equal(walk.rejectedM, 0);
+  assert.ok(walk.gpsM < 60, String(walk.gpsM));
+});

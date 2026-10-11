@@ -244,8 +244,9 @@ export function addFix(
  * lisciata corrente, che altrimenti andrebbe perso. Vale con lo stesso
  * riscontro richiesto durante il tragitto: il telefono si stava muovendo
  * all'ultima lettura, oppure lo spostamento è netto.
+ * @param bridge come in addFix: decide quanto vale un pezzo senza posizioni in mezzo
  */
-export function closeTrack(state: TrackState, maxSegmentMs: number): TrackState {
+export function closeTrack(state: TrackState, maxSegmentMs: number, bridge?: Bridge): TrackState {
   const { last, estimate, lastRaw } = state;
   if (!last || !estimate || !lastRaw) return state;
   const d = haversineM(last, estimate);
@@ -253,6 +254,11 @@ export function closeTrack(state: TrackState, maxSegmentMs: number): TrackState 
   const corroborated = isMoving(lastRaw) || d >= BIG_MOVE_FACTOR * Math.max(MIN_STEP_M, lastRaw.accuracy ?? 0);
   if (d < CLOSE_MIN_M || dt <= 0 || d / dt > maxSegmentMs || !corroborated) return state;
   const end: Fix = { lat: estimate.lat, lon: estimate.lon, t: estimate.t, accuracy: Math.sqrt(estimate.variance) };
+  // Chi esce dalla metro e chiude subito: l'ultimo pezzo è proprio il viaggio sottoterra.
+  const hop = bridge ? bridge(last, end, d) : null;
+  if (hop && hop.meters / dt <= maxSegmentMs) {
+    return { ...state, distanceM: state.distanceM + hop.meters, hops: [...(state.hops ?? []), hop], last: end, pending: null };
+  }
   return { ...state, distanceM: state.distanceM + d, last: end, pending: null };
 }
 

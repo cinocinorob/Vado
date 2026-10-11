@@ -194,7 +194,9 @@ dalla stazione di ingresso a quella di uscita, cambi di linea compresi. Due modi
    (entro 300 m) e ricompaiono vicino a un'altra, dopo almeno 45 secondi e a una velocità da treno (al massimo
    80 km/h), quel tratto vale i metri della rete invece della linea d'aria. Nel riepilogo compare come "Metro",
    con i nomi delle due stazioni, e risulta "Verificato" se copre almeno metà del tratto. Se una delle condizioni
-   manca, resta la linea d'aria come prima. Nessun limite al numero di viaggi.
+   manca, resta la linea d'aria come prima. Nessun limite al numero di viaggi. Vale anche se all'uscita arriva una
+   sola posizione e si preme subito Termina, e se si torna "A piedi" quando si è ancora sottoterra: in quel caso
+   il viaggio e il suo tempo vengono messi sul tratto dei mezzi pubblici, non sulla camminata.
 2. **A posteriori**, con "Ho preso la metro" nella schermata Oggi, per chi ha dimenticato di avviare. La stazione
    di arrivo è quella dove ci si trova (entro 400 m, letta una volta dalla posizione), quella di partenza si
    sceglie dall'elenco. Poiché la partenza è solo dichiarata: al massimo **2 viaggi al giorno**, niente
@@ -221,7 +223,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (159 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (163 controlli automatici), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

@@ -7,15 +7,17 @@
  */
 import {
   EMPTY_TRACK,
+  MAX_ACCURACY_M,
   addFix,
   breakTrack,
   closeTrack,
   withoutCoordinates,
   type Bridge,
   type Fix,
+  haversineM,
   type TrackState,
 } from '../core/geo';
-import { metroHop } from '../core/metro';
+import { HOP_MIN_M, metroHop } from '../core/metro';
 import { getMode, type ModeId } from '../core/modes';
 import type { LegInput } from '../core/scoring';
 import { ROMA } from '../data/metro';
@@ -43,6 +45,13 @@ export type ActiveLeg = {
    * Servono a chiedere a Connessione Salute i passi fatti proprio in quei minuti.
    */
   spans?: [number, number][];
+  /**
+   * Il tratto precedente era con i mezzi pubblici e si è chiuso senza una
+   * posizione recente (cambio di mezzo fatto sottoterra): la strada tra
+   * l'ultima posizione nota e la prima nuova appartiene a lui, non a questo.
+   * Resta vero finché non arriva una posizione che lo decide.
+   */
+  handover?: boolean;
 };
 
 export type PathPoint = { lat: number; lon: number };
@@ -149,29 +158,93 @@ export function legSpans(leg: ActiveLeg, now: number): [number, number][] {
  * metro la distanza viene dalla rete invece che dalla linea d'aria.
  */
 const metroBridge: Bridge = (from, to, straightM) => metroHop(ROMA, from, to, straightM);
+const bridgeFor = (mode: ModeId): Bridge | undefined => (mode === 'tpl' ? metroBridge : undefined);
+
+/** Il tratto corrente riparte da dove è arrivato un altro tracciato, senza ereditarne i metri. */
+function continueFrom(track: TrackState): TrackState {
+  return { ...EMPTY_TRACK, last: track.last, estimate: track.estimate, lastRaw: track.lastRaw, pending: track.pending };
+}
+
+/**
+ * Prima posizione dopo un cambio di mezzo fatto sottoterra (vedi `handover`).
+ *
+ * Se è lontana dall'ultima nota, quella strada è stata fatta con il mezzo di
+ * prima: viene accreditata al tratto precedente (con i metri della rete, se
+ * le due posizioni sono a due stazioni), insieme al tempo trascorso, e il
+ * tratto corrente riparte dal punto di arrivo. Senza questo, il viaggio in
+ * metro finirebbe sul conto di "A piedi" e verrebbe scartato per la velocità.
+ *
+ * @returns null se la posizione va trattata normalmente
+ */
+function handOver(trip: ActiveTrip, fix: Fix): { trip: ActiveTrip; credited: Fix | null } | null {
+  const current = currentLeg(trip);
+  const previous = trip.legs[trip.legs.length - 2];
+  const from = previous?.track.last;
+  const usable = !fix.mocked && fix.accuracy != null && fix.accuracy <= MAX_ACCURACY_M;
+  // Posizione inutilizzabile: si aspetta la prossima.
+  if (previous && from && !usable) return null;
+
+  const settle = (prev: ActiveLeg, cur: ActiveLeg) => ({ ...trip, legs: [...trip.legs.slice(0, -2), prev, cur] });
+  // Ancora vicino a dove si è cambiato mezzo: nessun viaggio da attribuire.
+  if (!previous || !from || haversineM(from, fix) < HOP_MIN_M) {
+    return previous ? applyOne(settle(previous, { ...current, handover: false }), fix) : null;
+  }
+
+  const result = addFix(previous.track, fix, getMode(previous.mode).maxSegmentMs, bridgeFor(previous.mode));
+  const arrived = result.state.last;
+  if (result.state.distanceM > previous.track.distanceM && arrived) {
+    // Il tempo passato dal cambio di mezzo all'arrivo è tempo di viaggio del tratto precedente.
+    const since = current.runningSince;
+    const moved = since != null ? Math.max(0, arrived.t - since) : 0;
+    const spans = previous.spans && previous.spans.length > 0 && moved > 0
+      ? [...previous.spans.slice(0, -1), [previous.spans[previous.spans.length - 1][0], arrived.t] as [number, number]]
+      : previous.spans;
+    return {
+      trip: settle(
+        { ...previous, track: { ...result.state, pending: null, suspect: null }, accumMs: previous.accumMs + moved, spans },
+        { ...current, handover: false, runningSince: since != null ? since + moved : since, track: continueFrom(result.state) },
+      ),
+      credited: result.credited,
+    };
+  }
+  if (result.state.rejectedM > previous.track.rejectedM || result.state.last !== previous.track.last) {
+    // Troppo veloce anche per un treno, o un salto del GPS: quella strada non
+    // va a nessuno dei due tratti. Si riparte da qui.
+    return { trip: settle(previous, { ...current, handover: false, track: continueFrom(result.state) }), credited: null };
+  }
+  // Una sola posizione lontana non basta: serve la conferma della successiva.
+  return { trip: settle({ ...previous, track: result.state }, current), credited: null };
+}
+
+function applyOne(trip: ActiveTrip, fix: Fix): { trip: ActiveTrip; credited: Fix | null } {
+  const leg = currentLeg(trip);
+  if (leg.handover) {
+    const handed = handOver(trip, fix);
+    if (handed) return handed;
+  }
+  const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode));
+  return { trip: result.state === leg.track ? trip : replaceCurrent(trip, { ...leg, track: result.state }), credited: result.credited };
+}
 
 /** Nuove posizioni dal GPS. In pausa vengono ignorate. */
 export function applyFixes(trip: ActiveTrip, fixes: Fix[]): ActiveTrip {
   if (trip.paused || fixes.length === 0) return trip;
-  const leg = currentLeg(trip);
-  const maxMs = getMode(leg.mode).maxSegmentMs;
-  const bridge = leg.mode === 'tpl' ? metroBridge : undefined;
-  let track = leg.track;
+  let next = trip;
   let path = trip.path;
   for (const fix of fixes) {
-    const result = addFix(track, fix, maxMs, bridge);
-    track = result.state;
+    const result = applyOne(next, fix);
+    next = result.trip;
     if (result.credited) {
       path = [...path, { lat: result.credited.lat, lon: result.credited.lon }];
     }
   }
-  if (track === leg.track) return trip;
+  if (next === trip) return trip;
   while (path.length > MAX_PATH_POINTS) {
     // Si dimezza la risoluzione tenendo l'ultimo punto.
     const full = path;
     path = full.filter((_, i) => i % 2 === 0 || i === full.length - 1);
   }
-  return { ...replaceCurrent(trip, { ...leg, track }), path };
+  return { ...next, path };
 }
 
 /** Nuova lettura del contapassi. */
@@ -192,7 +265,7 @@ export function enterBackground(trip: ActiveTrip): ActiveTrip {
 function closeLeg(trip: ActiveTrip, leg: ActiveLeg, now: number): ActiveLeg {
   return {
     ...leg,
-    track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs),
+    track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode)),
     accumMs: legElapsedMs(leg, now),
     spans: legSpans(leg, now),
     runningSince: null,
@@ -212,6 +285,8 @@ export function switchMode(trip: ActiveTrip, mode: ModeId, now: number): ActiveT
     runningSince: trip.paused ? null : now,
     // Il nuovo tratto riparte dall'ultima posizione nota del precedente.
     track: { ...EMPTY_TRACK, last: closed.track.last, estimate: closed.track.estimate, lastRaw: closed.track.lastRaw },
+    // Dai mezzi pubblici si può scendere sottoterra, dove la posizione non arriva.
+    handover: closed.mode === 'tpl' && closed.track.last != null,
   };
   return { ...trip, legs: [...trip.legs.slice(0, -1), closed, opened] };
 }
@@ -223,7 +298,7 @@ export function pauseTrip(trip: ActiveTrip, now: number): ActiveTrip {
     ...replaceCurrent(trip, {
       ...leg,
       // L'ultimo pezzo fatto prima della pausa viene accreditato adesso.
-      track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs),
+      track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode)),
       accumMs: legElapsedMs(leg, now),
       spans: legSpans(leg, now),
       runningSince: null,
@@ -245,6 +320,7 @@ export function resumeTrip(trip: ActiveTrip, now: number): ActiveTrip {
       runningSince: now,
       stepBase: leg.stepBase != null ? leg.stepBase + walkedInPause : leg.stepBase,
       track: breakTrack(leg.track),
+      handover: false,
     }),
     paused: false,
     stepsAtPause: null,
@@ -257,7 +333,8 @@ export function resumeTrip(trip: ActiveTrip, now: number): ActiveTrip {
  */
 export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegInput[] {
   return trip.legs.map((leg) => {
-    const track = final && !leg.closed && !trip.paused ? closeTrack(leg.track, getMode(leg.mode).maxSegmentMs) : leg.track;
+    const track =
+      final && !leg.closed && !trip.paused ? closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode)) : leg.track;
     return {
       mode: leg.mode,
       gpsM: track.distanceM,
@@ -288,6 +365,7 @@ export function afterRestart(trip: ActiveTrip, now: number): ActiveTrip {
       spans: legSpans(leg, until),
       runningSince: trip.paused ? null : now,
       track: breakTrack(leg.track),
+      handover: false,
     }),
     stepsUsable: false,
     stepsStale: false,

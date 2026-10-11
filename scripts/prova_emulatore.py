@@ -140,7 +140,10 @@ def finish_button() -> dict | None:
         return None
     step = 12
     wide_row = (width // step) // 4
-    xs, ys, rows = [], [], 0
+    # Fasce di righe consecutive larghe: anche la barra del tetto dei punti è
+    # corallo e larga, ma è bassa. Il pulsante è la fascia più alta di tutte.
+    bands: list[list[tuple[int, list[int]]]] = []
+    previous_y = None
     for y in range(int(height * 0.6), height, step):
         row = []
         for x in range(0, width, step):
@@ -150,12 +153,18 @@ def finish_button() -> dict | None:
             if r > 235 and 120 < g < 158 and 85 < b < 120:
                 row.append(x)
         if len(row) >= wide_row:
-            rows += 1
-            xs.extend(row)
-            ys.extend([y] * len(row))
-    # Un pulsante largo e alto: almeno sei righe della griglia.
-    if rows < 6:
+            if previous_y is None or y - previous_y > step:
+                bands.append([])
+            bands[-1].append((y, row))
+            previous_y = y
+    if not bands:
         return None
+    band = max(bands, key=len)
+    # Un pulsante largo e alto: almeno sei righe della griglia.
+    if len(band) < 6:
+        return None
+    xs = [x for _, row in band for x in row]
+    ys = [y for y, row in band for _ in row]
     return {"center": (sum(xs) // len(xs), sum(ys) // len(ys))}
 
 
@@ -490,8 +499,10 @@ def check_metro() -> str:
     # Sottoterra: per cento secondi non arriva nessuna posizione nuova.
     time.sleep(100)
     check_alive("sottoterra")
-    for _ in range(12):
-        station_fix("colosseo", -40)
+    # Fuori dalla stazione si cammina: qualche metro a ogni lettura, altrimenti
+    # il telefono non consegna posizioni nuove a chi è fermo.
+    for i in range(12):
+        station_fix("colosseo", -40 - i * 4)
         time.sleep(1)
     finish = wait_for_trip_screen(30, "all'uscita dalla metro")
     screenshot("metro-in-corso")
