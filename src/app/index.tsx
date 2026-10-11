@@ -8,7 +8,7 @@ import { getMode } from '../core/modes';
 import { DAILY_GOAL, dayKey, streak, summarizeDay, type Trip } from '../core/scoring';
 import { connectHealth, forgetImportedBefore, refreshHealth, type HealthState } from '../health/sync';
 import { openHealthSettings } from '../health/connect';
-import { resetDemo } from '../social';
+import { social } from '../social';
 import { clearTrips, loadTrips } from '../storage/trips';
 import { useActiveTrip } from '../tracking/store';
 import { restoreTracking } from '../tracking/tracker';
@@ -63,6 +63,9 @@ export default function Oggi() {
       loadTrips().then((loaded) => {
         if (alive) setTrips(loaded);
       });
+      // I punti dei tragitti nuovi vanno al server della classifica, se c'è un
+      // profilo: così gli altri li vedono senza che si debba aprire la classifica.
+      social.sync(Date.now()).catch(() => undefined);
       // Se Connessione Salute è collegata, si leggono i passi di oggi e le
       // attività nuove. Succede solo qui, ad app aperta.
       refreshHealth(Date.now())
@@ -103,8 +106,8 @@ export default function Oggi() {
     await clearTrips();
     // Le attività già importate non devono rientrare alla prossima lettura.
     await forgetImportedBefore(Date.now());
-    // Anche soprannome, leghe e sfide dell'anteprima.
-    await resetDemo();
+    // Anche il profilo della classifica, qui e sul server.
+    await social.reset();
     setTrips([]);
     setHealthNote(null);
     setConfirmReset(false);

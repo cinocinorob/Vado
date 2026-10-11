@@ -1,8 +1,8 @@
 /**
  * Il contratto tra le schermate di classifica, leghe e sfide e la sorgente
- * dei dati. Oggi la sorgente è quella di esempio (demo.ts), che vive solo sul
- * telefono; quando ci sarà un server basterà scriverne una seconda con le
- * stesse funzioni, senza toccare le schermate.
+ * dei dati. Le sorgenti sono due: quella vera, che parla con il server
+ * (remote.ts), e quella di esempio con partecipanti inventati (demo.ts), che
+ * vive solo sul telefono e serve per le prove delle schermate.
  */
 import type { Challenge, ChallengeKind, Entry, Tier, TierState } from '../core/social';
 
@@ -65,6 +65,12 @@ export type Result<T> = { ok: true; value: T } | { ok: false; problem: string };
 export interface SocialSource {
   /** Vero se gli altri partecipanti non sono persone reali. */
   readonly demo: boolean;
+  /** L'ultimo problema di collegamento, se l'ultima lettura non è andata a buon fine. */
+  problem(): string | null;
+  /** Manda al server i punti dei tragitti nuovi, così gli altri li vedono. */
+  sync(now: number): Promise<void>;
+  /** Cancella il profilo, qui e sul server. */
+  reset(): Promise<void>;
   profile(): Promise<Profile | null>;
   setNickname(name: string): Promise<Result<Profile>>;
   leagues(now: number): Promise<LeagueSummary[]>;

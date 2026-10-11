@@ -176,6 +176,10 @@ function toChallenge(stored: StoredChallenge, state: Stored, trips: Trip[], now:
 export const demoSource: SocialSource = {
   demo: true,
 
+  problem: () => null,
+  sync: async () => undefined,
+  reset: () => resetDemo(),
+
   async profile(): Promise<Profile | null> {
     const { nickname } = await load();
     return nickname ? { id: ME, nickname } : null;

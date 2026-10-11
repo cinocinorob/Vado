@@ -2,13 +2,15 @@
  * Schermata "Riservatezza": quali dati usa l'app e dove restano.
  * È anche la spiegazione che Connessione Salute chiede a ogni app che ne legge i dati.
  */
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { IMPORT_DAYS } from '../core/health';
 import { ROMA } from '../data/metro';
+import { social, type Profile } from '../social';
 import { CloseIcon } from '../ui/Icons';
-import { Header, Panel, RoundButton, Screen, text } from '../ui/parts';
+import { GhostButton, Header, Panel, RoundButton, Screen, text } from '../ui/parts';
 import { C, F } from '../ui/theme';
 
 const SECTIONS: { title: string; body: string }[] = [
@@ -35,10 +37,16 @@ const SECTIONS: { title: string; body: string }[] = [
     body: `Solo se la colleghi tu. L'app legge tre cose: i passi, le attività registrate (camminate, corse, escursioni, giri in bici) e la loro distanza, degli ultimi ${IMPORT_DAYS} giorni. Li usa per confermare i tratti a piedi e per assegnare punti alle attività. Non scrive nulla in Connessione Salute e legge solo quando l'app è aperta.`,
   },
   {
+    title: 'Classifica, leghe e sfide',
+    body:
+      "Solo se scegli un soprannome. Da quel momento al server di Vado arrivano: il soprannome, le leghe e le sfide a cui partecipi e, per ogni tragitto che ti ha dato punti, l'ora in cui è finito, i punti e il mezzo principale. Servono a sommare i punti della settimana e delle sfide. I compagni di lega vedono il tuo soprannome, il totale dei punti e il mezzo che usi di più; non i singoli tragitti. Non arrivano mai posizioni, distanze o nomi di stazioni. Niente email né password: il telefono si fa riconoscere con una chiave casuale.",
+  },
+  {
     title: 'Dove restano i dati',
     body:
-      "Tutto resta su questo telefono. Nessun dato viene inviato a un server, venduto, usato per la pubblicità o condiviso con altri. Se disinstalli l'app, i dati vengono cancellati con lei.",
+      "Tragitti, passi e dati di Connessione Salute restano su questo telefono. Lasciano il telefono solo i dati della classifica descritti qui sopra, conservati su un server gestito da Supabase. Nessun dato viene venduto, usato per la pubblicità o condiviso con altri. Se disinstalli l'app, i dati sul telefono vengono cancellati con lei.",
   },
+
   {
     title: 'Come togliere i permessi',
     body:
@@ -47,6 +55,33 @@ const SECTIONS: { title: string; body: string }[] = [
 ];
 
 export default function Riservatezza() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [confirm, setConfirm] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      social.profile().then((who) => {
+        if (alive) setProfile(who);
+      });
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
+
+  async function remove() {
+    if (!confirm) {
+      setConfirm(true);
+      return;
+    }
+    await social.reset();
+    setProfile(null);
+    setConfirm(false);
+    setDeleted(true);
+  }
+
   return (
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -67,6 +102,26 @@ export default function Riservatezza() {
             <Text style={text.body}>{section.body}</Text>
           </Panel>
         ))}
+        {!social.demo && (profile || deleted) ? (
+          <Panel style={styles.section}>
+            <Text style={styles.title} accessibilityRole="header">
+              Cancellare il profilo della classifica
+            </Text>
+            {profile ? (
+              <>
+                <Text style={text.body}>
+                  Cancella dal server il soprannome &quot;{profile.nickname}&quot;, i punti inviati e la tua presenza in leghe e sfide. I tragitti
+                  sul telefono restano. Non si può annullare.
+                </Text>
+                <GhostButton label={confirm ? 'Tocca di nuovo per cancellare' : 'Cancella il profilo'} onPress={remove} />
+              </>
+            ) : (
+              <Text style={[text.body, { color: C.teal, fontFamily: F.bold }]} accessibilityRole="alert">
+                Profilo cancellato dal server.
+              </Text>
+            )}
+          </Panel>
+        ) : null}
         <View style={{ height: 8 }} />
       </ScrollView>
     </Screen>

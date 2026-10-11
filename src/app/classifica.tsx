@@ -1,7 +1,7 @@
 /** Schermata "Classifica": leghe (a livelli e con invito) e sfide. */
 import { router, useFocusEffect } from 'expo-router';
 import { Fragment, useCallback, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   PROMOTED,
@@ -48,6 +48,8 @@ export default function Classifica() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [monthly, setMonthly] = useState<MonthlyChallenge | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [pulling, setPulling] = useState(false);
 
   const refresh = useCallback(async (wanted: string | null) => {
     const at = clock();
@@ -71,8 +73,16 @@ export default function Classifica() {
     setChallenges(nextChallenges);
     setMonthly(nextMonthly);
     setConfirmLeave(false);
+    // Se il server non ha risposto si vedono gli ultimi dati buoni, con un avviso.
+    setProblem(social.problem());
     setLoaded(true);
   }, []);
+
+  async function pull() {
+    setPulling(true);
+    await refresh(leagueId).catch(() => undefined);
+    setPulling(false);
+  }
 
   // A ogni ritorno sulla schermata: dati aggiornati, e se è appena stata
   // creata una lega si apre quella.
@@ -89,6 +99,7 @@ export default function Classifica() {
     setLeagueId(id);
     setConfirmLeave(false);
     setBoard(await social.board(id, clock()));
+    setProblem(social.problem());
   }
 
   async function invite() {
@@ -146,7 +157,11 @@ export default function Classifica() {
 
   return (
     <Screen bleed>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={pulling} onRefresh={pull} colors={[C.ink]} tintColor={C.ink} />}
+      >
         <HeroBlock
           caption={weekLabel(now)}
           title="Classifica"
@@ -187,6 +202,12 @@ export default function Classifica() {
           </View>
         ) : null}
 
+        {problem ? (
+          <View style={styles.demo} accessibilityRole="alert">
+            <Text style={styles.demoText}>{problem} Quello che vedi può non essere aggiornato: trascina verso il basso per riprovare.</Text>
+          </View>
+        ) : null}
+
         {section === 'leghe' ? (
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipsBleed}>
@@ -201,6 +222,19 @@ export default function Classifica() {
               ))}
               <Chip label="Nuova lega" onPress={() => router.push('/lega-nuova')} icon={<PlusIcon size={16} />} />
             </ScrollView>
+
+            {leagues.length === 0 ? (
+              <Panel style={styles.empty}>
+                <Mascot size={84} tilt={-6} />
+                <Text style={styles.tierTitle} accessibilityRole="header">
+                  Ancora nessuna lega
+                </Text>
+                <Text style={[text.body, { textAlign: 'center' }]}>
+                  Creane una e manda il codice a chi vuoi sfidare, oppure entra in quella di un amico con il suo codice.
+                </Text>
+                <PrimaryButton label="Crea o entra in una lega" onPress={() => router.push('/lega-nuova')} icon={<PlusIcon size={20} color={C.ink} />} />
+              </Panel>
+            ) : null}
 
             {board?.kind === 'livelli' && board.tier ? (
               <Panel style={styles.tier}>
@@ -285,7 +319,9 @@ export default function Classifica() {
                   detail={`${monthly.points} di ${monthly.target}`}
                 />
                 <Text style={text.small}>
-                  {monthly.reached} su {monthly.people} partecipanti ci sono già arrivati.
+                  {monthly.people === 1
+                    ? 'Questo mese sei il primo a fare punti.'
+                    : `${monthly.reached} su ${monthly.people} persone attive questo mese ci sono già arrivate.`}
                 </Text>
               </Panel>
             ) : null}
@@ -383,8 +419,9 @@ function Nickname({ onDone }: { onDone: () => void }) {
       ) : null}
       <PrimaryButton label={saving ? 'Salvo…' : 'Entra in classifica'} onPress={save} disabled={saving} />
       <Text style={text.small}>
-        Il soprannome resta su questo telefono finché la classifica è in anteprima. Se disinstalli l&apos;app o cambi telefono, il profilo si
-        perde.
+        {social.demo
+          ? "Il soprannome resta su questo telefono finché la classifica è in anteprima. Se disinstalli l'app o cambi telefono, il profilo si perde."
+          : "Il soprannome e i punti dei tuoi tragitti vengono salvati sul server di Vado, così i compagni di lega li vedono. Nessuna posizione lascia il telefono. Se disinstalli l'app o cambi telefono, il profilo si perde."}
       </Text>
     </Panel>
   );
@@ -413,5 +450,6 @@ const styles = StyleSheet.create({
   monthly: { gap: 12 },
   monthlyHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   nickname: { gap: 14 },
+  empty: { alignItems: 'center', gap: 12 },
   problem: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.alert },
 });

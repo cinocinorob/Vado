@@ -1,0 +1,103 @@
+# Prova del server di classifica, leghe e sfide.
+#
+# "Banco di prova": avvia un database vuoto e il servizio che lo espone (gli
+# stessi programmi che usa Supabase), applica supabase/schema.sql e fa girare
+# la prova con quattro persone simulate. Non tocca il progetto vero. Parte a
+# ogni modifica del server o della parte dell'app che gli parla.
+#
+# "Progetto vero": la stessa prova contro il progetto Supabase dell'app, per
+# controllare che le istruzioni siano state incollate bene. Crea quattro
+# profili di prova e alla fine li cancella. Si lancia a mano dalla scheda
+# Actions ("Run workflow", spuntando "reale"), oppure inviando sul ramo
+# "server-reale".
+
+name: Prova del server
+
+on:
+  push:
+    branches: [server, server-reale]
+  workflow_dispatch:
+    inputs:
+      reale:
+        description: Prova anche contro il progetto Supabase vero
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  banco:
+    name: Banco di prova
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: prova
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGPASSWORD: prova
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Applica le istruzioni al database (due volte: devono potersi rilanciare)
+        run: |
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -f supabase/prova/ruoli.sql
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -f supabase/schema.sql
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -f supabase/schema.sql
+
+      - name: Avvia il servizio che espone le funzioni
+        run: |
+          docker run -d --name postgrest --network host \
+            -e PGRST_DB_URI="postgres://authenticator:prova@localhost:5432/postgres" \
+            -e PGRST_DB_SCHEMAS=public \
+            -e PGRST_DB_ANON_ROLE=anon \
+            -e PGRST_SERVER_PORT=3000 \
+            postgrest/postgrest:latest
+          for i in $(seq 1 30); do
+            curl -fsS -o /dev/null http://localhost:3000/ && break
+            sleep 1
+          done
+          curl -fsS -o /dev/null http://localhost:3000/ || (docker logs postgrest; exit 1)
+
+      - name: Quattro persone simulate
+        env:
+          VADO_TEST_SERVER: http://localhost:3000
+        run: npx tsx --test src/social/remote.server.test.ts
+
+      - name: Registro del servizio, se qualcosa è andato storto
+        if: failure()
+        run: docker logs postgrest | tail -60
+
+  reale:
+    name: Progetto vero
+    if: github.ref_name == 'server-reale' || inputs.reale
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Quattro persone simulate sul progetto Supabase dell'app
+        run: |
+          # Indirizzo e chiave pubblica sono quelli scritti nell'app.
+          export VADO_TEST_SERVER=$(sed -n "s/.*rest: '\(.*\)',/\1/p" src/social/config.ts)
+          export VADO_TEST_KEY=$(sed -n "s/.*key: '\(.*\)',/\1/p" src/social/config.ts)
+          test -n "$VADO_TEST_SERVER" && test -n "$VADO_TEST_KEY"
+          npx tsx --test src/social/remote.server.test.ts
