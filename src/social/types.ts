@@ -4,6 +4,7 @@
  * (remote.ts), e quella di esempio con partecipanti inventati (demo.ts), che
  * vive solo sul telefono e serve per le prove delle schermate.
  */
+import type { TreeBadge } from '../core/plant';
 import type { Challenge, ChallengeKind, Entry, Tier, TierState } from '../core/social';
 
 export type Profile = {
@@ -36,7 +37,7 @@ export type LeagueBoard = LeagueSummary & {
   outcome?: TierState['lastOutcome'];
 };
 
-export type Person = { id: string; name: string };
+export type Person = { id: string; name: string; tree?: TreeBadge | null };
 
 export type NewChallenge = {
   title: string;

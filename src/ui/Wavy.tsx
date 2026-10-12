@@ -8,14 +8,33 @@ import { C } from './theme';
 
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
-/** Anello: binario piatto e tratto ondulato fino al valore. */
-export function WavyRing({ size, ratio, color = C.ink, track = 'rgba(26, 29, 20, 0.12)', stroke = 9 }: { size: number; ratio: number; color?: string; track?: string; stroke?: number }) {
+/**
+ * Anello: binario piatto e tratto ondulato fino al valore. Oltre il 100% parte
+ * un secondo giro in un altro colore, come gli anelli di Attività di Apple.
+ */
+export function WavyRing({
+  size,
+  ratio,
+  color = C.ink,
+  overColor = C.coral,
+  track = 'rgba(26, 29, 20, 0.12)',
+  stroke = 9,
+}: {
+  size: number;
+  ratio: number;
+  color?: string;
+  overColor?: string;
+  track?: string;
+  stroke?: number;
+}) {
   const r = 90;
-  const frac = clamp(ratio);
+  const first = clamp(ratio);
+  const over = clamp(ratio - 1);
   return (
     <Svg width={size} height={size} viewBox="0 0 220 220">
       <Circle cx={110} cy={110} r={r} fill="none" stroke={track} strokeWidth={stroke} />
-      {frac > 0 ? <Path d={waveArc(110, r, frac)} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" /> : null}
+      {first > 0 ? <Path d={waveArc(110, r, first)} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" /> : null}
+      {over > 0 ? <Path d={waveArc(110, r, over)} fill="none" stroke={overColor} strokeWidth={stroke + 1} strokeLinecap="round" strokeLinejoin="round" /> : null}
     </Svg>
   );
 }

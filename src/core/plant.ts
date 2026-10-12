@@ -7,7 +7,8 @@
  * - l'aspetto (in forma, ha sete, appassita) dipende solo dai giorni recenti
  *   e si recupera con un solo tragitto.
  * A 22 kg, quanto assorbe un albero adulto in un anno, l'albero è completo:
- * va nel bosco e nasce un seme nuovo.
+ * va nel bosco e nasce un seme nuovo. Che albero diventa lo sceglie l'utente
+ * (pino, cipresso...): è anche il suo avatar in classifica.
  *
  * Le pause ("Sono in pausa") congelano l'aspetto: i giorni in pausa non
  * contano come giorni fermi. Non toccano punti, serie né medaglie.
@@ -29,6 +30,8 @@ export type Stage = 'seme' | 'germoglio' | 'piantina';
 export type Health = 'forma' | 'sete' | 'appassita' | 'pausa';
 
 export type SpeciesId = 'pino' | 'cipresso' | 'leccio' | 'ulivo' | 'platano';
+/** Albero di chi non ha ancora scelto. */
+export const DEFAULT_SPECIES: SpeciesId = 'pino';
 export const SPECIES: readonly { id: SpeciesId; name: string }[] = [
   { id: 'pino', name: 'Pino domestico' },
   { id: 'cipresso', name: 'Cipresso' },
@@ -42,8 +45,8 @@ export type Pause = { from: string; to: string | null };
 
 export type PlantState = {
   totalG: number;
-  /** Alberi completi, nell'ordine in cui sono cresciuti. */
-  forest: SpeciesId[];
+  /** Alberi completi. Di che specie sono lo dice la memoria del bosco (forestOf). */
+  trees: number;
   /** CO₂ del ciclo in corso, da 0 a TREE_G. */
   cycleG: number;
   stage: Stage;
@@ -102,7 +105,6 @@ export function plantState(trips: readonly Trip[], now: number, pauses: readonly
 
   // Piccola tolleranza per le somme di decimali, come per le medaglie.
   const trees = Math.floor((totalG + 1e-6) / TREE_G);
-  const forest = Array.from({ length: trees }, (_, i) => SPECIES[i % SPECIES.length].id);
   const cycleG = Math.max(0, totalG - trees * TREE_G);
   const { stage, nextG } = stageOf(cycleG);
 
@@ -119,8 +121,26 @@ export function plantState(trips: readonly Trip[], now: number, pauses: readonly
   else if (idleDays >= WILTED_DAYS) health = 'appassita';
   else if (idleDays >= THIRSTY_DAYS) health = 'sete';
 
-  return { totalG, forest, cycleG, stage, nextG, health, idleDays };
+  return { totalG, trees, cycleG, stage, nextG, health, idleDays };
 }
+
+export function isSpecies(value: unknown): value is SpeciesId {
+  return typeof value === 'string' && SPECIES.some((s) => s.id === value);
+}
+
+/**
+ * Le specie degli alberi del bosco: quelle registrate quando ciascuno è
+ * cresciuto, e per gli altri l'albero scelto adesso. Così cambiare albero non
+ * ridipinge il bosco già fatto.
+ */
+export function forestOf(trees: number, history: readonly SpeciesId[], chosen: SpeciesId | null): SpeciesId[] {
+  return Array.from({ length: trees }, (_, i) => history[i] ?? chosen ?? DEFAULT_SPECIES);
+}
+
+/** Come appare una persona in classifica: il suo albero, a che punto è, quanti ne ha fatti. */
+export type TreeBadge = { species: SpeciesId; stage: Stage; trees: number };
+
+export const STAGES: readonly Stage[] = ['seme', 'germoglio', 'piantina'];
 
 export function speciesName(id: SpeciesId): string {
   return SPECIES.find((s) => s.id === id)?.name ?? id;

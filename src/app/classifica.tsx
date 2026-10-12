@@ -14,8 +14,10 @@ import {
   type Ranked,
   type Zone,
 } from '../core/social';
-import { social, type LeagueBoard, type LeagueSummary, type MonthlyChallenge, type Profile } from '../social';
+import type { SpeciesId, TreeBadge } from '../core/plant';
+import { myTree, social, type LeagueBoard, type LeagueSummary, type MonthlyChallenge, type Profile } from '../social';
 import { leagueToOpen } from '../social/selection';
+import { loadTree, saveTree } from '../storage/tree';
 import { useActiveTrip } from '../tracking/store';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PlusIcon, ShareIcon } from '../ui/Icons';
@@ -24,6 +26,7 @@ import { HeroBlock } from '../ui/Hero';
 import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, ProgressBar, Screen, input, text } from '../ui/parts';
 import { ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
 import { C, F } from '../ui/theme';
+import { TreePicker } from '../ui/TreeAvatar';
 
 type Section = 'leghe' | 'sfide';
 
@@ -50,6 +53,16 @@ export default function Classifica() {
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
+  /** Il proprio avatar si prende dal telefono: è sempre aggiornato, anche prima che arrivi al server. */
+  const [mine, setMine] = useState<TreeBadge | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      myTree()
+        .then(setMine)
+        .catch(() => undefined);
+    }, []),
+  );
 
   const refresh = useCallback(async (wanted: string | null) => {
     const at = clock();
@@ -149,7 +162,8 @@ export default function Classifica() {
     );
   }
 
-  const ranked = board ? rankEntries(board.entries) : [];
+  const withMine = <T extends { me?: boolean; tree?: TreeBadge | null }>(e: T): T => (e.me && mine ? { ...e, tree: mine } : e);
+  const ranked = board ? rankEntries(board.entries.map(withMine)) : [];
   const zones = zonesFor(ranked, board?.tier);
   const rest = ranked.slice(3);
   const nextTier = board?.tier ? TIERS[Math.min(TIERS.length - 1, TIERS.indexOf(board.tier) + 1)] : null;
@@ -335,7 +349,9 @@ export default function Classifica() {
                 <Text style={[text.body, { textAlign: 'center' }]}>Nessuna sfida in corso. Lanciane una ai compagni di lega.</Text>
               </Panel>
             ) : (
-              challenges.map((challenge) => <ChallengeCard key={challenge.id} challenge={challenge} now={now} onRemove={() => remove(challenge.id)} />)
+              challenges.map((challenge) => (
+                <ChallengeCard key={challenge.id} challenge={{ ...challenge, people: challenge.people.map(withMine) }} now={now} onRemove={() => remove(challenge.id)} />
+              ))
             )}
 
             <PrimaryButton label="Nuova sfida" onPress={() => router.push('/sfida-nuova')} icon={<PlusIcon size={20} color={C.lime} />} />
@@ -380,9 +396,19 @@ function Nickname({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [species, setSpecies] = useState<SpeciesId | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTree()
+        .then((t) => setSpecies(t.species))
+        .catch(() => undefined);
+    }, []),
+  );
 
   async function save() {
     setSaving(true);
+    if (species) await saveTree({ ...(await loadTree()), species });
     const result = await social.setNickname(name);
     setSaving(false);
     if (result.ok) onDone();
@@ -416,6 +442,9 @@ function Nickname({ onDone }: { onDone: () => void }) {
         accessibilityLabel="Soprannome"
         style={input}
       />
+      <Text style={styles.pickTitle}>Il tuo albero</Text>
+      <Text style={text.small}>È il tuo avatar: cresce con il tuo germoglio, e gli altri lo vedono in classifica.</Text>
+      <TreePicker value={species} onChange={setSpecies} />
       {problem ? (
         <Text style={styles.problem} accessibilityRole="alert">
           {problem}
@@ -441,6 +470,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 18 },
   sections: { marginTop: 14 },
   heroTabs: { padding: 0, marginTop: 14 },
+  pickTitle: { fontFamily: F.bold, fontSize: 15, color: C.text, marginTop: 4 },
   invite: { backgroundColor: C.tonal, height: 44, paddingLeft: 12, paddingRight: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   inviteText: { fontFamily: F.bold, fontSize: 14, color: C.text },
   demo: { borderRadius: 18, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.coralSoft },

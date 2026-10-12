@@ -18,14 +18,16 @@ import {
   endPause,
   pauseDaysLeft,
   pauseLastDay,
-  plantState,
   speciesName,
   startPause,
   type Health,
+  type SpeciesId,
   type Stage,
 } from '../core/plant';
 import { dayKey, type Trip } from '../core/scoring';
+import { social } from '../social';
 import { savePauses } from '../storage/pause';
+import { loadTree, saveTree } from '../storage/tree';
 import { loadTrips } from '../storage/trips';
 import { SectionTitle } from '../ui/expressive';
 import { dateLabel } from '../ui/format';
@@ -33,7 +35,8 @@ import { CloseIcon } from '../ui/Icons';
 import { Header, Panel, RoundButton, Screen, Toggle, text } from '../ui/parts';
 import { Sprout, Tree } from '../ui/Sprout';
 import { C, F, R } from '../ui/theme';
-import { usePauses } from '../ui/usePlant';
+import { TreePicker } from '../ui/TreeAvatar';
+import { usePauses, usePlant } from '../ui/usePlant';
 import { WavyBar } from '../ui/Wavy';
 
 const STAGE_NAME: Record<Stage, string> = { seme: 'Seme', germoglio: 'Germoglio', piantina: 'Piantina' };
@@ -76,10 +79,18 @@ export default function Bosco() {
   );
 
   const today = dayKey(now);
-  const plant = plantState(trips, now, pauses);
+  const plant = usePlant(trips, now, pauses);
   const pause = activePause(pauses, today);
   const pauseEnd = pause ? dayLabel(pauseLastDay(pause)) : null;
   const ratio = plant.nextG > 0 ? plant.cycleG / plant.nextG : 0;
+
+  async function pickTree(species: SpeciesId) {
+    const next = { ...(await loadTree()), species };
+    await saveTree(next);
+    plant.setTree(next);
+    // Il nuovo avatar arriva subito alla classifica.
+    social.sync(Date.now()).catch(() => undefined);
+  }
 
   async function togglePause(on: boolean) {
     const next = on ? startPause(pauses, today) : endPause(pauses, today);
@@ -101,8 +112,8 @@ export default function Bosco() {
         />
 
         <View style={styles.plantCard}>
-          <Sprout size={190} stage={plant.stage} health={plant.health} label={`${STAGE_NAME[plant.stage]}, ${plant.health}`} />
-          <Text style={styles.stage}>{STAGE_NAME[plant.stage]}</Text>
+          <Sprout size={190} stage={plant.stage} health={plant.health} species={plant.species} label={`${STAGE_NAME[plant.stage]}, ${plant.health}`} />
+          <Text style={styles.stage}>{plant.stage === 'piantina' ? `${STAGE_NAME.piantina} di ${speciesName(plant.species).toLowerCase()}` : STAGE_NAME[plant.stage]}</Text>
           <Text style={styles.health}>{healthText(plant.health, plant.idleDays, pauseEnd)}</Text>
           <View style={styles.progress} accessible accessibilityRole="progressbar" accessibilityLabel={`${formatCo2(plant.cycleG)} di ${formatCo2(plant.nextG)} per diventare ${NEXT_NAME[plant.stage]}`}>
             <WavyBar ratio={ratio} color={C.onMint} track="rgba(4, 36, 29, 0.16)" height={18} stroke={6} />
@@ -113,6 +124,12 @@ export default function Bosco() {
               <Text style={styles.progressText}>poi diventa {NEXT_NAME[plant.stage]}</Text>
             </View>
           </View>
+        </View>
+
+        <View style={styles.pick}>
+          <Text style={styles.pickTitle}>{plant.chosen ? 'Il tuo albero' : 'Scegli il tuo albero'}</Text>
+          <Text style={text.small}>Il germoglio diventa questo albero, ed è il tuo avatar in classifica. Puoi cambiarlo quando vuoi: gli alberi già nel bosco restano com&apos;erano.</Text>
+          <TreePicker value={plant.chosen ? plant.species : null} onChange={pickTree} />
         </View>
 
         <View style={styles.total}>
@@ -199,6 +216,8 @@ const styles = StyleSheet.create({
   tree: { width: '25%', alignItems: 'center', gap: 2 },
   treeName: { fontFamily: F.medium, fontSize: 12, color: C.dim },
   pause: { gap: 10, marginTop: 4 },
+  pick: { backgroundColor: C.card, borderRadius: R.card, padding: 16, gap: 8 },
+  pickTitle: { fontFamily: F.bold, fontSize: 16, color: C.text },
   pauseRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   pauseTitle: { fontFamily: F.bold, fontSize: 16, color: C.text },
 });

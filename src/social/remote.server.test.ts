@@ -13,6 +13,7 @@ import { randomBytes } from 'node:crypto';
 import { after, test } from 'node:test';
 
 import type { ModeId } from '../core/modes';
+import type { TreeBadge } from '../core/plant';
 import type { Trip } from '../core/scoring';
 import { challengeState, weekStart } from '../core/social';
 import { remoteSource, type RemoteSource } from './remote';
@@ -41,7 +42,7 @@ function trip(points: number, endedAt: number, mode: ModeId = 'piedi'): Trip {
   };
 }
 
-type Phone = { source: RemoteSource; trips: Trip[] };
+type Phone = { source: RemoteSource; trips: Trip[]; tree: { current: TreeBadge | null } };
 
 const phones: Phone[] = [];
 
@@ -49,6 +50,7 @@ const phones: Phone[] = [];
 function phone(): Phone {
   const memory = new Map<string, string>();
   const trips: Trip[] = [];
+  const tree: { current: TreeBadge | null } = { current: null };
   const source = remoteSource({
     rest: SERVER ?? '',
     key: KEY,
@@ -58,9 +60,10 @@ function phone(): Phone {
       remove: async (key) => void memory.delete(key),
     },
     loadTrips: async () => trips,
+    loadTree: async () => tree.current,
     newSecret: async () => randomBytes(32).toString('hex'),
   });
-  const created = { source, trips };
+  const created = { source, trips, tree };
   phones.push(created);
   return created;
 }
@@ -118,12 +121,14 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   // --- chi non è nella lega non la vede ---
   assert.equal(await c.source.board(league.id, now), null);
   assert.deepEqual(await c.source.rivals(now), []);
-  assert.deepEqual(await a.source.rivals(now), [{ id: flavia.id, name: flavia.nickname }]);
+  assert.deepEqual(await a.source.rivals(now), [{ id: flavia.id, name: flavia.nickname, tree: null }]);
 
   // --- i punti di ognuno arrivano agli altri ---
   const recent = Math.max(weekStart(now) + 1000, now - 3_600_000);
   a.trips.push(trip(30, recent, 'piedi'), trip(20, recent + 1000, 'tpl'));
   b.trips.push(trip(45, recent + 2000, 'bici'));
+  // L'avatar: Flavia ha scelto l'ulivo, è a piantina e ha già due alberi nel bosco.
+  b.tree.current = { species: 'ulivo', stage: 'piantina', trees: 2 };
   await a.source.sync(now);
   await b.source.sync(now);
   // Rimandare gli stessi tragitti non raddoppia nulla.
@@ -138,6 +143,9 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   assert.equal(byId.get(robbie.id)?.points, 50);
   assert.equal(byId.get(robbie.id)?.me, true);
   assert.equal(byId.get(robbie.id)?.mainMode, 'piedi');
+  assert.deepEqual(byId.get(flavia.id)?.tree, { species: 'ulivo', stage: 'piantina', trees: 2 });
+  assert.equal(byId.get(robbie.id)?.tree, null);
+  assert.deepEqual((await a.source.rivals(now))[0].tree, { species: 'ulivo', stage: 'piantina', trees: 2 });
   assert.equal(byId.get(flavia.id)?.points, 45);
   assert.equal(byId.get(flavia.id)?.me, false);
   assert.equal(byId.get(flavia.id)?.name, flavia.nickname);

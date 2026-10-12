@@ -15,6 +15,7 @@
  * prove automatiche contro un server di prova.
  */
 import type { ModeId } from '../core/modes';
+import { STAGES, isSpecies, type TreeBadge } from '../core/plant';
 import type { Trip } from '../core/scoring';
 import {
   TARGET_MAX_DAYS,
@@ -45,6 +46,8 @@ export type RemoteConfig = {
     remove(key: string): Promise<void>;
   };
   loadTrips(): Promise<Trip[]>;
+  /** L'avatar da mostrare agli altri: albero scelto e crescita. null se non c'è ancora un albero scelto. */
+  loadTree?(): Promise<TreeBadge | null>;
   /** Chiave segreta nuova: almeno 32 caratteri imprevedibili. */
   newSecret(): Promise<string>;
   fetch?: typeof fetch;
@@ -93,14 +96,25 @@ type State = {
   profile: Profile | null;
   /** Tragitti già inviati al server. */
   pushed: string[];
+  /** Ultimo avatar inviato, per non rimandarlo uguale. */
+  tree?: string;
 };
 
 const EMPTY: State = { secret: null, profile: null, pushed: [] };
 
-type BoardRow = { id: string; name: string; me: boolean; points: number; before: number; mode: string | null };
+type TreeRow = { species?: unknown; stage?: unknown; trees?: unknown } | null | undefined;
+type BoardRow = { id: string; name: string; me: boolean; points: number; before: number; mode: string | null; tree?: TreeRow };
 type ChallengeRow = Omit<Challenge, 'people'> & {
-  people: { id: string; name: string; me: boolean; team: 0 | 1; points: number; mode: string | null; reachedAt: number | null }[];
+  people: { id: string; name: string; me: boolean; team: 0 | 1; points: number; mode: string | null; reachedAt: number | null; tree?: TreeRow }[];
 };
+
+/** L'avatar come arriva dal server; null se manca o non è valido (server non ancora aggiornato). */
+export function toTree(row: TreeRow): TreeBadge | null {
+  if (!row || !isSpecies(row.species)) return null;
+  const stage = STAGES[Number(row.stage)] ?? 'seme';
+  const trees = Math.max(0, Math.floor(Number(row.trees) || 0));
+  return { species: row.species, stage, trees };
+}
 
 /** Il mezzo che ha dato più punti in un tragitto. */
 function tripMode(trip: Trip): ModeId | null {
@@ -175,7 +189,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     if (code === 'non-registrato' && !options.probe) {
       // Il profilo è stato cancellato dal server: qui si torna alla scelta del soprannome.
       const state = await load();
-      await save({ ...state, profile: null, pushed: [] });
+      await save({ ...state, profile: null, pushed: [], tree: undefined });
     }
     throw new ServerError(code, code === 'non-pronto' ? NOT_READY : (PROBLEMS[code] ?? `Il server ha risposto con un errore (${code}).`));
   }
@@ -225,10 +239,32 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     await save({ ...(await load()), pushed });
   }
 
+  /**
+   * Manda l'avatar se è cambiato. Un errore qui non diventa un avviso: un
+   * server non ancora aggiornato (senza vado_set_tree) deve continuare a
+   * funzionare per tutto il resto.
+   */
+  async function pushTree(): Promise<void> {
+    if (!config.loadTree) return;
+    try {
+      const state = await load();
+      if (!state.secret || !state.profile) return;
+      const tree = await config.loadTree();
+      if (!tree) return;
+      const key = `${tree.species}:${STAGES.indexOf(tree.stage)}:${tree.trees}`;
+      if (key === state.tree) return;
+      await call('vado_set_tree', { p_secret: state.secret, p_tree: tree.species, p_stage: STAGES.indexOf(tree.stage), p_trees: tree.trees });
+      await save({ ...(await load()), tree: key });
+    } catch {
+      // Riprova alla prossima sincronizzazione.
+    }
+  }
+
   function sync(now: number, force = false): Promise<void> {
     if (syncing) return syncing;
     if (!force && now - lastSync < SYNC_EVERY_MS) return Promise.resolve();
     syncing = pushTrips(now)
+      .then(() => pushTree())
       .then(() => {
         lastSync = now;
       })
@@ -252,6 +288,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       mainMode: (p.mode as ModeId | null) ?? null,
       reachedAt: p.reachedAt,
       team: p.team,
+      tree: toTree(p.tree),
     }));
     // L'utente per primo, come nelle schermate.
     people.sort((a, b) => Number(b.me === true) - Number(a.me === true));
@@ -281,7 +318,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
         // prossimo tentativo si ritrova lo stesso profilo invece di crearne un altro.
         if (!state.secret) await save({ ...state, secret });
         const profile = await call<Profile>('vado_register', { p_secret: secret, p_nickname: nickname });
-        await save({ ...(await load()), secret, profile });
+        await save({ ...(await load()), secret, profile, tree: undefined });
         return profile;
       });
     },
@@ -313,6 +350,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
           points: e.points,
           me: e.me,
           mainMode: (e.mode as ModeId | null) ?? null,
+          tree: toTree(e.tree),
           previousRank: earlier.get(e.id),
         }));
         return { ...summary(row), entries, endsAt };
@@ -337,7 +375,9 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     },
 
     async rivals(): Promise<Person[]> {
-      return read('avversari', [], () => mine<Person[]>('vado_rivals'));
+      return read('avversari', [], async () =>
+        (await mine<{ id: string; name: string; tree?: TreeRow }[]>('vado_rivals')).map((p) => ({ id: p.id, name: p.name, tree: toTree(p.tree) })),
+      );
     },
 
     async challenges(now: number): Promise<Challenge[]> {

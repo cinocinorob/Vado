@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { newlyUnlocked, type BadgeState } from '../core/badges';
 import { formatCo2, totalCo2, treeTime, tripCo2 } from '../core/co2';
-import { plantState, speciesName, type SpeciesId, type Stage } from '../core/plant';
+import { DEFAULT_SPECIES, plantState, speciesName, type SpeciesId, type Stage } from '../core/plant';
 import { TRIP_CAP, type Trip } from '../core/scoring';
+import { loadTree } from '../storage/tree';
 import { loadTrips } from '../storage/trips';
 import { duration, km } from '../ui/format';
 import Svg, { Path } from 'react-native-svg';
@@ -20,18 +21,19 @@ import { SHAPES } from '../ui/shapes';
 import { Sprout, Tree } from '../ui/Sprout';
 import { C, F, R } from '../ui/theme';
 
-type Growth = { text: string; stage: Stage; tree: SpeciesId | null };
+type Growth = { text: string; stage: Stage; tree: SpeciesId | null; species?: SpeciesId };
 
 /** Cosa è cambiato nel germoglio con questo tragitto: un albero nuovo o un passo di crescita. */
-function growthBetween(before: Trip[], after: Trip[], at: number): Growth | null {
+function growthBetween(before: Trip[], after: Trip[], at: number, species: SpeciesId): Growth | null {
   const a = plantState(before, at);
   const b = plantState(after, at);
-  if (b.forest.length > a.forest.length) {
-    const tree = b.forest[b.forest.length - 1];
+  if (b.trees > a.trees) {
+    const tree = species;
     return { text: `Un albero nuovo nel tuo bosco: ${speciesName(tree)}. E nasce un seme nuovo.`, stage: b.stage, tree };
   }
   if (b.stage !== a.stage) {
-    return { text: `Il tuo ${a.stage} è diventato ${b.stage}.`, stage: b.stage, tree: null };
+    const what = b.stage === 'piantina' ? `piantina di ${speciesName(species).toLowerCase()}` : b.stage;
+    return { text: `Il tuo ${a.stage} è diventato ${what}.`, stage: b.stage, tree: null, species };
   }
   return null;
 }
@@ -46,7 +48,7 @@ export default function Riepilogo() {
 
   useEffect(() => {
     let alive = true;
-    loadTrips().then((all) => {
+    Promise.all([loadTrips(), loadTree()]).then(([all, tree]) => {
       if (!alive) return;
       const found = all.find((t) => t.id === id) ?? null;
       setTrip(found);
@@ -54,7 +56,7 @@ export default function Riepilogo() {
       if (found) {
         const before = all.filter((t) => t.id !== found.id);
         setMedals(newlyUnlocked(before, [found], found.endedAt));
-        setGrowth(growthBetween(before, all, found.endedAt));
+        setGrowth(growthBetween(before, all, found.endedAt, tree.species ?? DEFAULT_SPECIES));
         setTotalG(totalCo2(all));
       }
     });
@@ -119,7 +121,7 @@ export default function Riepilogo() {
 
           {growth ? (
             <View style={styles.growth}>
-              {growth.tree ? <Tree species={growth.tree} size={72} /> : <Sprout size={72} stage={growth.stage} />}
+              {growth.tree ? <Tree species={growth.tree} size={72} /> : <Sprout size={72} stage={growth.stage} species={growth.species} />}
               <Text style={styles.growthText}>{growth.text}</Text>
             </View>
           ) : null}

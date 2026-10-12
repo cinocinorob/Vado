@@ -65,7 +65,55 @@ function Face({ cx, cy, health, scale = 1 }: { cx: number; cy: number; health: H
 const GROUND = <Path d="M14 84H82" stroke="#8B6B4A" strokeWidth={5} strokeLinecap="round" />;
 
 /** Solo le forme, da mettere dentro un <Svg viewBox="0 0 96 96">. */
-export function SproutShapes({ stage, health = 'forma', ground = true }: { stage: Stage; health?: Health; ground?: boolean }) {
+/** Dove sta la chioma di ogni albero, per metterci la faccia. */
+const CANOPY: Record<SpeciesId, { x: number; y: number; scale: number }> = {
+  pino: { x: 48, y: 32, scale: 1 },
+  cipresso: { x: 48, y: 46, scale: 0.8 },
+  leccio: { x: 48, y: 42, scale: 1.1 },
+  ulivo: { x: 48, y: 36, scale: 1 },
+  platano: { x: 48, y: 34, scale: 1.05 },
+};
+
+/**
+ * L'albero scelto con la faccia: da piccolo (piantina) o completo. Sete e
+ * appassimento lo piegano e lo sbiadiscono.
+ */
+function TreeWithFace({ species, young, health, ground }: { species: SpeciesId; young: boolean; health: Health; ground: boolean }) {
+  const c = CANOPY[species];
+  const tilt = health === 'sete' ? -7 : health === 'appassita' ? -16 : 0;
+  // La piantina è l'albero in piccolo, appoggiato a terra.
+  const size = young ? 'translate(48 84) scale(0.78) translate(-48 -84)' : '';
+  return (
+    <G>
+      {ground ? GROUND : null}
+      <G transform={`${size} rotate(${tilt} 48 84)`} opacity={health === 'appassita' ? 0.55 : 1}>
+        {TREES[species]}
+        <Face cx={c.x} cy={c.y} health={health} scale={c.scale} />
+      </G>
+      {health === 'sete' ? <Path d="M74 46c-2 3-2 6 0 7s3-4 0-7z" fill="#7FC4E8" /> : null}
+      {health === 'pausa' ? <Path d="M70 18h7l-7 8h7M80 8h5l-5 6h5" fill="none" stroke={INK} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" /> : null}
+    </G>
+  );
+}
+
+export function SproutShapes({
+  stage,
+  health = 'forma',
+  ground = true,
+  species,
+  grown = false,
+}: {
+  stage: Stage;
+  health?: Health;
+  ground?: boolean;
+  /** Con la specie, la piantina è già l'albero scelto in piccolo. */
+  species?: SpeciesId;
+  /** L'albero completo (per chi ne ha già fatto crescere almeno uno, in classifica). */
+  grown?: boolean;
+}) {
+  if (species && (grown || stage === 'piantina')) {
+    return <TreeWithFace species={species} young={!grown} health={health} ground={ground} />;
+  }
   const t = TONES[health];
   const droop = DROOP[health];
   let plant: ReactNode;
@@ -111,10 +159,24 @@ export function SproutShapes({ stage, health = 'forma', ground = true }: { stage
   );
 }
 
-export function Sprout({ size = 96, stage, health = 'forma', label }: { size?: number; stage: Stage; health?: Health; label?: string }) {
+export function Sprout({
+  size = 96,
+  stage,
+  health = 'forma',
+  species,
+  grown,
+  label,
+}: {
+  size?: number;
+  stage: Stage;
+  health?: Health;
+  species?: SpeciesId;
+  grown?: boolean;
+  label?: string;
+}) {
   return (
     <Svg width={size} height={size} viewBox="0 0 96 96" accessibilityLabel={label} accessible={!!label}>
-      <SproutShapes stage={stage} health={health} />
+      <SproutShapes stage={stage} health={health} species={species} grown={grown} />
     </Svg>
   );
 }

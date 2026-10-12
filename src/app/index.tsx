@@ -11,6 +11,7 @@ import { connectHealth, forgetImportedBefore, refreshHealth, type HealthState } 
 import { openHealthSettings } from '../health/connect';
 import { social } from '../social';
 import { clearPauses } from '../storage/pause';
+import { loadTree, saveTree } from '../storage/tree';
 import { clearTrips, loadTrips } from '../storage/trips';
 import { useActiveTrip } from '../tracking/store';
 import { restoreTracking } from '../tracking/tracker';
@@ -102,6 +103,8 @@ export default function Oggi() {
     ...(trip.bonus > 0 ? [{ key: `${trip.id}-bonus`, leg: null, bonus: trip.bonus, caption: undefined }] : []),
   ]);
   const healthSteps = health?.connected ? health.todaySteps : null;
+  // I punti oltre l'obiettivo valgono come gli altri (classifica, sfide): l'anello fa un secondo giro.
+  const extra = Math.max(0, today.points - DAILY_GOAL);
   const todayCo2 = today.trips.reduce((sum, t) => sum + tripCo2(t), 0);
   const plant = usePlant(trips, now);
   const activeDays = useMemo(() => new Set(trips.filter((t) => t.total > 0).map((t) => t.day)), [trips]);
@@ -113,6 +116,7 @@ export default function Oggi() {
     }
     await clearTrips();
     await clearPauses();
+    await saveTree({ ...(await loadTree()), history: [] });
     // Le attività già importate non devono rientrare alla prossima lettura.
     await forgetImportedBefore(Date.now());
     // Anche il profilo della classifica, qui e sul server.
@@ -131,7 +135,7 @@ export default function Oggi() {
           right={
             <Pressable onPress={() => router.push('/bosco')} accessibilityRole="button" accessibilityLabel="Il tuo germoglio e il bosco" hitSlop={6}>
               <ShapeBadge shape="cookie12" color={C.mint} size={60}>
-                <Sprout size={52} stage={plant.stage} health={plant.health} />
+                <Sprout size={52} stage={plant.stage} health={plant.health} species={plant.species} />
               </ShapeBadge>
             </Pressable>
           }
@@ -143,14 +147,22 @@ export default function Oggi() {
               style={styles.ring}
               accessible
               accessibilityRole="progressbar"
-              accessibilityLabel={`Obiettivo di oggi: ${today.points} di ${DAILY_GOAL} punti`}
+              accessibilityLabel={
+                extra > 0 ? `Obiettivo di oggi superato: ${today.points} punti, ${extra} oltre gli ${DAILY_GOAL}` : `Obiettivo di oggi: ${today.points} di ${DAILY_GOAL} punti`
+              }
             >
               <WavyRing size={196} ratio={today.points / DAILY_GOAL} />
               <View style={styles.ringText}>
                 <Text style={styles.heroPoints} adjustsFontSizeToFit numberOfLines={1}>
                   {today.points}
                 </Text>
-                <Text style={styles.heroLabel}>di {DAILY_GOAL} punti</Text>
+                {extra > 0 ? (
+                  <View style={styles.extra}>
+                    <Text style={styles.extraText}>+{extra} oltre l&apos;obiettivo</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.heroLabel}>di {DAILY_GOAL} punti</Text>
+                )}
               </View>
             </View>
             <View style={styles.heroSide}>
@@ -296,6 +308,8 @@ const styles = StyleSheet.create({
   heroPoints: { fontFamily: F.displayBold, fontSize: 68, lineHeight: 74, letterSpacing: -2, color: C.ink },
   heroLabel: { fontFamily: F.semi, fontSize: 14, color: C.ink, marginTop: -2 },
   heroSide: { flex: 1, gap: 10 },
+  extra: { marginTop: 2, height: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: C.coral, justifyContent: 'center' },
+  extraText: { fontFamily: F.bold, fontSize: 12, color: C.onCoral },
   streak: {
     backgroundColor: C.ink,
     borderTopLeftRadius: 28,

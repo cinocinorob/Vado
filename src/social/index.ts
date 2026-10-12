@@ -8,6 +8,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
+import { plantState, type TreeBadge } from '../core/plant';
+import { loadPauses } from '../storage/pause';
+import { loadTree } from '../storage/tree';
 import { loadTrips } from '../storage/trips';
 import { SERVER } from './config';
 import { remoteSource } from './remote';
@@ -19,6 +22,14 @@ async function newSecret(): Promise<string> {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/** L'avatar per la classifica: l'albero scelto e la crescita della pianta. */
+export async function myTree(): Promise<TreeBadge | null> {
+  const [tree, trips, pauses] = await Promise.all([loadTree(), loadTrips(), loadPauses()]);
+  if (!tree.species) return null;
+  const plant = plantState(trips, Date.now(), pauses);
+  return { species: tree.species, stage: plant.stage, trees: plant.trees };
+}
+
 export const social: SocialSource = remoteSource({
   rest: SERVER.rest,
   key: SERVER.key,
@@ -28,6 +39,7 @@ export const social: SocialSource = remoteSource({
     remove: (key) => AsyncStorage.removeItem(key),
   },
   loadTrips,
+  loadTree: myTree,
   newSecret,
 });
 

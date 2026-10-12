@@ -6,7 +6,6 @@ import {
   challengeRule,
   challengeState,
   gapPhrase,
-  initials,
   modePhrase,
   timeLeft,
   zoneFor,
@@ -15,32 +14,16 @@ import {
   type Tier,
   type Zone,
 } from '../core/social';
-import { ShapeBadge } from './expressive';
+import type { TreeBadge } from '../core/plant';
 import { CrownIcon, TrashIcon, TrendIcon } from './Icons';
-import type { ShapeId } from './shapes';
+import { TreeAvatar } from './TreeAvatar';
 import { C, F, card } from './theme';
 
-/** Colori dei cerchi con le iniziali: fissi per nome, così ognuno resta riconoscibile. */
-const TONES = ['#B9DDF7', C.coral, '#FFE07A', '#7FD8C6', '#E3D7FF'] as const;
-/** Anche la forma è fissa per nome. */
-const AVATAR_SHAPES: readonly ShapeId[] = ['cookie9', 'flower8', 'sunny', 'clover4', 'cookie6', 'pent', 'hept'];
-
-function hash(id: string): number {
-  let sum = 0;
-  for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
-  return sum;
-}
-
-function toneFor(id: string): string {
-  return TONES[hash(id) % TONES.length];
-}
-
-export function Avatar({ id, name, me = false, size = 36 }: { id: string; name: string; me?: boolean; size?: number }) {
+/** L'avatar è l'albero scelto dalla persona, cresciuto quanto la sua pianta. */
+export function Avatar({ me = false, size = 36, tree }: { id: string; name: string; me?: boolean; size?: number; tree?: TreeBadge | null }) {
   return (
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <ShapeBadge shape={me ? 'cookie12' : AVATAR_SHAPES[hash(id) % AVATAR_SHAPES.length]} color={me ? C.ink : toneFor(id)} size={size}>
-        <Text style={[styles.avatarText, { fontSize: size * 0.34 }, me && { color: C.lime }]}>{me ? 'TU' : initials(name)}</Text>
-      </ShapeBadge>
+      <TreeAvatar badge={tree} me={me} size={size} />
     </View>
   );
 }
@@ -126,7 +109,7 @@ export function Podium({ ranked }: { ranked: Ranked[] }) {
                 accessibilityLabel={`${entry.rank}º posto: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti`}
               >
                 {first ? <CrownIcon /> : null}
-                <Avatar id={entry.id} name={entry.name} me={entry.me} size={step.avatar} />
+                <Avatar id={entry.id} name={entry.name} me={entry.me} size={step.avatar} tree={entry.tree} />
                 <Text style={styles.podiumName} numberOfLines={1}>
                   {entry.me ? 'Tu' : entry.name}
                 </Text>
@@ -159,7 +142,7 @@ export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked
       accessibilityLabel={`${entry.rank}º: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti${zoneText ? `, ${zoneText.toLowerCase()}` : ''}`}
     >
       <Text style={styles.rowRank}>{entry.rank}</Text>
-      <Avatar id={entry.id} name={entry.name} me={entry.me} />
+      <Avatar id={entry.id} name={entry.name} me={entry.me} tree={entry.tree} />
       <View style={styles.rowText}>
         <Text style={styles.rowName} numberOfLines={1}>
           {entry.me ? 'Tu' : entry.name}
@@ -185,7 +168,7 @@ export function zonesFor(ranked: Ranked[], tier: Tier | undefined): Map<string, 
 }
 
 /** Barra di avanzamento con il cerchio del partecipante in punta, come una gara su un rettilineo. */
-function Track({ ratio, id, name, me, label, points }: { ratio: number; id: string; name: string; me: boolean; label: string; points: number }) {
+function Track({ ratio, id, name, me, label, points, tree }: { ratio: number; id: string; name: string; me: boolean; label: string; points: number; tree?: TreeBadge | null }) {
   const percent = Math.max(0, Math.min(1, ratio)) * 100;
   return (
     <View style={styles.track} accessible accessibilityLabel={`${label}: ${points} punti`}>
@@ -201,7 +184,7 @@ function Track({ ratio, id, name, me, label, points }: { ratio: number; id: stri
         {/* Il cerchio resta dentro la corsia anche a 0% e a 100%. */}
         <View style={[styles.trackRunner, { left: `${percent}%` }]}>
           <View style={styles.trackRunnerInner}>
-            <Avatar id={id} name={name} me={me} size={30} />
+            <Avatar id={id} name={name} me={me} size={30} tree={tree} />
           </View>
         </View>
       </View>
@@ -251,6 +234,7 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
               me={side.me && !challenge.teams}
               label={challenge.teams ? `${side.name}${side.me ? ' (la tua)' : ''}` : side.me ? 'Tu' : side.name}
               points={side.points}
+              tree={challenge.teams ? null : person?.tree}
             />
           );
         })}

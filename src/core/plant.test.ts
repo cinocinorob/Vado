@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { CAR_G_PER_KM, formatCo2, legCo2, totalCo2, treeTime, tripCo2 } from './co2';
-import { PAUSE_MAX_DAYS, activePause, addDays, endPause, pauseDaysLeft, plantState, startPause, type Pause } from './plant';
+import { PAUSE_MAX_DAYS, activePause, addDays, endPause, forestOf, pauseDaysLeft, plantState, startPause, type Pause } from './plant';
 import { dayKey, type LegResult, type Trip } from './scoring';
 
 const NOW = new Date(2026, 9, 12, 9, 0, 0).getTime();
@@ -60,12 +60,20 @@ test('germoglio: cresce per soglie, a 22 kg va nel bosco e riparte da seme', () 
   assert.equal(plantState([walk(TODAY, 3)], NOW).stage, 'germoglio');
   assert.equal(plantState([walk(TODAY, 12)], NOW).stage, 'piantina');
   const one = plantState([walk(TODAY, 12), walk(TODAY, 10)], NOW);
-  assert.deepEqual(one.forest, ['pino']);
+  assert.equal(one.trees, 1);
   assert.equal(one.stage, 'seme');
   assert.ok(one.cycleG < 1);
   const many = plantState([walk(TODAY, 22 * 6 + 4)], NOW);
-  assert.deepEqual(many.forest, ['pino', 'cipresso', 'leccio', 'ulivo', 'platano', 'pino']);
+  assert.equal(many.trees, 6);
   assert.equal(many.stage, 'germoglio');
+});
+
+test('bosco: gli alberi già cresciuti restano della specie di allora', () => {
+  assert.deepEqual(forestOf(0, [], 'ulivo'), []);
+  assert.deepEqual(forestOf(3, ['pino', 'leccio'], 'ulivo'), ['pino', 'leccio', 'ulivo']);
+  assert.deepEqual(forestOf(2, [], null), ['pino', 'pino']);
+  // Se i tragitti sono stati azzerati, la memoria in più non conta.
+  assert.deepEqual(forestOf(1, ['cipresso', 'leccio'], 'ulivo'), ['cipresso']);
 });
 
 test('germoglio: in forma, ha sete dopo 3 giorni fermi, appassita dopo 6; un tragitto lo riprende', () => {

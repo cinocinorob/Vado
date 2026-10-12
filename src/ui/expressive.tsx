@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 import Svg, { Path } from 'react-native-svg';
 
 import { formatCo2, treeTime } from '../core/co2';
-import type { PlantState } from '../core/plant';
+import type { PlantState, SpeciesId } from '../core/plant';
 import { dayKey } from '../core/scoring';
 import { km } from './format';
 import { SHAPES, type ShapeId } from './shapes';
@@ -100,7 +100,7 @@ export function WeekStrip({ activeDays, now }: { activeDays: ReadonlySet<string>
 }
 
 /** Scheda verde acqua con la CO₂ evitata, l'equivalenza con l'albero e il germoglio. */
-export function Co2Card({ grams, meters, title, plant, onPress }: { grams: number; meters: number; title: string; plant: PlantState; onPress?: () => void }) {
+export function Co2Card({ grams, meters, title, plant, onPress }: { grams: number; meters: number; title: string; plant: PlantState & { species?: SpeciesId }; onPress?: () => void }) {
   const body =
     grams > 0
       ? `con ${km(meters)} senza auto. Un albero adulto ci mette ${treeTime(grams)} ad assorbirla.`
@@ -113,7 +113,7 @@ export function Co2Card({ grams, meters, title, plant, onPress }: { grams: numbe
         <Text style={styles.co2Body}>{body}</Text>
       </View>
       <View style={styles.co2Plant}>
-        <Sprout size={84} stage={plant.stage} health={plant.health} label="Il tuo germoglio" />
+        <Sprout size={84} stage={plant.stage} health={plant.health} species={plant.species} label="Il tuo germoglio" />
       </View>
     </Pressable>
   );

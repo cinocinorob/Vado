@@ -161,7 +161,7 @@ export default function NuovaSfida() {
                   accessibilityLabel={person.name}
                   style={[styles.rival, selected && styles.rivalOn]}
                 >
-                  <Avatar id={person.id} name={person.name} />
+                  <Avatar id={person.id} name={person.name} tree={person.tree} />
                   <Text style={styles.rivalName}>{person.name}</Text>
                   <View style={[styles.check, selected && styles.checkOn]}>{selected ? <CheckIcon size={16} color={C.ink} /> : null}</View>
                 </Pressable>

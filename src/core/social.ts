@@ -13,6 +13,7 @@
  *   di più in un tempo fissato), individuali o a due squadre, fino a 10 persone.
  */
 import type { ModeId } from './modes';
+import type { TreeBadge } from './plant';
 import type { Trip } from './scoring';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -157,6 +158,8 @@ export type Entry = {
   /** È l'utente di questo telefono. */
   me?: boolean;
   mainMode?: ModeId | null;
+  /** L'albero scelto e la sua crescita, per l'avatar. */
+  tree?: TreeBadge | null;
   /** Posizione nella rilevazione precedente, per la freccia su/giù. */
   previousRank?: number;
 };

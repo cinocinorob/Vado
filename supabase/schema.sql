@@ -32,6 +32,13 @@ create table if not exists vado.users (
   seen_at timestamptz not null default now()
 );
 
+-- L'avatar: l'albero scelto, a che punto è la pianta (0 seme, 1 germoglio,
+-- 2 piantina) e quanti alberi ha già fatto crescere. Aggiunte dopo: "if not
+-- exists" le crea sui progetti che hanno già la tabella.
+alter table vado.users add column if not exists tree text check (tree in ('pino', 'cipresso', 'leccio', 'ulivo', 'platano'));
+alter table vado.users add column if not exists stage smallint not null default 0 check (stage between 0 and 2);
+alter table vado.users add column if not exists trees integer not null default 0 check (trees between 0 and 100000);
+
 create table if not exists vado.leagues (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 2 and 24),
@@ -127,6 +134,12 @@ language sql immutable set search_path = '' as $$
   select (extract(epoch from p_time) * 1000)::bigint
 $$;
 
+-- L'avatar di una persona; null se non ha ancora scelto l'albero.
+create or replace function vado.tree_json(p_tree text, p_stage smallint, p_trees integer) returns json
+language sql immutable set search_path = '' as $$
+  select case when p_tree is null then null else json_build_object('species', p_tree, 'stage', p_stage, 'trees', p_trees) end
+$$;
+
 -- Due persone hanno almeno una lega in comune?
 create or replace function vado.mates(p_a uuid, p_b uuid) returns boolean
 language sql stable security definer set search_path = '' as $$
@@ -153,6 +166,7 @@ language sql stable security definer set search_path = '' as $$
         'id', u.id,
         'name', u.nickname,
         'me', u.id = p_user,
+        'tree', vado.tree_json(u.tree, u.stage, u.trees),
         'team', p.team,
         'points', coalesce(t.points, 0),
         'mode', t.mode,
@@ -217,6 +231,21 @@ begin
   return (select json_build_object('id', u.id, 'nickname', u.nickname) from vado.users u where u.id = v_user);
 end $$;
 
+-- L'albero scelto e la crescita della pianta, per l'avatar in classifica.
+create or replace function public.vado_set_tree(p_secret text, p_tree text, p_stage integer, p_trees integer) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+begin
+  if p_tree is null or p_tree not in ('pino', 'cipresso', 'leccio', 'ulivo', 'platano')
+     or p_stage is null or p_stage not between 0 and 2
+     or p_trees is null or p_trees not between 0 and 100000 then
+    raise exception 'dati-non-validi';
+  end if;
+  update vado.users set tree = p_tree, stage = p_stage, trees = p_trees where id = v_user;
+  return json_build_object('ok', true);
+end $$;
+
 -- Riceve i tragitti con punti non ancora inviati. Quelli già presenti vengono
 -- ignorati, quindi rimandare lo stesso elenco non fa danni.
 create or replace function public.vado_push_scores(p_secret text, p_scores jsonb) returns json
@@ -278,6 +307,7 @@ begin
         'id', u.id,
         'name', u.nickname,
         'me', u.id = v_user,
+        'tree', vado.tree_json(u.tree, u.stage, u.trees),
         'points', coalesce((select sum(s.points) from vado.scores s
           where s.user_id = u.id and s.ended_at >= p_from and s.ended_at < p_to), 0),
         'before', coalesce((select sum(s.points) from vado.scores s
@@ -365,9 +395,9 @@ declare
   v_user uuid := vado.who(p_secret);
 begin
   return (
-    select coalesce(json_agg(json_build_object('id', x.id, 'name', x.nickname) order by x.nickname, x.id), '[]'::json)
+    select coalesce(json_agg(json_build_object('id', x.id, 'name', x.nickname, 'tree', vado.tree_json(x.tree, x.stage, x.trees)) order by x.nickname, x.id), '[]'::json)
     from (
-      select distinct u.id, u.nickname
+      select distinct u.id, u.nickname, u.tree, u.stage, u.trees
       from vado.members mine
       join vado.members other on other.league_id = mine.league_id and other.user_id <> mine.user_id
       join vado.users u on u.id = other.user_id
