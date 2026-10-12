@@ -179,6 +179,8 @@ export const demoSource: SocialSource = {
   problem: () => null,
   sync: async () => undefined,
   reset: () => resetDemo(),
+  recoveryCode: async () => null,
+  recover: async () => ({ ok: false, problem: "Nell'anteprima non ci sono profili da recuperare." }),
 
   async profile(): Promise<Profile | null> {
     const { nickname } = await load();

@@ -170,7 +170,7 @@ Limiti da conoscere:
 
 - **Punti dichiarati dal telefono.** Un'app modificata può mandarne di falsi. Il server rifiuta quelli
   impossibili (più di 70 per tragitto, tragitti nel futuro), non quelli falsi ma plausibili.
-- **Cambio telefono o disinstallazione:** con il solo soprannome il profilo si perde.
+- **Cambio telefono o disinstallazione:** senza il codice di recupero (o un file di backup) il profilo si perde.
 - **Piano gratuito di Supabase:** il progetto può essere messo in pausa dopo una settimana di attività scarsa e
   va riattivato a mano dal pannello.
 - **Contenuti scritti dagli utenti** (soprannomi, nomi di leghe e sfide): per il Play Store servono un modo per
@@ -231,6 +231,22 @@ pubblicate (A 18,4 km, B 18,1 km).
 Non ancora verificato su strada: quanto spesso il telefono dà una posizione valida entro 300 m dalla stazione
 subito prima di scendere e subito dopo essere risaliti. Le soglie sono in `src/core/metro.ts`.
 
+## Backup e cambio telefono
+
+Dalla schermata Oggi, "Backup e cambio telefono":
+
+- **Crea il backup:** un file JSON con tutti i tragitti e il codice di recupero della classifica, passato al
+  foglio di condivisione di Android (Drive, una chat, un'email). Vado non ne tiene copia.
+- **Scegli il file:** sul telefono nuovo i tragitti del file si aggiungono a quelli presenti (mai sovrascritti,
+  rimettere lo stesso file non raddoppia nulla); se sul telefono non c'è un profilo della classifica, torna anche
+  quello.
+- **Codice di recupero:** 54 caratteri in 9 gruppi da 6 (stesse lettere dei codici delle leghe, più due di
+  controllo che scoprono gli errori di battitura). Ridà soprannome, leghe e punti su un altro telefono. È la
+  chiave segreta del telefono scritta in un altro modo: chi lo ha può usare il profilo.
+
+Il backup automatico di Android (dati delle app su Google Drive) non è disattivato, ma per Vado non è stato
+verificato: il file e il codice sono la strada provata. Regole in `src/core/backup.ts` e `src/core/recovery.ts`.
+
 ## Come viene misurata la distanza
 
 Il GPS oscilla anche da fermi e in città si sposta di lato per i riflessi sui palazzi. Il filtro in
@@ -246,7 +262,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (173 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (187 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

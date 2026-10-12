@@ -260,6 +260,11 @@ export default function Oggi() {
             </Panel>
           ) : null}
 
+          <Pressable onPress={() => router.push('/backup')} accessibilityRole="button" style={styles.backup}>
+            <Text style={styles.backupText}>Backup e cambio telefono</Text>
+            <ChevronIcon size={14} color={C.ink} />
+          </Pressable>
+
           {trips.length > 0 ? (
             <Pressable onPress={reset} accessibilityRole="button" style={styles.reset}>
               <Text style={[text.small, confirmReset && { color: C.alert, fontFamily: F.bold }]}>
@@ -322,4 +327,6 @@ const styles = StyleSheet.create({
   healthLinkText: { fontFamily: F.bold, fontSize: 13, color: C.text, textDecorationLine: 'underline' },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 8 },
   reset: { alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16 },
+  backup: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 16 },
+  backupText: { fontFamily: F.bold, fontSize: 14, color: C.text, textDecorationLine: 'underline' },
 });

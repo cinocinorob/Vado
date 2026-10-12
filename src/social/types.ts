@@ -71,6 +71,10 @@ export interface SocialSource {
   sync(now: number): Promise<void>;
   /** Cancella il profilo, qui e sul server. */
   reset(): Promise<void>;
+  /** Codice da annotare per ritrovare il profilo su un altro telefono; null se non c'è un profilo. */
+  recoveryCode(): Promise<string | null>;
+  /** Ritrova un profilo dal suo codice di recupero. Sostituisce quello eventualmente presente su questo telefono. */
+  recover(code: string): Promise<Result<Profile>>;
   profile(): Promise<Profile | null>;
   setNickname(name: string): Promise<Result<Profile>>;
   leagues(now: number): Promise<LeagueSummary[]>;

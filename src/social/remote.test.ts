@@ -107,3 +107,37 @@ test('un rifiuto del server arriva come frase, non come sigla', async () => {
   const result = await source.joinLeague('ABC234');
   assert.deepEqual(result, { ok: false, problem: 'Nessuna lega ha questo codice. Controlla di averlo scritto giusto.' });
 });
+
+test('codice di recupero: si ritrova il profilo con la stessa chiave', async () => {
+  const { source: oldPhone } = harness(() => REGISTERED);
+  await oldPhone.setNickname('Robbie');
+  // La chiave del telefono di prova non è esadecimale: per questa prova se ne usa una che lo è.
+  const secret = 'a1'.repeat(32);
+  const { source: phone, calls } = harness((name, params) =>
+    name === 'vado_me' && params.p_secret === secret ? REGISTERED : { status: 400, body: { code: 'P0001', message: 'non-registrato' } },
+  );
+  const { encodeRecovery } = await import('../core/recovery');
+  const code = encodeRecovery(secret) ?? '';
+  const result = await phone.recover(code.toLowerCase());
+  assert.deepEqual(result, { ok: true, value: { id: 'u1', nickname: 'Robbie' } });
+  assert.equal(calls[0].name, 'vado_me');
+  assert.deepEqual(await phone.profile(), { id: 'u1', nickname: 'Robbie' });
+  assert.equal(await phone.recoveryCode(), code);
+});
+
+test('codice sbagliato: il profilo già presente sul telefono non si tocca', async () => {
+  const { source } = harness((name) => (name === 'vado_register' ? REGISTERED : { status: 400, body: { code: 'P0001', message: 'non-registrato' } }));
+  await source.setNickname('Robbie');
+  const { encodeRecovery } = await import('../core/recovery');
+  const result = await source.recover(encodeRecovery('b2'.repeat(32)) ?? '');
+  assert.equal(result.ok, false);
+  assert.match(result.ok ? '' : result.problem, /Nessun profilo/);
+  assert.deepEqual(await source.profile(), { id: 'u1', nickname: 'Robbie' });
+});
+
+test('codice con un errore di battitura: nemmeno si chiama il server', async () => {
+  const { source, calls } = harness(() => REGISTERED);
+  const result = await source.recover('ABCDEF');
+  assert.equal(result.ok, false);
+  assert.equal(calls.length, 0);
+});

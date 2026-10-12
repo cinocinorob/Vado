@@ -449,6 +449,41 @@ def check_leaderboard() -> str:
     return "ok"
 
 
+def check_backup() -> str:
+    """Schermata Backup: il codice di recupero si vede, e creare il file non fa chiudere l'app."""
+    log("apro Backup")
+    link = scroll_to("Backup e cambio telefono", swipes=10)
+    if not link:
+        return "collegamento a Backup non trovato: " + visible_text()[:300]
+    tap(link)
+    wait_for("Salva un backup", 20, "aprendo Backup")
+    show = scroll_to("Mostra il codice", exact=True, swipes=6)
+    if not show:
+        return "pulsante Mostra il codice non trovato: " + visible_text()[:300]
+    tap(show)
+    time.sleep(1.5)
+    shown = visible_text()
+    screenshot("backup-codice")
+    if not re.search(r"([A-HJ-NP-Z2-9]{6}-){8}[A-HJ-NP-Z2-9]{6}", shown):
+        return "il codice di recupero non compare: " + shown[:400]
+    for _ in range(3):
+        adb("shell", "input", "swipe", "540", "900", "540", "1500", "300")
+        time.sleep(0.5)
+    tap(wait_for("Crea il backup", 15, "in Backup", exact=True))
+    time.sleep(4)
+    check_alive("creando il backup")
+    screenshot("backup-condivisione")
+    # Si chiude il foglio di condivisione di Android e si torna a Oggi.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    time.sleep(1.5)
+    result = wait_for("Backup creato", 10, "dopo la condivisione", required=False)
+    if not result:
+        return "dopo la condivisione non compare la conferma del backup: " + visible_text()[:400]
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi da Backup")
+    return "ok"
+
+
 def clean_server() -> str:
     """Toglie dal server ciò che la prova ha creato: il profilo dell'app e quello dell'altra persona."""
     notes = []
@@ -690,6 +725,7 @@ def main() -> None:
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
 
     board = check_leaderboard()
+    backup = check_backup() if board == "ok" else "non provato: manca il profilo"
     metro = check_metro()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
@@ -716,8 +752,10 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; classifica: {board}; metro: {metro}; Connessione Salute: {health}"
+        f"permessi: {answered}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
     )
+    if backup != "ok":
+        problems.append(f"backup: {backup}")
     if board != "ok":
         problems.append(f"classifica: {board}")
     if metro != "ok":

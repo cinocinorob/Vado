@@ -221,6 +221,19 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   assert.equal(forged.status, 400);
   assert.match(await forged.text(), /non-registrato/);
 
+  // --- cambio di telefono: il codice di recupero riporta profilo, leghe e punti ---
+  const recovery = await a.source.recoveryCode();
+  assert.ok(recovery, 'il codice di recupero manca');
+  const newPhone = phone();
+  const back = value(await newPhone.source.recover(recovery));
+  assert.equal(back.id, robbie.id);
+  assert.deepEqual((await newPhone.source.leagues(later)).map((l) => l.id), [league.id]);
+  assert.equal((await newPhone.source.board(league.id, later))?.entries.find((e) => e.me)?.points, 75);
+  // Un codice di un profilo che non esiste non sostituisce quello presente.
+  const stranger = await newPhone.source.recover(recovery.replace(/^[A-HJ-NP-Z2-9]/, (c) => (c === 'A' ? 'B' : 'A')));
+  assert.equal(stranger.ok, false);
+  assert.equal((await newPhone.source.profile())?.id, robbie.id);
+
   // --- cancellare il profilo ---
   const secret = await a.source.secret();
   assert.ok(secret);

@@ -31,6 +31,7 @@ import {
   type Challenger,
   type Entry,
 } from '../core/social';
+import { decodeRecovery, encodeRecovery } from '../core/recovery';
 import type { LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
 
 export type RemoteConfig = {
@@ -75,6 +76,8 @@ const PROBLEMS: Record<string, string> = {
   'troppe-sfide': 'Hai già 12 sfide in corso: aspetta che ne finisca una.',
   'dati-non-validi': 'Il server non ha accettato i dati.',
 };
+
+const UNKNOWN_CODE = 'Nessun profilo corrisponde a questo codice. Controlla di averlo copiato tutto, dal telefono dove avevi il profilo.';
 
 class ServerError extends Error {
   constructor(
@@ -137,7 +140,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
   const save = (state: State) => config.storage.set(KEY, JSON.stringify(state));
 
   /** Chiama una funzione del server. Lancia ServerError con una frase già pronta per l'utente. */
-  async function call<T>(name: string, params: Record<string, unknown>): Promise<T> {
+  async function call<T>(name: string, params: Record<string, unknown>, options: { probe?: boolean } = {}): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     let response: Response;
@@ -168,7 +171,8 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     } catch {
       // Risposta non leggibile: resta il codice HTTP.
     }
-    if (code === 'non-registrato') {
+    // Con `probe` si sta solo provando una chiave (codice di recupero): se è sbagliata, il profilo di questo telefono non c'entra.
+    if (code === 'non-registrato' && !options.probe) {
       // Il profilo è stato cancellato dal server: qui si torna alla scelta del soprannome.
       const state = await load();
       await save({ ...state, profile: null, pushed: [] });
@@ -375,6 +379,27 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
         });
         return { ...base, ...row };
       });
+    },
+
+    async recoveryCode(): Promise<string | null> {
+      const { secret, profile } = await load();
+      return secret && profile ? encodeRecovery(secret) : null;
+    },
+
+    async recover(code: string): Promise<Result<Profile>> {
+      const decoded = decodeRecovery(code);
+      if (!decoded.ok) return { ok: false, problem: decoded.problem };
+      try {
+        const profile = await call<Profile>('vado_me', { p_secret: decoded.secret }, { probe: true });
+        // I tragitti di questo telefono ripartono tutti: il server scarta quelli che ha già.
+        await save({ secret: decoded.secret, profile, pushed: [] });
+        cache.clear();
+        lastSync = 0;
+        return { ok: true, value: profile };
+      } catch (error) {
+        if (error instanceof ServerError && error.code === 'non-registrato') return { ok: false, problem: UNKNOWN_CODE };
+        return { ok: false, problem: error instanceof ServerError ? error.problem : OFFLINE };
+      }
     },
 
     async reset(): Promise<void> {

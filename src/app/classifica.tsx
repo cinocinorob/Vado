@@ -420,10 +420,15 @@ function Nickname({ onDone }: { onDone: () => void }) {
         </Text>
       ) : null}
       <PrimaryButton label={saving ? 'Salvo…' : 'Entra in classifica'} onPress={save} disabled={saving} />
+      {!social.demo ? (
+        <Pressable onPress={() => router.push('/backup')} accessibilityRole="link" hitSlop={6}>
+          <Text style={styles.recoverLink}>Avevi già un profilo su un altro telefono? Ritrovalo con il codice di recupero</Text>
+        </Pressable>
+      ) : null}
       <Text style={text.small}>
         {social.demo
           ? "Il soprannome resta su questo telefono finché la classifica è in anteprima. Se disinstalli l'app o cambi telefono, il profilo si perde."
-          : "Il soprannome e i punti dei tuoi tragitti vengono salvati sul server di Vado, così i compagni di lega li vedono. Nessuna posizione lascia il telefono. Se disinstalli l'app o cambi telefono, il profilo si perde."}
+          : "Il soprannome e i punti dei tuoi tragitti vengono salvati sul server di Vado, così i compagni di lega li vedono. Nessuna posizione lascia il telefono. Per cambiare telefono senza perdere il profilo usa il codice di recupero, nella schermata Backup."}
       </Text>
     </Panel>
   );
@@ -453,5 +458,6 @@ const styles = StyleSheet.create({
   monthlyHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   nickname: { gap: 14 },
   empty: { alignItems: 'center', gap: 12 },
+  recoverLink: { fontFamily: F.bold, fontSize: 13.5, lineHeight: 19, color: C.text, textDecorationLine: 'underline' },
   problem: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.alert },
 });

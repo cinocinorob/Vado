@@ -42,6 +42,11 @@ const SECTIONS: { title: string; body: string }[] = [
       "Solo se scegli un soprannome. Da quel momento al server di Vado arrivano: il soprannome, le leghe e le sfide a cui partecipi e, per ogni tragitto che ti ha dato punti, l'ora in cui è finito, i punti e il mezzo principale. Servono a sommare i punti della settimana e delle sfide. I compagni di lega vedono il tuo soprannome, il totale dei punti e il mezzo che usi di più; non i singoli tragitti. Non arrivano mai posizioni, distanze o nomi di stazioni. Niente email né password: il telefono si fa riconoscere con una chiave casuale.",
   },
   {
+    title: 'Backup',
+    body:
+      "Il file di backup lo crei tu e va dove lo mandi tu (Drive, una chat, un'email): contiene i tragitti, con distanze, orari, passi, mezzi e i nomi delle stazioni della metro, e il codice di recupero della classifica. Vado non ne tiene una copia. Chi ha il file o il codice può usare il tuo profilo della classifica: tienili per te.",
+  },
+  {
     title: 'Dove restano i dati',
     body:
       "Tragitti, passi e dati di Connessione Salute restano su questo telefono. Lasciano il telefono solo i dati della classifica descritti qui sopra, conservati in Germania (Francoforte), nell'Unione Europea, su un server gestito da Supabase. Nessun dato viene venduto, usato per la pubblicità o condiviso con altri. Se disinstalli l'app, i dati sul telefono vengono cancellati con lei.",
