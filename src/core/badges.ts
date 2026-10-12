@@ -89,7 +89,7 @@ function carFreeCommutes(trips: Trip[]): number {
  * tragitto in auto privata. L'app vede solo ciò che viene registrato: un
  * viaggio in auto non registrato non interrompe la serie.
  */
-function carFreeDays(trips: Trip[]): Set<string> {
+export function carFreeDays(trips: Trip[]): Set<string> {
   const good = new Set<string>();
   const bad = new Set<string>();
   for (const trip of trips) {

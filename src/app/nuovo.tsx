@@ -75,7 +75,7 @@ export default function NuovoTragitto() {
       </ScrollView>
 
       <View style={[styles.cta, { bottom: insets.bottom + 16 }]}>
-        <PrimaryButton label={starting ? 'Avvio…' : 'Avvia'} icon={<PlayIcon size={22} />} onPress={start} disabled={starting} />
+        <PrimaryButton label={starting ? 'Avvio…' : 'Avvia'} icon={<PlayIcon size={22} color={C.onCoral} />} onPress={start} disabled={starting} tone="coral" />
       </View>
     </Screen>
   );

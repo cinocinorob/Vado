@@ -1,16 +1,18 @@
-/** Barra in basso: le sezioni dell'app e il pulsante per iniziare un tragitto. */
+/** Barra di navigazione in basso (Material 3) e il pulsante per iniziare un tragitto. */
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { HomeIcon, MedalIcon, PlayIcon, TrophyIcon } from './Icons';
-import { BORDER, C, F, card, shadow } from './theme';
+import { C, F } from './theme';
 
 export type Section = 'oggi' | 'classifica' | 'medaglie';
 
-/** Spazio da lasciare in fondo alle schermate che mostrano la barra. */
-export const NAV_SPACE = 126;
+const BAR = 80;
+const FAB = 64;
+
+/** Spazio da lasciare in fondo alle schermate che mostrano la barra e il pulsante. */
+export const NAV_SPACE = BAR + FAB + 40;
 
 export function BottomNav({ current, tripActive }: { current: Section; tripActive: boolean }) {
   const insets = useSafeAreaInsets();
@@ -26,69 +28,56 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
 
   return (
     <>
-      {/* Il contenuto che scorre sfuma nel fondo prima di arrivare sotto la barra. */}
-      <View pointerEvents="none" style={[styles.fade, { height: insets.bottom + 16 + 66 + 44 }]}>
-        <Svg width="100%" height="100%">
-          <Defs>
-            <LinearGradient id={`sfumatura-${current}`} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={C.bg} stopOpacity={0} />
-              <Stop offset="0.5" stopColor={C.bg} stopOpacity={0.9} />
-              <Stop offset="1" stopColor={C.bg} stopOpacity={1} />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#sfumatura-${current})`} />
-        </Svg>
-      </View>
-      <View style={[styles.nav, { bottom: insets.bottom + 16 }]} accessibilityRole="tablist">
-        <View style={styles.pill}>
-          <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
-          <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
-          <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
-        </View>
-        <Pressable
-          onPress={() => router.push(tripActive ? '/in-corso' : '/nuovo')}
-          accessibilityRole="button"
-          accessibilityLabel={tripActive ? 'Riapri il tragitto in corso' : 'Inizia un tragitto'}
-          style={({ pressed }) => [styles.play, pressed ? [shadow(1), { transform: [{ translateY: 4 }] }] : shadow(5)]}
-        >
-          <PlayIcon size={26} />
-        </Pressable>
+      <Pressable
+        onPress={() => router.push(tripActive ? '/in-corso' : '/nuovo')}
+        accessibilityRole="button"
+        accessibilityLabel={tripActive ? 'Riapri il tragitto in corso' : 'Inizia un tragitto'}
+        style={({ pressed }) => [styles.fab, { bottom: insets.bottom + BAR + 16 }, tripActive && styles.fabActive, pressed && styles.pressed]}
+      >
+        <PlayIcon size={24} color={tripActive ? C.lime : C.onCoral} />
+        <Text style={[styles.fabLabel, tripActive && { color: C.lime }]}>{tripActive ? 'In corso' : 'Parti'}</Text>
+      </Pressable>
+      <View style={[styles.bar, { height: BAR + insets.bottom, paddingBottom: insets.bottom }]} accessibilityRole="tablist">
+        <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
+        <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
+        <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
       </View>
     </>
   );
 }
 
 function Tab({ label, active, onPress, icon }: { label: string; active: boolean; onPress: () => void; icon: (color: string) => React.ReactNode }) {
-  const color = active ? C.lime : C.ink;
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={label}
-      style={[styles.tab, active && styles.tabActive]}
-    >
-      {icon(color)}
-      <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: active }} accessibilityLabel={label} style={styles.tab}>
+      <View style={[styles.indicator, active && styles.indicatorOn]}>{icon(C.ink)}</View>
+      <Text style={[styles.tabLabel, active && styles.tabLabelOn]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  nav: { position: 'absolute', left: 20, right: 20, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pill: { ...card, flex: 1, height: 66, padding: 5, borderRadius: 33, flexDirection: 'row', gap: 4, ...shadow(5) },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 26 },
-  tabActive: { backgroundColor: C.ink },
-  tabLabel: { fontFamily: F.bold, fontSize: 11.5 },
-  play: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: C.navBg, flexDirection: 'row', paddingTop: 12 },
+  tab: { flex: 1, alignItems: 'center', gap: 4 },
+  indicator: { width: 64, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  indicatorOn: { backgroundColor: C.lime },
+  tabLabel: { fontFamily: F.medium, fontSize: 12, color: '#45493D' },
+  tabLabelOn: { fontFamily: F.bold, color: C.ink },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    height: FAB,
+    paddingLeft: 18,
+    paddingRight: 22,
+    borderRadius: 22,
     backgroundColor: C.coral,
-    borderColor: C.ink,
-    borderWidth: BORDER,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 10,
+    elevation: 4,
+    boxShadow: '0px 6px 16px 0px rgba(58, 19, 6, 0.22)',
+    zIndex: 2,
   },
+  fabActive: { backgroundColor: C.ink },
+  fabLabel: { fontFamily: F.bold, fontSize: 16, color: C.onCoral },
+  pressed: { transform: [{ scale: 0.96 }] },
 });

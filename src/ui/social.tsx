@@ -15,26 +15,32 @@ import {
   type Tier,
   type Zone,
 } from '../core/social';
+import { ShapeBadge } from './expressive';
 import { CrownIcon, TrashIcon, TrendIcon } from './Icons';
-import { BORDER, C, F, card, shadow } from './theme';
+import type { ShapeId } from './shapes';
+import { C, F, card } from './theme';
 
 /** Colori dei cerchi con le iniziali: fissi per nome, così ognuno resta riconoscibile. */
-const TONES = ['#A5DDEB', C.coral, '#FFD35C', C.coralSoft, '#D9CCFF'] as const;
+const TONES = ['#B9DDF7', C.coral, '#FFE07A', '#7FD8C6', '#E3D7FF'] as const;
+/** Anche la forma è fissa per nome. */
+const AVATAR_SHAPES: readonly ShapeId[] = ['cookie9', 'flower8', 'sunny', 'clover4', 'cookie6', 'pent', 'hept'];
 
-function toneFor(id: string): string {
+function hash(id: string): number {
   let sum = 0;
   for (let i = 0; i < id.length; i++) sum += id.charCodeAt(i);
-  return TONES[sum % TONES.length];
+  return sum;
+}
+
+function toneFor(id: string): string {
+  return TONES[hash(id) % TONES.length];
 }
 
 export function Avatar({ id, name, me = false, size = 36 }: { id: string; name: string; me?: boolean; size?: number }) {
   return (
-    <View
-      style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: me ? C.lime : toneFor(id), borderWidth: size >= 50 ? BORDER : 2.5 }]}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      <Text style={[styles.avatarText, { fontSize: size * 0.36 }]}>{me ? 'TU' : initials(name)}</Text>
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <ShapeBadge shape={me ? 'cookie12' : AVATAR_SHAPES[hash(id) % AVATAR_SHAPES.length]} color={me ? C.ink : toneFor(id)} size={size}>
+        <Text style={[styles.avatarText, { fontSize: size * 0.34 }, me && { color: C.lime }]}>{me ? 'TU' : initials(name)}</Text>
+      </ShapeBadge>
     </View>
   );
 }
@@ -43,8 +49,10 @@ export function Avatar({ id, name, me = false, size = 36 }: { id: string; name: 
 export function Segmented<T extends string>({ options, value, onChange, label }: { options: { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string }) {
   return (
     <View style={styles.segmented} accessibilityRole="tablist" accessibilityLabel={label}>
-      {options.map((option) => {
+      {options.map((option, i) => {
         const active = option.id === value;
+        const first = i === 0;
+        const last = i === options.length - 1;
         return (
           <Pressable
             key={option.id}
@@ -52,7 +60,11 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             accessibilityLabel={option.label}
-            style={[styles.segment, active && styles.segmentActive]}
+            style={[
+              styles.segment,
+              { borderTopLeftRadius: first ? 22 : 8, borderBottomLeftRadius: first ? 22 : 8, borderTopRightRadius: last ? 22 : 8, borderBottomRightRadius: last ? 22 : 8 },
+              active && styles.segmentActive,
+            ]}
           >
             <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{option.label}</Text>
           </Pressable>
@@ -69,7 +81,7 @@ export function Chip({ label, active, onPress, icon }: { label: string; active?:
       accessibilityRole="button"
       accessibilityState={{ selected: !!active }}
       accessibilityLabel={label}
-      style={[styles.chip, active ? [styles.chipActive, shadow(3)] : null]}
+      style={[styles.chip, active ? styles.chipActive : null]}
     >
       {icon}
       <Text style={styles.chipText} numberOfLines={1}>
@@ -89,7 +101,7 @@ const TIER_COLOR: Record<Tier, string> = {
 
 /** Scudetto del livello. */
 export function TierBadge({ tier, size = 18 }: { tier: Tier; size?: number }) {
-  return <View style={{ width: size, height: size, borderRadius: size / 3, backgroundColor: TIER_COLOR[tier], borderWidth: 2.5, borderColor: C.ink, transform: [{ rotate: '45deg' }] }} />;
+  return <View style={{ width: size, height: size, borderRadius: size / 3, backgroundColor: TIER_COLOR[tier], transform: [{ rotate: '45deg' }] }} />;
 }
 
 const PODIUM = [
@@ -121,7 +133,7 @@ export function Podium({ ranked }: { ranked: Ranked[] }) {
                 <Text style={styles.podiumPoints}>{entry.points}</Text>
               </View>
             ) : null}
-            <View style={[styles.podiumStep, { height: step.height }, first && { backgroundColor: C.lime }]}>
+            <View style={[styles.podiumStep, { height: step.height }, first && { backgroundColor: C.lime }, step.place === 3 && { backgroundColor: C.coralSoft }]}>
               <Text style={[styles.podiumNumber, { fontSize: step.number }]}>{step.place}</Text>
             </View>
           </View>
@@ -185,7 +197,7 @@ function Track({ ratio, id, name, me, label, points }: { ratio: number; id: stri
       </View>
       <View style={styles.trackLine}>
         <View style={styles.trackRail} />
-        <View style={[styles.trackFill, { right: `${100 - percent}%`, backgroundColor: me ? C.coral : '#A5DDEB' }]} />
+        <View style={[styles.trackFill, { right: `${100 - percent}%`, backgroundColor: me ? C.coral : '#B9DDF7' }]} />
         {/* Il cerchio resta dentro la corsia anche a 0% e a 100%. */}
         <View style={[styles.trackRunner, { left: `${percent}%` }]}>
           <View style={styles.trackRunnerInner}>
@@ -250,18 +262,16 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
 }
 
 const styles = StyleSheet.create({
-  avatar: { alignItems: 'center', justifyContent: 'center', borderColor: C.ink },
   avatarText: { fontFamily: F.displayBold, color: C.ink },
 
-  segmented: { ...card, height: 54, padding: 4, borderRadius: 27, flexDirection: 'row', gap: 4 },
-  segment: { flex: 1, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  segmented: { height: 48, flexDirection: 'row', gap: 2 },
+  segment: { flex: 1, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: C.ink },
   segmentText: { fontFamily: F.bold, fontSize: 14, color: C.ink },
   segmentTextActive: { color: C.lime },
 
   chip: {
-    ...card,
-    borderWidth: 2.5,
+    backgroundColor: C.tonal,
     height: 44,
     paddingHorizontal: 16,
     borderRadius: 22,
@@ -272,18 +282,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   chipActive: { backgroundColor: C.lime },
-  chipText: { fontFamily: F.bold, fontSize: 14, color: C.ink },
+  chipText: { fontFamily: F.semi, fontSize: 14, color: C.ink },
 
   podium: { height: 256, flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
   podiumColumn: { flex: 1, alignItems: 'center', gap: 6 },
   podiumPerson: { alignItems: 'center', gap: 4, alignSelf: 'stretch' },
   podiumName: { fontFamily: F.bold, fontSize: 14, lineHeight: 18, color: C.text, maxWidth: '100%' },
   podiumPoints: { fontFamily: F.displayBold, fontSize: 18, lineHeight: 22, color: C.text },
-  podiumStep: { ...card, alignSelf: 'stretch', borderRadius: 18, alignItems: 'center', justifyContent: 'center', ...shadow(5) },
+  podiumStep: { backgroundColor: C.tonal, alignSelf: 'stretch', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, alignItems: 'center', justifyContent: 'center' },
   podiumNumber: { fontFamily: F.displayBold, color: C.text },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, paddingHorizontal: 8, borderRadius: 16 },
-  rowMe: { backgroundColor: C.lime, borderColor: C.ink, borderWidth: 2.5, marginVertical: 2 },
+  rowMe: { backgroundColor: C.lime, marginVertical: 2 },
   rowRank: { width: 22, fontFamily: F.displayBold, fontSize: 16, color: C.text, textAlign: 'center' },
   rowText: { flex: 1 },
   rowName: { fontFamily: F.bold, fontSize: 15, lineHeight: 19, color: C.text },
@@ -292,11 +302,11 @@ const styles = StyleSheet.create({
   rowTrend: { width: 16, alignItems: 'center' },
   zoneDot: { width: 10, height: 10, borderRadius: 5 },
 
-  card: { ...card, borderRadius: 24, padding: 16, gap: 14, ...shadow(5) },
+  card: { ...card, borderRadius: 28, padding: 18, gap: 14 },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   cardTitle: { fontFamily: F.displayBold, fontSize: 18, lineHeight: 22, color: C.text },
   cardRule: { fontFamily: F.medium, fontSize: 13, lineHeight: 18, color: C.dim },
-  cardRemove: { ...card, borderWidth: 2.5, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  cardRemove: { backgroundColor: C.tonal, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   cardVerdict: { fontFamily: F.bold, fontSize: 13.5, color: C.text },
 
   tracks: { gap: 12 },
@@ -305,8 +315,8 @@ const styles = StyleSheet.create({
   trackName: { flex: 1, fontFamily: F.bold, fontSize: 13.5, color: C.text },
   trackPoints: { fontFamily: F.displayBold, fontSize: 15, color: C.text },
   trackLine: { height: 30, justifyContent: 'center', marginHorizontal: 15 },
-  trackRail: { position: 'absolute', left: -15, right: -15, height: 14, borderRadius: 7, backgroundColor: C.card, borderColor: C.ink, borderWidth: 2.5 },
-  trackFill: { position: 'absolute', left: -15, height: 14, borderTopLeftRadius: 7, borderBottomLeftRadius: 7, borderColor: C.ink, borderWidth: 2.5 },
+  trackRail: { position: 'absolute', left: -15, right: -15, height: 12, borderRadius: 6, backgroundColor: C.tonal },
+  trackFill: { position: 'absolute', left: -15, height: 12, borderRadius: 6 },
   trackRunner: { position: 'absolute', width: 0, height: 30, alignItems: 'center' },
   trackRunnerInner: { width: 30, height: 30 },
 });

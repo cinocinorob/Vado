@@ -15,7 +15,7 @@ import { clock, distance, integer, speed } from '../ui/format';
 import { PauseIcon, PlayIcon, StarIcon, StopIcon, SwapIcon } from '../ui/Icons';
 import { Mascot, MascotShapes } from '../ui/Mascot';
 import { GhostButton, ModeBadge, ModeGrid, Panel, ProgressBar, Screen, StatusChip, text } from '../ui/parts';
-import { BORDER, C, F, card, shadow } from '../ui/theme';
+import { C, F, R } from '../ui/theme';
 
 export default function InCorso() {
   const trip = useActiveTrip();
@@ -87,7 +87,7 @@ export default function InCorso() {
           onPress={() => setPicker(true)}
           accessibilityRole="button"
           accessibilityLabel="Cambia mezzo"
-          style={({ pressed }) => [styles.swap, pressed ? [shadow(1), { transform: [{ translateY: 2 }] }] : shadow(3)]}
+          style={({ pressed }) => [styles.swap, pressed && { opacity: 0.8 }]}
         >
           <SwapIcon size={18} />
           <Text style={styles.swapLabel}>Cambia</Text>
@@ -131,6 +131,8 @@ export default function InCorso() {
           max={TRIP_CAP}
           label={capUsed > 0 ? 'Tetto, con il tragitto precedente' : 'Tetto del tragitto'}
           detail={`${capNow} di ${TRIP_CAP}`}
+          color={C.lime}
+          track="rgba(200, 245, 96, 0.22)"
         />
 
         <View style={styles.stats}>
@@ -145,7 +147,7 @@ export default function InCorso() {
 
         <View style={styles.buttons}>
           <GhostButton
-            style={{ flex: 1 }}
+            style={styles.pause}
             label={trip.paused ? 'Riprendi' : 'Pausa'}
             icon={trip.paused ? <PlayIcon size={18} color={C.text} /> : <PauseIcon />}
             onPress={trip.paused ? resumeTracking : pauseTracking}
@@ -154,9 +156,9 @@ export default function InCorso() {
             onPress={finish}
             disabled={finishing}
             accessibilityRole="button"
-            style={({ pressed }) => [styles.finish, { opacity: finishing ? 0.55 : 1 }, pressed ? [shadow(1), { transform: [{ translateY: 3 }] }] : shadow(4)]}
+            style={({ pressed }) => [styles.finish, { opacity: finishing ? 0.55 : 1 }, pressed && { transform: [{ scale: 0.97 }] }]}
           >
-            <StopIcon />
+            <StopIcon color={C.onCoral} />
             <Text style={styles.finishLabel}>{finishing ? 'Chiudo…' : 'Termina'}</Text>
           </Pressable>
         </View>
@@ -182,7 +184,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={text.small}>{label}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -198,7 +200,7 @@ function TrackView({ path, gpsUsable, paused }: { path: PathPoint[]; gpsUsable: 
   if (path.length < 2) {
     return (
       <View style={styles.waiting} onLayout={onLayout}>
-        <Mascot size={104} tilt={-6} />
+        <Mascot size={110} />
         <Text style={[text.body, { textAlign: 'center' }]}>
           {!gpsUsable
             ? 'Posizione non concessa: conto solo i passi.'
@@ -249,36 +251,39 @@ function TrackView({ path, gpsUsable, paused }: { path: PathPoint[]; gpsUsable: 
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  modeChip: { ...card, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, paddingLeft: 8, paddingRight: 16, borderRadius: 28 },
+  modeChip: { backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, paddingLeft: 8, paddingRight: 16, borderRadius: 28 },
   modeLabel: { fontFamily: F.bold, fontSize: 15, color: C.text },
-  swap: { ...card, height: 46, paddingLeft: 12, paddingRight: 14, borderRadius: 23, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  swapLabel: { fontFamily: F.bold, fontSize: 14, color: C.text },
-  map: { flex: 1, minHeight: 140, marginVertical: 12 },
+  swap: { backgroundColor: C.tonal, height: 48, paddingLeft: 14, paddingRight: 16, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  swapLabel: { fontFamily: F.semi, fontSize: 14, color: C.text },
+  map: { flex: 1, minHeight: 140, marginVertical: 12, backgroundColor: C.card, borderRadius: R.card, overflow: 'hidden' },
   waiting: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 24 },
   notice: { fontFamily: F.bold, fontSize: 12.5, lineHeight: 17, color: C.alert, marginBottom: 10 },
-  sheet: { borderRadius: 30, padding: 18, gap: 14, marginBottom: 6 },
+  sheet: { borderRadius: R.hero, padding: 20, gap: 16, marginBottom: 6, backgroundColor: C.ink },
   pointsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   pointsLine: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
-  points: { fontFamily: F.displayBold, fontSize: 80, lineHeight: 82, color: C.ink },
-  pointsLabel: { fontFamily: F.display, fontSize: 18, color: C.text },
-  bonus: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bonusText: { fontFamily: F.bold, fontSize: 12.5, color: C.lime },
+  points: { fontFamily: F.displayBold, fontSize: 76, lineHeight: 82, letterSpacing: -2, color: C.lime },
+  pointsLabel: { fontFamily: F.semi, fontSize: 18, color: C.onInk },
+  bonus: { height: 32, paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.lime, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bonusText: { fontFamily: F.bold, fontSize: 12.5, color: C.ink },
   stats: { flexDirection: 'row', gap: 8 },
-  statValue: { fontFamily: F.displayBold, fontSize: 21, color: C.text },
-  buttons: { flexDirection: 'row', gap: 10 },
+  statValue: { fontFamily: F.displayBold, fontSize: 22, color: C.onInk },
+  statLabel: { fontFamily: F.medium, fontSize: 12.5, lineHeight: 17, color: C.onInkDim },
+  buttons: { flexDirection: 'row', gap: 4 },
   finish: {
-    flex: 1.4,
-    height: 54,
-    borderRadius: 27,
+    flex: 1.5,
+    height: 64,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 32,
+    borderBottomRightRadius: 32,
     backgroundColor: C.coral,
-    borderColor: C.ink,
-    borderWidth: BORDER,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  finishLabel: { fontFamily: F.displayBold, fontSize: 18, color: C.ink },
-  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(11, 31, 42, 0.6)' },
-  pickerSheet: { backgroundColor: C.bg, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderColor: C.ink, borderWidth: BORDER, borderBottomWidth: 0, padding: 20, gap: 14 },
+  finishLabel: { fontFamily: F.bold, fontSize: 18, color: C.onCoral },
+  pause: { flex: 1, height: 64, borderTopLeftRadius: 32, borderBottomLeftRadius: 32, borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(26, 29, 20, 0.6)' },
+  pickerSheet: { backgroundColor: C.bg, borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 20, gap: 14 },
 });

@@ -5,7 +5,7 @@ import type { ModeId } from '../core/modes';
 
 type IconProps = { size?: number; color?: string };
 
-function Stroke({ size = 24, color = '#0B1F2A', width = 2.2, children }: IconProps & { width?: number; children: React.ReactNode }) {
+function Stroke({ size = 24, color = '#1A1D14', width = 2.2, children }: IconProps & { width?: number; children: React.ReactNode }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
       {children}
@@ -89,7 +89,7 @@ export function ModeIcon({ mode, ...props }: IconProps & { mode: ModeId }) {
   }
 }
 
-export function PlayIcon({ size = 24, color = '#0B1F2A' }: IconProps) {
+export function PlayIcon({ size = 24, color = '#1A1D14' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Path d="M8 5l11 7-11 7V5z" />
@@ -97,7 +97,7 @@ export function PlayIcon({ size = 24, color = '#0B1F2A' }: IconProps) {
   );
 }
 
-export function PauseIcon({ size = 18, color = '#0B1F2A' }: IconProps) {
+export function PauseIcon({ size = 18, color = '#1A1D14' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={6} y={5} width={4} height={14} rx={1.5} />
@@ -106,7 +106,7 @@ export function PauseIcon({ size = 18, color = '#0B1F2A' }: IconProps) {
   );
 }
 
-export function StopIcon({ size = 18, color = '#0B1F2A' }: IconProps) {
+export function StopIcon({ size = 18, color = '#1A1D14' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={6} y={6} width={12} height={12} rx={2.5} />
@@ -216,7 +216,7 @@ export function TrophyIcon(props: IconProps) {
 export function TrendIcon({ trend, size = 16 }: { trend: 'su' | 'giu' | 'stabile'; size?: number }) {
   if (trend === 'stabile') {
     return (
-      <Stroke size={size} color="rgba(11, 31, 42, 0.45)" width={2.6}>
+      <Stroke size={size} color="rgba(26, 29, 20, 0.45)" width={2.6}>
         <Path d="M6 12h12" />
       </Stroke>
     );
@@ -248,7 +248,7 @@ export function ShareIcon(props: IconProps) {
 
 export function CrownIcon({ size = 30, color = '#FFD35C' }: IconProps) {
   return (
-    <Svg width={size} height={size * 0.8} viewBox="0 0 34 27" fill={color} stroke="#0B1F2A" strokeWidth={2.6} strokeLinejoin="round">
+    <Svg width={size} height={size * 0.8} viewBox="0 0 34 27" fill={color} stroke="#1A1D14" strokeWidth={2.6} strokeLinejoin="round">
       <Path d="M5 24L3 9l8 6 6-11 6 11 8-6-2 15z" />
     </Svg>
   );

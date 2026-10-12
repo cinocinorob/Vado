@@ -484,6 +484,44 @@ def check_backup() -> str:
     return "ok"
 
 
+def check_bosco() -> str:
+    """CO₂ su Oggi, schermata del germoglio e interruttore della pausa (acceso e spento)."""
+    log("controllo la CO₂ e apro il germoglio")
+    oggi = visible_text()
+    if "CO₂ evitata oggi" not in oggi:
+        return "su Oggi manca la CO₂ evitata: " + oggi[:300]
+    tap_label("Il tuo germoglio e il bosco")
+    if not wait_for("Il tuo germoglio", 20, "aprendo il germoglio", exact=True, required=False):
+        return "la schermata del germoglio non si apre: " + visible_text()[:300]
+    shown = visible_text()
+    screenshot("germoglio")
+    if "CO₂ evitata da quando usi Vado" not in shown:
+        return "nel germoglio manca il totale di CO₂: " + shown[:300]
+    switch = None
+    for _ in range(6):
+        switch = next((n for n in nodes() if n["desc"] == "Sono in pausa"), None)
+        if switch:
+            break
+        adb("shell", "input", "swipe", "540", "1500", "540", "800", "300")
+        time.sleep(0.8)
+    if not switch:
+        return "interruttore della pausa non trovato: " + visible_text()[:300]
+    tap(switch)
+    if not wait_for("In pausa fino a", 10, "accendendo la pausa", required=False):
+        return "la pausa non si accende: " + visible_text()[:300]
+    screenshot("germoglio-pausa")
+    switch = next((n for n in nodes() if n["desc"] == "Sono in pausa"), None)
+    if not switch:
+        return "interruttore della pausa sparito dopo l'accensione"
+    tap(switch)
+    time.sleep(1)
+    if "In pausa fino a" in visible_text():
+        return "la pausa non si spegne"
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dal germoglio")
+    return "ok"
+
+
 def clean_server() -> str:
     """Toglie dal server ciò che la prova ha creato: il profilo dell'app e quello dell'altra persona."""
     notes = []
@@ -724,6 +762,7 @@ def main() -> None:
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
 
+    plant = check_bosco()
     board = check_leaderboard()
     backup = check_backup() if board == "ok" else "non provato: manca il profilo"
     metro = check_metro()
@@ -752,10 +791,12 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
+        f"permessi: {answered}; germoglio: {plant}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
     )
     if backup != "ok":
         problems.append(f"backup: {backup}")
+    if plant != "ok":
+        problems.append(f"germoglio: {plant}")
     if board != "ok":
         problems.append(f"classifica: {board}")
     if metro != "ok":

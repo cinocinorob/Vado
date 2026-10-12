@@ -1,6 +1,5 @@
 /** Radice dell'app: caratteri, navigazione e registrazione del rilevamento. */
-import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold } from '@expo-google-fonts/figtree';
-import { Fredoka_500Medium, Fredoka_600SemiBold, Fredoka_700Bold } from '@expo-google-fonts/fredoka';
+import { Roboto_400Regular, Roboto_500Medium, Roboto_600SemiBold, Roboto_700Bold, Roboto_800ExtraBold, Roboto_900Black } from '@expo-google-fonts/roboto';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -13,13 +12,12 @@ import { C } from '../ui/theme';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    Figtree_400Regular,
-    Figtree_500Medium,
-    Figtree_600SemiBold,
-    Figtree_700Bold,
-    Fredoka_500Medium,
-    Fredoka_600SemiBold,
-    Fredoka_700Bold,
+    Roboto_400Regular,
+    Roboto_500Medium,
+    Roboto_600SemiBold,
+    Roboto_700Bold,
+    Roboto_800ExtraBold,
+    Roboto_900Black,
   });
 
   // Se i caratteri non si caricano l'app parte comunque con quelli di sistema.
@@ -40,6 +38,7 @@ export default function RootLayout() {
         <Stack.Screen name="riepilogo" />
         <Stack.Screen name="riservatezza" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="backup" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="bosco" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

@@ -18,7 +18,7 @@ import { useActiveTrip } from '../tracking/store';
 import { km } from '../ui/format';
 import { CheckIcon, CloseIcon, ShieldIcon } from '../ui/Icons';
 import { GhostButton, Header, LineBadge, Panel, PointsChip, PrimaryButton, RoundButton, Screen, Toggle, text } from '../ui/parts';
-import { BORDER, C, F } from '../ui/theme';
+import { C, F } from '../ui/theme';
 
 // L'ora letta al momento di un'azione, fuori dal disegno della schermata.
 const clock = () => Date.now();
@@ -280,9 +280,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: 22,
-    borderWidth: 2.5,
-    borderColor: C.ink,
-    backgroundColor: C.card,
+    backgroundColor: C.tonal,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -294,7 +292,7 @@ const styles = StyleSheet.create({
   stopName: { flex: 1, fontFamily: F.semi, fontSize: 15, color: C.text },
   radio: { width: 26, height: 26, borderRadius: 13, borderWidth: 2.5, borderColor: C.ink, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   radioOn: { backgroundColor: C.lime },
-  result: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.lime, borderWidth: BORDER },
+  result: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.lime },
   resultTitle: { fontFamily: F.displayBold, fontSize: 19, lineHeight: 23, color: C.text },
   resultDetail: { fontFamily: F.semi, fontSize: 13, lineHeight: 18, color: C.text },
   commute: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, paddingVertical: 12 },

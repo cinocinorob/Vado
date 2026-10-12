@@ -23,7 +23,7 @@ import { Mascot } from '../ui/Mascot';
 import { HeroBlock } from '../ui/Hero';
 import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, ProgressBar, Screen, input, text } from '../ui/parts';
 import { ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
-import { C, F, card, shadow } from '../ui/theme';
+import { C, F } from '../ui/theme';
 
 type Section = 'leghe' | 'sfide';
 
@@ -165,13 +165,15 @@ export default function Classifica() {
         <HeroBlock
           caption={weekLabel(now)}
           title="Classifica"
+          color={C.bg}
+          style={styles.heroTabs}
           right={
             section === 'leghe' && board?.kind === 'invito' ? (
               <Pressable
                 onPress={invite}
                 accessibilityRole="button"
                 accessibilityLabel="Invita con il codice della lega"
-                style={({ pressed }) => [styles.invite, pressed ? [shadow(1), { transform: [{ translateY: 2 }] }] : shadow(3)]}
+                style={({ pressed }) => [styles.invite, pressed && { opacity: 0.8 }]}
               >
                 <ShareIcon size={18} />
                 <Text style={styles.inviteText}>Invita</Text>
@@ -336,7 +338,7 @@ export default function Classifica() {
               challenges.map((challenge) => <ChallengeCard key={challenge.id} challenge={challenge} now={now} onRemove={() => remove(challenge.id)} />)
             )}
 
-            <PrimaryButton label="Nuova sfida" onPress={() => router.push('/sfida-nuova')} icon={<PlusIcon size={20} color={C.ink} />} />
+            <PrimaryButton label="Nuova sfida" onPress={() => router.push('/sfida-nuova')} icon={<PlusIcon size={20} color={C.lime} />} />
           </>
         )}
         </View>
@@ -438,9 +440,10 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: NAV_SPACE },
   body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 18 },
   sections: { marginTop: 14 },
-  invite: { ...card, height: 44, paddingLeft: 12, paddingRight: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  heroTabs: { padding: 0, marginTop: 14 },
+  invite: { backgroundColor: C.tonal, height: 44, paddingLeft: 12, paddingRight: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   inviteText: { fontFamily: F.bold, fontSize: 14, color: C.text },
-  demo: { borderRadius: 18, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.coralSoft, borderColor: C.ink, borderWidth: 2.5 },
+  demo: { borderRadius: 18, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: C.coralSoft },
   demoText: { fontFamily: F.semi, fontSize: 12.5, lineHeight: 18, color: C.text },
   chipsBleed: { marginHorizontal: -GUTTER, flexGrow: 0 },
   chips: { gap: 8, paddingHorizontal: GUTTER, paddingBottom: 4 },

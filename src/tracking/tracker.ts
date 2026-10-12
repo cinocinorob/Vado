@@ -125,7 +125,7 @@ async function startLocation(): Promise<boolean> {
         foregroundService: {
           notificationTitle: 'Vado: tragitto in corso',
           notificationBody: "Sto misurando la distanza. Apri l'app per terminare.",
-          notificationColor: '#0B1F2A',
+          notificationColor: '#1A1D14',
           // Se l'app viene chiusa dall'elenco delle app recenti il rilevamento
           // si ferma: nessuna posizione raccolta senza che l'utente lo veda.
           killServiceOnDestroy: true,

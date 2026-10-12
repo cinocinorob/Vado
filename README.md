@@ -24,12 +24,45 @@ decise insieme. Tragitti e posizioni restano sul telefono; al server va solo ci�
 
 ## Grafica
 
-Lo stile si chiama "Adesivi": fondo chiaro, blocco lime in cima alle schermate principali, schede bianche con bordo
-spesso color inchiostro e ombra piena (senza sfumatura), mascotte e medaglie disegnate come figurine. Colori,
-caratteri e forme stanno in `src/ui/theme.ts`; i pezzi riusati in `src/ui/parts.tsx` e `src/ui/Hero.tsx`.
+Lo stile si chiama "Expressive", ispirato a Material 3 Expressive (Android 16 e successivi): superfici chiare a
+toni, schede senza bordo con angoli molto tondi e a volte asimmetrici, forme a lobi (biscotti, fiori, quadrifogli,
+poligoni smussati), indicatori di avanzamento ondulati, numeri grandi in Roboto pesante, barra di navigazione
+Material in basso e pulsante esteso "Parti" per iniziare un tragitto. Ogni medaglia ha la sua forma e il suo
+pittogramma.
+
+- Colori, caratteri e angoli: `src/ui/theme.ts`
+- Forme e onde: `src/ui/shapes.ts`, `src/ui/Wavy.tsx`
+- Germoglio e alberi: `src/ui/Sprout.tsx`
+- Pezzi riusati: `src/ui/parts.tsx`, `src/ui/expressive.tsx`, `src/ui/Hero.tsx`
 
 Regola per i testi: sul chiaro si scrive in inchiostro. Lime e corallo sono riempimenti, non colori di testo su
 bianco (il contrasto non basta); il lime come testo compare solo su fondo inchiostro.
+
+## CO₂ evitata
+
+Per ogni tratto valido fatto a piedi, in bici, in bici elettrica, con i mezzi pubblici o in treno:
+km × 167,1 g di CO₂ (`src/core/co2.ts`). È il metodo ISPRA per le emissioni evitate da chi lascia l'auto privata,
+con il fattore medio delle autovetture italiane della banca dati ISPRA. Car sharing e auto, anche elettrica, non
+contano.
+
+Limiti dichiarati anche nell'app:
+- per mezzi pubblici e treno non si sottrae la CO₂ del mezzo, come nel metodo ISPRA: lì la stima è per eccesso;
+- il confronto con gli alberi usa circa 22 kg di CO₂ l'anno per un albero adulto (Agenzia europea
+  dell'ambiente). È un ordine di grandezza: secondo specie, età e clima si va da circa 10 a oltre 20 kg.
+
+## Il germoglio
+
+È la mascotte e cresce con la CO₂ evitata (`src/core/plant.ts`): seme, germoglio a 3 kg, piantina a 10 kg,
+albero a 22 kg (quanto assorbe un albero adulto in un anno). L'albero completo va nel bosco, una specie di Roma
+diversa ogni volta (pino domestico, cipresso, leccio, ulivo, platano), e nasce un seme nuovo. La crescita non
+torna mai indietro.
+
+L'aspetto dipende dagli ultimi giorni: dopo 3 giorni interi senza tragitti senza auto ha sete, dopo 6 è
+appassito. Non muore: basta un tragitto e si riprende.
+
+"Sono in pausa" (schermata del germoglio, da Oggi): per malattia o vacanza. I giorni in pausa non contano come
+giorni fermi; una pausa dura al massimo 14 giorni, poi finisce da sola. Non cambia punti, serie né medaglie. Le
+pause restano solo sul telefono.
 
 ## Installarla sul telefono, senza PC
 
@@ -262,7 +295,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (187 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (193 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

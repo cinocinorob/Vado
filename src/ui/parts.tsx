@@ -8,7 +8,11 @@ import type { LegResult, LegStatus } from '../core/scoring';
 import { ROMA } from '../data/metro';
 import { distance, duration } from './format';
 import { AlertIcon, ModeIcon, ShieldIcon, StarIcon } from './Icons';
-import { BORDER, C, F, card, shadow } from './theme';
+import Svg, { Path } from 'react-native-svg';
+
+import { SHAPES } from './shapes';
+import { BORDER, C, F, R, card } from './theme';
+import { WavyBar } from './Wavy';
 
 /**
  * Contenitore di una schermata.
@@ -19,7 +23,7 @@ export function Screen({ children, style, bleed = false }: { children: ReactNode
   return (
     <View style={[styles.screen, bleed ? styles.bleed : { paddingTop: insets.top + 12 }, { paddingBottom: insets.bottom }, style]}>
       {children}
-      {/* Striscia lime fissa dietro l'ora e le icone di sistema: scorrendo, il contenuto non ci passa sotto. */}
+      {/* Striscia fissa dietro l'ora e le icone di sistema: scorrendo, il contenuto non ci passa sotto. */}
       {bleed && <View pointerEvents="none" style={[styles.statusStrip, { height: insets.top }]} />}
     </View>
   );
@@ -28,7 +32,7 @@ export function Screen({ children, style, bleed = false }: { children: ReactNode
 /** Margine laterale del contenuto nelle schermate "bleed". */
 export const GUTTER = 20;
 
-/** Scheda bianca con bordo spesso e ombra piena. */
+/** Scheda bianca, senza bordo, con angoli molto tondi. */
 export function Panel({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.panel, style]}>{children}</View>;
 }
@@ -55,23 +59,21 @@ export function RoundButton({ onPress, label, children }: { onPress: () => void;
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.round, pressed ? [shadow(1), styles.pressed] : shadow(3)]}
+      style={({ pressed }) => [styles.round, pressed && styles.pressed]}
     >
       {children}
     </Pressable>
   );
 }
 
-export function ProgressBar({ value, max, label, detail }: { value: number; max: number; label: string; detail: string }) {
+export function ProgressBar({ value, max, label, detail, color = C.ink, track }: { value: number; max: number; label: string; detail: string; color?: string; track?: string }) {
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
   return (
     <View accessibilityRole="progressbar" accessibilityLabel={`${label}: ${detail}`}>
-      <View style={styles.barTrack}>
-        {ratio > 0 ? <View style={[styles.barFill, { width: `${ratio * 100}%` }, ratio >= 1 && { borderRightWidth: 0 }]} /> : null}
-      </View>
+      <WavyBar ratio={ratio} color={color} track={track} height={18} stroke={6} />
       <View style={styles.barLabels}>
-        <Text style={styles.barLabel}>{label}</Text>
-        <Text style={styles.barLabel}>{detail}</Text>
+        <Text style={[styles.barLabel, { color }]}>{label}</Text>
+        <Text style={[styles.barLabel, { color }]}>{detail}</Text>
       </View>
     </View>
   );
@@ -97,25 +99,31 @@ export function StatusChip({ status }: { status: LegStatus }) {
 /** Colore del bollino di ogni mezzo: aiuta a riconoscerlo prima di leggere. */
 const MODE_TONE: Record<ModeId, string> = {
   piedi: C.lime,
-  bici: '#A5DDEB',
-  ebike: '#A5DDEB',
+  bici: '#B9DDF7',
+  ebike: '#B9DDF7',
   tpl: C.coral,
-  treno: '#FFD35C',
+  treno: '#FFE07A',
   carsharing: C.coralSoft,
-  autoel: C.card,
-  auto: C.card,
+  autoel: C.tonal,
+  auto: C.tonal,
 };
 
-/** Bollino tondo con l'icona del mezzo. */
+/** Bollino a biscotto con l'icona del mezzo. */
 export function ModeBadge({ mode, size = 40 }: { mode: ModeId; size?: number }) {
   return (
-    <View style={[styles.badge, { width: size, height: size, borderRadius: size / 2, backgroundColor: MODE_TONE[mode] }]}>
-      <ModeIcon mode={mode} size={size * 0.5} color={C.ink} />
+    <View style={[styles.badge, { width: size, height: size }]}>
+      <Svg width={size} height={size} viewBox="0 0 96 96" style={StyleSheet.absoluteFill}>
+        <Path d={SHAPES.cookie9} fill={MODE_TONE[mode]} />
+      </Svg>
+      {/* Dentro una View: nel browser un disegno non posizionato finirebbe sotto la forma. */}
+      <View>
+        <ModeIcon mode={mode} size={size * 0.5} color={C.ink} />
+      </View>
     </View>
   );
 }
 
-/** Etichetta dei punti: lime su inchiostro. */
+/** Etichetta dei punti: inchiostro su lime. */
 export function PointsChip({ points, invalid = false }: { points: number; invalid?: boolean }) {
   return (
     <View style={[styles.points, invalid && { backgroundColor: C.coralSoft }]}>
@@ -141,7 +149,7 @@ export function LineBadge({ line, size = 30 }: { line: string; size?: number }) 
   );
 }
 
-export function LegRow({ leg, showStatus = false, caption }: { leg: LegResult; showStatus?: boolean; caption?: string }) {
+export function LegRow({ leg, showStatus = false, caption, co2 }: { leg: LegResult; showStatus?: boolean; caption?: string; co2?: string }) {
   const mode = getMode(leg.mode);
   const detail = [distance(leg.meters), duration(leg.seconds), leg.steps != null && leg.mode === 'piedi' ? `${leg.steps} passi` : null]
     .filter(Boolean)
@@ -154,6 +162,7 @@ export function LegRow({ leg, showStatus = false, caption }: { leg: LegResult; s
         {leg.route ? <Text style={styles.rowRoute}>{leg.route}</Text> : null}
         <Text style={styles.rowDetail}>{detail}</Text>
         {caption ? <Text style={styles.rowDetail}>{caption}</Text> : null}
+        {co2 ? <Text style={styles.rowCo2}>{co2}</Text> : null}
         {showStatus ? <StatusChip status={leg.status} /> : null}
         {showStatus && leg.note ? <Text style={styles.rowDetail}>{leg.note}</Text> : null}
       </View>
@@ -165,7 +174,7 @@ export function LegRow({ leg, showStatus = false, caption }: { leg: LegResult; s
 export function BonusRow({ points }: { points: number }) {
   return (
     <View style={styles.row}>
-      <View style={[styles.badge, { width: 40, height: 40, borderRadius: 20, backgroundColor: C.ink }]}>
+      <View style={[styles.badge, { width: 40, height: 40, borderRadius: 14, backgroundColor: C.ink }]}>
         <StarIcon size={20} color={C.lime} filled />
       </View>
       <View style={styles.rowText}>
@@ -194,7 +203,7 @@ export function ModeGrid({ selected, onSelect }: { selected: ModeId; onSelect: (
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
             accessibilityLabel={`${mode.label}, ${mode.ptPerKm} punti per chilometro`}
-            style={[styles.tile, active ? [styles.tileActive, shadow(4)] : null]}
+            style={[styles.tile, active ? styles.tileActive : null]}
           >
             <View style={styles.tileTop}>
               <ModeIcon mode={mode.id} size={26} color={C.ink} />
@@ -208,7 +217,7 @@ export function ModeGrid({ selected, onSelect }: { selected: ModeId; onSelect: (
   );
 }
 
-/** Pulsante principale "a rilievo": premendolo scende sull'ombra. */
+/** Pulsante principale: pieno, a pillola. "lime" è il pulsante scuro con la scritta lime. */
 export function PrimaryButton({ label, onPress, icon, disabled, tone = 'lime' }: { label: string; onPress: () => void; icon?: ReactNode; disabled?: boolean; tone?: 'lime' | 'coral' }) {
   return (
     <Pressable
@@ -218,23 +227,23 @@ export function PrimaryButton({ label, onPress, icon, disabled, tone = 'lime' }:
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.primary,
-        { backgroundColor: tone === 'lime' ? C.lime : C.coral, opacity: disabled ? 0.55 : 1 },
-        pressed ? [shadow(1), styles.pressed] : shadow(5),
+        { backgroundColor: tone === 'lime' ? C.ink : C.coral, opacity: disabled ? 0.55 : 1 },
+        pressed && styles.pressed,
       ]}
     >
       {icon}
-      <Text style={styles.primaryLabel}>{label}</Text>
+      <Text style={[styles.primaryLabel, { color: tone === 'lime' ? C.lime : C.onCoral }]}>{label}</Text>
     </Pressable>
   );
 }
 
-/** Pulsante secondario: bianco, stesso bordo, ombra più bassa. */
+/** Pulsante secondario: superficie a toni. */
 export function GhostButton({ label, onPress, icon, style }: { label: string; onPress: () => void; icon?: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.ghost, pressed ? [shadow(1), styles.pressedSmall] : shadow(3), style]}
+      style={({ pressed }) => [styles.ghost, pressed && styles.pressed, style]}
     >
       {icon}
       <Text style={styles.ghostLabel}>{label}</Text>
@@ -242,7 +251,7 @@ export function GhostButton({ label, onPress, icon, style }: { label: string; on
   );
 }
 
-/** Interruttore: lime quando è acceso. */
+/** Interruttore in stile Material 3: binario scuro e pomello lime quando è acceso. */
 export function Toggle({ value, onChange, label, disabled = false }: { value: boolean; onChange: (next: boolean) => void; label: string; disabled?: boolean }) {
   return (
     <Pressable
@@ -254,7 +263,7 @@ export function Toggle({ value, onChange, label, disabled = false }: { value: bo
       hitSlop={8}
       style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff, disabled && { opacity: 0.45 }]}
     >
-      <View style={styles.knob} />
+      <View style={[styles.knob, value ? styles.knobOn : styles.knobOff]} />
     </Pressable>
   );
 }
@@ -262,8 +271,8 @@ export function Toggle({ value, onChange, label, disabled = false }: { value: bo
 export const text = StyleSheet.create({
   caption: { fontFamily: F.semi, fontSize: 13, color: C.dim },
   body: { fontFamily: F.medium, fontSize: 14, lineHeight: 20, color: C.dim },
-  h2: { fontFamily: F.displayBold, fontSize: 19, color: C.text },
-  value: { fontFamily: F.displayBold, fontSize: 24, color: C.text },
+  h2: { fontFamily: F.bold, fontSize: 18, color: C.text },
+  value: { fontFamily: F.displayBold, fontSize: 26, color: C.text },
   small: { fontFamily: F.medium, fontSize: 12.5, lineHeight: 17, color: C.dim },
 });
 
@@ -273,82 +282,81 @@ export const input = {
   borderRadius: 18,
   paddingHorizontal: 16,
   backgroundColor: C.card,
-  borderColor: C.ink,
+  borderColor: 'rgba(26, 29, 20, 0.22)',
   borderWidth: BORDER,
-  fontFamily: F.semi,
+  fontFamily: F.medium,
   fontSize: 17,
   color: C.text,
 } as const;
 
-export const PLACEHOLDER = 'rgba(11, 31, 42, 0.5)';
+export const PLACEHOLDER = 'rgba(26, 29, 20, 0.5)';
 
 const styles = StyleSheet.create({
-  statusStrip: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.lime },
+  statusStrip: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.bg },
   screen: { flex: 1, backgroundColor: C.bg, paddingHorizontal: 20 },
   bleed: { paddingHorizontal: 0 },
-  panel: { ...card, borderRadius: 24, padding: 16, ...shadow(5) },
+  panel: { ...card, borderRadius: R.card, padding: 16 },
   header: { minHeight: 64, flexDirection: 'row', alignItems: 'flex-end', gap: 14, marginBottom: 16 },
   headerText: { flex: 1 },
-  caption: { fontFamily: F.semi, fontSize: 13, color: C.dim },
-  title: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, color: C.text },
-  round: { ...card, width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  pressed: { transform: [{ translateY: 4 }] },
-  pressedSmall: { transform: [{ translateY: 2 }] },
-  barTrack: { height: 22, borderRadius: 11, backgroundColor: C.card, borderColor: C.ink, borderWidth: BORDER, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: C.coral, borderRightWidth: BORDER, borderRightColor: C.ink },
+  caption: { fontFamily: F.medium, fontSize: 14, color: C.dim },
+  title: { fontFamily: F.displayBold, fontSize: 36, lineHeight: 42, letterSpacing: -0.8, color: C.text },
+  round: { width: 48, height: 48, borderRadius: 24, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  pressed: { transform: [{ scale: 0.97 }], opacity: 0.9 },
+  pressedSmall: { transform: [{ scale: 0.97 }] },
   barLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  barLabel: { fontFamily: F.bold, fontSize: 13, color: C.text },
+  barLabel: { fontFamily: F.semi, fontSize: 13 },
   statusChip: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   statusText: { fontFamily: F.bold, fontSize: 12.5 },
-  badge: { borderColor: C.ink, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
-  points: { height: 30, paddingHorizontal: 10, borderRadius: 15, backgroundColor: C.ink, justifyContent: 'center' },
-  pointsText: { fontFamily: F.display, fontSize: 16, color: C.lime },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 54, paddingVertical: 7 },
+  badge: { alignItems: 'center', justifyContent: 'center' },
+  points: { height: 28, paddingHorizontal: 10, borderRadius: 14, backgroundColor: C.lime, justifyContent: 'center' },
+  pointsText: { fontFamily: F.displayBold, fontSize: 14, color: C.ink },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 7 },
   rowText: { flex: 1 },
-  rowTitle: { fontFamily: F.bold, fontSize: 15, color: C.text },
-  rowRoute: { fontFamily: F.semi, fontSize: 13, lineHeight: 18, color: C.text },
-  lineBadge: { borderWidth: 2, borderColor: C.ink, alignItems: 'center', justifyContent: 'center' },
+  rowTitle: { fontFamily: F.semi, fontSize: 15, color: C.text },
+  rowRoute: { fontFamily: F.medium, fontSize: 13, lineHeight: 18, color: C.text },
+  lineBadge: { alignItems: 'center', justifyContent: 'center' },
   lineBadgeText: { fontFamily: F.displayBold },
-  rowDetail: { fontFamily: F.medium, fontSize: 12.5, lineHeight: 17, color: C.dim },
-  divider: { height: 2, borderRadius: 1, backgroundColor: C.line },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  rowDetail: { fontFamily: F.body, fontSize: 13, lineHeight: 18, color: C.dim },
+  rowCo2: { fontFamily: F.semi, fontSize: 12.5, lineHeight: 17, color: C.teal },
+  divider: { height: 1, backgroundColor: C.line },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
-    ...card,
     width: '48.5%',
     flexGrow: 1,
     height: 84,
-    paddingVertical: 10,
-    paddingHorizontal: 13,
-    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 24,
+    backgroundColor: C.card,
     justifyContent: 'space-between',
   },
-  tileActive: { backgroundColor: C.lime },
+  tileActive: { backgroundColor: C.lime, borderRadius: 32 },
   tileTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tilePoints: { fontFamily: F.display, fontSize: 14, color: C.text },
-  tileLabel: { fontFamily: F.semi, fontSize: 15, color: C.text },
-  toggle: { width: 60, height: 36, borderRadius: 18, borderColor: C.ink, borderWidth: BORDER, padding: 3, justifyContent: 'center' },
-  toggleOn: { backgroundColor: C.lime, alignItems: 'flex-end' },
-  toggleOff: { backgroundColor: C.card, alignItems: 'flex-start' },
-  knob: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.ink },
+  tilePoints: { fontFamily: F.bold, fontSize: 14, color: C.text },
+  tileLabel: { fontFamily: F.medium, fontSize: 15, color: C.text },
+  toggle: { width: 56, height: 34, borderRadius: 17, padding: 4, justifyContent: 'center', borderWidth: 2 },
+  toggleOn: { backgroundColor: C.ink, borderColor: C.ink, alignItems: 'flex-end' },
+  toggleOff: { backgroundColor: C.tonal, borderColor: '#74796D', alignItems: 'flex-start' },
+  knob: { borderRadius: 14 },
+  knobOn: { width: 24, height: 24, backgroundColor: C.lime },
+  knobOff: { width: 16, height: 16, marginLeft: 2, backgroundColor: '#74796D' },
   primary: {
     height: 60,
     borderRadius: 30,
-    borderColor: C.ink,
-    borderWidth: BORDER,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
   },
-  primaryLabel: { fontFamily: F.displayBold, fontSize: 20, color: C.ink },
+  primaryLabel: { fontFamily: F.bold, fontSize: 17 },
   ghost: {
-    ...card,
     height: 54,
     borderRadius: 27,
+    backgroundColor: C.tonal,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  ghostLabel: { fontFamily: F.bold, fontSize: 16, color: C.text },
+  ghostLabel: { fontFamily: F.semi, fontSize: 16, color: C.text },
 });

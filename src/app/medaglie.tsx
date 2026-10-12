@@ -9,8 +9,10 @@ import { loadTrips } from '../storage/trips';
 import { useActiveTrip } from '../tracking/store';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { Medal, type MedalLook } from '../ui/Medal';
+import { Group, SectionTitle } from '../ui/expressive';
 import { HeroBlock } from '../ui/Hero';
-import { GUTTER, Panel, ProgressBar, Screen, text } from '../ui/parts';
+import { ProgressBar, Screen, text } from '../ui/parts';
+import { WavyBar } from '../ui/Wavy';
 import { C, F } from '../ui/theme';
 
 function look(badge: BadgeState): MedalLook {
@@ -45,52 +47,72 @@ export default function Medaglie() {
   const unlocked = badges.filter((b) => b.unlocked).length;
   const next = nextBadge(badges);
 
+  const earned = badges.filter((b) => b.unlocked);
+  const todo = badges.filter((b) => !b.unlocked && b.id !== next?.id).sort((x, y) => y.ratio - x.ratio);
+  const missing = next ? remaining(next) : '';
+
   return (
     <Screen bleed>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <HeroBlock caption={`${unlocked} di ${badges.length} sbloccate`} title="Medaglie">
+        <HeroBlock caption={`${unlocked} di ${badges.length} sbloccate`} title="Medaglie" color={C.coralSoft}>
           {next ? (
-            <View style={styles.next}>
-              <Medal id={next.id} look="sbloccata" size={104} label={`Medaglia ${next.name}`} />
-              <View style={styles.nextText}>
-                <View style={styles.nextChip}>
-                  <Text style={styles.nextCaption}>Prossima medaglia</Text>
+            <>
+              <View style={styles.next}>
+                <Medal id={next.id} look="sbloccata" size={108} label={`Medaglia ${next.name}`} />
+                <View style={styles.nextText}>
+                  <View style={styles.nextChip}>
+                    <Text style={styles.nextCaption}>Prossima medaglia</Text>
+                  </View>
+                  <Text style={styles.nextName} accessibilityRole="header">
+                    {next.name}
+                  </Text>
+                  <Text style={styles.nextGoal}>{next.goal}</Text>
                 </View>
-                <Text style={styles.nextName} accessibilityRole="header">
-                  {next.name}
-                </Text>
-                <Text style={styles.nextGoal}>{next.goal}</Text>
               </View>
-            </View>
+              <ProgressBar value={next.value} max={next.target} label={progressLabel(next)} detail={missing} color={C.onCoral} track="rgba(58, 19, 6, 0.16)" />
+            </>
           ) : (
-            <View style={styles.next}>
-              <View style={styles.nextText}>
-                <Text style={styles.nextName}>Le hai prese tutte</Text>
-                <Text style={styles.nextGoal}>Nove su nove. Ne arriveranno di nuove.</Text>
-              </View>
+            <View style={styles.nextText}>
+              <Text style={styles.nextName}>Le hai prese tutte</Text>
+              <Text style={styles.nextGoal}>Nove su nove. Ne arriveranno di nuove.</Text>
             </View>
           )}
-          {next ? <ProgressBar value={next.value} max={next.target} label="Avanzamento" detail={progressLabel(next)} /> : null}
         </HeroBlock>
 
         <View style={styles.body}>
-          <Panel style={styles.album}>
-            {badges.map((badge) => (
-              <View key={badge.id} style={styles.cell}>
-                <Medal id={badge.id} look={look(badge)} label={medalLabel(badge)} />
-                <View style={styles.cellText}>
-                  <Text style={styles.cellName} numberOfLines={1} adjustsFontSizeToFit>
+          <SectionTitle title="Le tue medaglie" />
+          <View style={styles.shelf}>
+            {earned.length === 0 ? (
+              <Text style={[text.body, { padding: 8 }]}>Ancora nessuna: la prima arriva con il primo tragitto a piedi.</Text>
+            ) : (
+              earned.map((badge) => (
+                <View key={badge.id} style={styles.cell}>
+                  <Medal id={badge.id} look="sbloccata" size={80} label={medalLabel(badge)} />
+                  <Text style={styles.cellName} numberOfLines={2}>
                     {badge.name}
                   </Text>
-                  {!badge.unlocked && badge.value > 0 ? (
-                    <Text style={styles.cellProgress}>{progressLabel(badge)}</Text>
-                  ) : (
-                    <Text style={styles.cellGoal}>{badge.goal}</Text>
-                  )}
                 </View>
-              </View>
-            ))}
-          </Panel>
+              ))
+            )}
+          </View>
+
+          {todo.length > 0 ? (
+            <>
+              <SectionTitle title="Da conquistare" />
+              <Group>
+                {todo.map((badge) => (
+                  <View key={badge.id} style={styles.row}>
+                    <Medal id={badge.id} look={look(badge)} size={54} label={medalLabel(badge)} />
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowName}>{badge.name}</Text>
+                      {badge.value > 0 ? <WavyBar ratio={badge.ratio} height={14} stroke={4.5} style={styles.rowBar} /> : null}
+                      <Text style={text.small}>{badge.value > 0 ? progressLabel(badge) : badge.goal}</Text>
+                    </View>
+                  </View>
+                ))}
+              </Group>
+            </>
+          ) : null}
 
           <Text style={[text.small, styles.rule]}>
             Contano solo i tratti validi. Per le medaglie a numero di tragitti servono almeno 500 metri con quel mezzo.
@@ -103,20 +125,30 @@ export default function Medaglie() {
   );
 }
 
+/** "ne mancano 11 km", "ne manca 1". */
+function remaining(badge: BadgeState): string {
+  const left = badge.target - badge.value;
+  const n = badge.unit === 'km' ? Math.ceil(left * 10) / 10 : Math.ceil(left);
+  const value = String(n).replace('.', ',');
+  const unit = badge.unit === 'km' ? ' km' : badge.unit === 'giorni' ? (n === 1 ? ' giorno' : ' giorni') : '';
+  return `${n === 1 && badge.unit !== 'km' ? 'ne manca' : 'ne mancano'} ${value}${unit}`;
+}
+
 const styles = StyleSheet.create({
   scroll: { paddingBottom: NAV_SPACE },
-  body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 16 },
-  next: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 10, marginBottom: 14 },
+  body: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
+  next: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
   nextText: { flex: 1, gap: 4, alignItems: 'flex-start' },
-  nextChip: { height: 24, paddingHorizontal: 10, borderRadius: 12, backgroundColor: C.ink, justifyContent: 'center' },
-  nextCaption: { fontFamily: F.bold, fontSize: 12, color: C.lime },
-  nextName: { fontFamily: F.displayBold, fontSize: 24, lineHeight: 28, color: C.ink },
-  nextGoal: { fontFamily: F.semi, fontSize: 13.5, lineHeight: 18, color: C.ink },
-  album: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, paddingHorizontal: 6, paddingVertical: 18 },
+  nextChip: { height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.ink, justifyContent: 'center' },
+  nextCaption: { fontFamily: F.bold, fontSize: 12, color: C.coralSoft },
+  nextName: { fontFamily: F.displayBold, fontSize: 27, lineHeight: 32, color: C.onCoral },
+  nextGoal: { fontFamily: F.medium, fontSize: 14, lineHeight: 19, color: C.onCoralDim },
+  shelf: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: C.card, borderRadius: 32, paddingVertical: 16, paddingHorizontal: 6, rowGap: 14 },
   cell: { width: '33.33%', alignItems: 'center', gap: 6, paddingHorizontal: 4 },
-  cellText: { alignItems: 'center', alignSelf: 'stretch' },
   cellName: { fontFamily: F.bold, fontSize: 13, lineHeight: 17, color: C.text, textAlign: 'center' },
-  cellGoal: { fontFamily: F.medium, fontSize: 12, lineHeight: 16, color: C.dim, textAlign: 'center' },
-  cellProgress: { fontFamily: F.bold, fontSize: 12, lineHeight: 16, color: C.teal, textAlign: 'center' },
-  rule: { textAlign: 'center', paddingHorizontal: 12, lineHeight: 18 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 },
+  rowText: { flex: 1, gap: 3 },
+  rowName: { fontFamily: F.bold, fontSize: 15, color: C.text },
+  rowBar: { width: '80%' },
+  rule: { textAlign: 'center', paddingHorizontal: 12, lineHeight: 18, marginTop: 6 },
 });
