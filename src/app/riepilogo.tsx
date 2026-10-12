@@ -91,6 +91,14 @@ export default function Riepilogo() {
         </HeroBlock>
 
         <View style={styles.body}>
+          <SectionTitle title="Tratti" />
+          <Group>
+            {[
+              ...trip.legs.map((leg, i) => <LegRow key={i} leg={leg} showStatus />),
+              ...(trip.bonus > 0 ? [<BonusRow key="bonus" points={trip.bonus} />] : []),
+            ]}
+          </Group>
+
           {medals.map((medal) => (
             <View key={medal.id} style={styles.prize} accessible accessibilityLabel={`Nuova medaglia: ${medal.name}. ${medal.goal}`}>
               <View style={styles.halo}>
@@ -131,14 +139,6 @@ export default function Riepilogo() {
               <Text style={styles.co2Note}>Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA).</Text>
             </View>
           ) : null}
-
-          <SectionTitle title="Tratti" />
-          <Group>
-            {[
-              ...trip.legs.map((leg, i) => <LegRow key={i} leg={leg} showStatus />),
-              ...(trip.bonus > 0 ? [<BonusRow key="bonus" points={trip.bonus} />] : []),
-            ]}
-          </Group>
 
           {capped ? (
             <Text style={text.body}>
