@@ -98,8 +98,11 @@ export function SproutShapes({ stage, health = 'forma', ground = true }: { stage
       </G>
     );
   }
+  // Il seme e il germoglio stanno in basso nel disegno: si ingrandiscono e si
+  // centrano, così nelle forme piccole (avatar, schede) si vedono bene.
+  const frame = stage === 'seme' ? 'translate(48 50) scale(1.5) translate(-48 -70)' : stage === 'germoglio' ? 'translate(48 50) scale(1.25) translate(-48 -64)' : 'translate(0 -2)';
   return (
-    <G>
+    <G transform={frame}>
       {ground ? GROUND : null}
       {plant}
       {health === 'sete' ? <Path d="M70 56c-2 3-2 6 0 7s3-4 0-7z" fill="#7FC4E8" /> : null}
