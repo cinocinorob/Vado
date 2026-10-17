@@ -1,0 +1,42 @@
+[prova 19:46:42] installo l'app
+[prova 19:47:03] apro l'app
+[prova 19:47:20] apro Nuovo tragitto
+[prova 19:47:28] premo Avvia e rispondo alle richieste di permesso
+[prova 19:47:36] finestra di permesso: 'Allow Vado to access this device’s location?'
+[prova 19:47:42] finestra di permesso: 'Allow Vado to send you notifications?'
+[prova 19:48:22] permessi concessi: 2
+[prova 19:48:22] cammino per 90 secondi con l'app aperta
+[prova 19:50:04] percorsi davvero 126 m, l'app ne mostra None
+[prova 19:50:04] mando l'app in secondo piano e cammino altri 60 secondi
+[prova 19:50:06] servizio in primo piano attivo: True
+[prova 19:51:07] riapro l'app
+[prova 19:51:25] percorsi davvero 210 m, l'app ne mostra None
+[prova 19:51:25] termino il tragitto
+[prova 19:51:34] riepilogo: distanza 205.0 m | Tragitto concluso | Riepilogo | +2 | punti | 0,2 km in 4 min | Nuova medaglia: Primo passo. Il primo tragitto a piedi | Medaglia Primo passo | Nuova medaglia | Primo passo | Il primo tragitto a piedi | Tratti | A piedi | 205 m · 4 min | Dichiarato | +2 | CO₂ evitata | 30 g | Fine | Fine
+[prova 19:51:40] apro le medaglie
+[prova 19:51:48] medaglie: 1 di 9 sbloccate | Medaglie | Medaglia Maratoneta | 42 | Prossima medaglia | Maratoneta | 42 km a piedi | 0,2 di 42 km | ne mancano 41,8 km | Le tue medaglie | Medaglia Primo passo, sbloccata | Primo passo | Da conquistare | Medaglia Re della metro, bloccata | Re della metro | 10 viaggi con i mezzi pubblici | Medaglia Due ruote, bloccata | Due ruote | 50 km in bici | Medaglia Sette su sette, bloccata | 7 | Sette su sette | 7 giorni di fila senza auto | Medaglia Pendolare d'oro, bloccata | Pendolare d'oro | 20 tragitti casa-lavoro senza auto | Inizia un tragitto | Parti | Oggi | Oggi | Classifica | Classifica | Medaglie | Medaglie
+[prova 19:51:50] controllo la CO₂ e apro il germoglio
+[prova 19:52:30] apro la classifica
+[prova 19:52:45] creo una lega
+[prova 19:53:00] lega creata, codice Q243W5
+[prova 19:53:00] un'altra persona entra con il codice e fa 37 punti
+[prova 19:53:11] classifica: Settimana 42 · 12–18 ottobre | Classifica | Invita con il codice della lega | Invita | Leghe | Leghe | Sfide | Sfide | ProvaCI | ProvaCI | Nuova lega | Nuova lega | 2º posto: tu, 2 punti | Tu | 2 | 1º posto: AmicaCI, 37 punti | AmicaCI | 37 | 2 | 1 | 3 | 2º: tu, 2 punti | 2 | Tu | 35 punti da chi hai davanti | 2 | Codice d'invito | Q243W5 | Codice d'invito: Q 2 4 3 W 5 | Chi lo inserisce da "Nuova lega" entra in questa classifica. | Condividi il codice | Condividi il codice | Esci dalla lega | Esci dalla lega | Inizia un tragitto | Parti | Oggi | Oggi | Classifica | Classifica | Medaglie | Medaglie
+[prova 19:53:20] sfide: Settimana 42 · 12–18 ottobre | Classifica | Leghe | Leghe | Sfide | Sfide | Il germoglio di Vado | Sfida di ottobre | 600 punti entro fine mese · mancano 15 giorni | I tuoi punti del mese | 2 di 600 | 1 su 4 persone attive questo mese ci sono già arrivate. | Nessuna sfida in corso. Lanciane una ai compagni di lega. | Nuova sfida | Nuova sfida | Inizia un tragitto | Parti | Oggi | Oggi | Classifica | Classifica | Medaglie | Medaglie
+[prova 19:53:22] apro Backup dalle impostazioni
+[prova 19:54:29] metro a posteriori: sono all'uscita di EUR Fermi
+[prova 19:55:10] metro a posteriori: Tragitto concluso | Riepilogo | +48 | punti | 12,2 km in 28 min | Tratti | Metro | Flaminio → EUR Fermi | 12,2 km · 28 min | Dichiarato | +48 | Arrivo verificato dalla posizione, partenza dichiarata | CO₂ evitata | 2 kg | Un albero adulto ci mette 34 giorni ad assorbirla | Da quando usi Vado: 2,1 kg, 34 giorni di lavoro di un albero | Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA). | Fine | Fine
+[prova 19:55:16] metro dentro un tragitto: entro a Termini, esco al Colosseo
+[prova 19:57:38] metro dentro un tragitto: Tragitto concluso | Riepilogo | +15 | punti | 1,4 km in 2 min | Tratti | Metro | Termini → Colosseo | 1,4 km · 2 min | +5 | Linea B: distanza lungo la rete della metro | Verificato | Bonus casa-lavoro | Tragitto abituale completato | +10 | CO₂ evitata | 230 g | Un albero adulto ci mette 4 giorni ad assorbirla | Da quando usi Vado: 2,3 kg, 38 giorni di lavoro di un albero | Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA). | Fine | Fine
+[prova 19:57:44] collego Connessione Salute
+[prova 19:57:59] schermata dei permessi: Get started with Health Connect | Health Connect stores and syncs your health and fitness data from different apps.
+
+Fitness and wellness data, including exercise sessions, steps, nutrition, sleep and more
+
+Health records, including vaccines, lab results and more | With Health Connect you can | Share data with your apps
+Choose the data each app can read or write to Health Connect | Manage your settings and privacy
+Change app permissions and manage your data at any time | Go back | Get started
+[prova 19:58:07] dopo la presentazione: Allow Vado to access your fitness and wellness data? | Choose which fitness and wellness data this app can access. This includes data tracked and stored on this device, learn more | If you give read access, the app can read new data and data from the past 30 days | You can learn how Vado handles your data in their privacy policy | Allow all | Allow “Vado” to read | Distance | Exercise | Steps | Don't allow | Allow
+[prova 19:58:22] dopo il collegamento: Ultimi 7 giorni: 1 con punti | Dom | Lun | Mar | Mer | Gio | Ven | Oggi | Tragitti di oggi | Ho preso la metro | Metro | Ho preso il bus | Bus | A piedi, 205 m · 4 min, 30 g di CO₂ evitata, +2 | A piedi | 205 m · 4 min | 30 g di CO₂ evitata | +2 | Metro, Flaminio → EUR Fermi, 12,2 km · 28 min, Registrato a posteriori, 2 kg di CO₂ evitata, +48 | Metro | Flaminio → EUR Fermi | 12,2 km · 28 min | Registrato a posteriori | +48 | 2 kg di CO₂ evitata | Metro, Termini → Colosseo, 1,4 km · 2 min, 230 g di CO₂ evitata, +5 | Metro | Termini → Colosseo | 1,4 km · 2 min | +5 | 230 g di CO₂ evitata | Bonus casa-lavoro, Tragitto abituale completato, +10 | Bonus casa-lavoro | Tragitto abituale completato | +10 | Connessione Salute | Collegata: passi e attività vengono letti quando apri l'app. | Gestisci i permessi | Gestisci i permessi | Come usiamo questi dati | Come usiamo questi dati | Tieni premuto
+[prova 19:59:32] pulizia del server: ok
+[prova 19:59:33] RIUSCITA: percorsi 210 m, misurati 205.0 m (app aperta None, dopo il secondo piano None); permessi: ['Allow Vado to access this device’s location?', 'Allow Vado to send you notifications?']; germoglio: ok; storico: ok; bus: ok; classifica: ok; backup: ok; metro: ok; Connessione Salute: collegata
+::notice::Prova riuscita: percorsi 210 m, misurati 205.0 m (app aperta None, dopo il secondo piano None); permessi: ['Allow Vado to access this device’s location?', 'Allow Vado to send you notifications?']; germoglio: ok; storico: ok; bus: ok; classifica: ok; backup: ok; metro: ok; Connessione Salute: collegata
