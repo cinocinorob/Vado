@@ -38,6 +38,13 @@ jobs:
           mkdir -p rete
           python3 scripts/rete_metro.py gtfs.zip rete
 
+      - name: Estrae bus e tram
+        run: python3 scripts/rete_bus.py gtfs.zip rete
+
+      - name: Prova il flusso in tempo reale dei mezzi
+        continue-on-error: true
+        run: python3 scripts/prova_tempo_reale.py "https://romamobilita.it/sites/default/files/rome_rtgtfs_vehicle_positions_feed.pb" rete
+
       - name: Conserva il risultato nel ramo dati-rete
         if: always()
         env:
