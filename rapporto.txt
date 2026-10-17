@@ -1,0 +1,106 @@
+File nel pacchetto: agency.txt, calendar_dates.txt, routes.txt, shapes.txt, stop_times.txt, stops.txt, trips.txt
+feed_info: {}
+  non inclusa (tipo 0): 14 | 14 | 
+  non inclusa (tipo 0): 2 | 2 | 
+  non inclusa (tipo 0): 3 | 3 | 
+  non inclusa (tipo 0): 5 | 5 | 
+  non inclusa (tipo 0): 8 | 8 | 
+Linee per tipo: {"3": 430, "0": 5, "1": 4}
+Metro: MEA | MEA |  | colore E27439
+Metro: MEB | MEB |  | colore 0570B5
+Metro: MEB1 | MEB1 |  | colore 0570B5
+Metro: MEC | MEC |  | colore 008456
+Corse della metro: 3650
+Banchine usate dalla metro: 154
+Tracciati disegnati trovati: 8 su 8 richiesti
+Stazione battistini: Battistini | banchine 2 | raggio 7 m | nomi originali ['Battistini']
+Stazione barberini: Barberini | banchine 2 | raggio 10 m | nomi originali ['Barberini']
+Stazione repubblica: Repubblica | banchine 2 | raggio 14 m | nomi originali ['Repubblica']
+Stazione termini: Termini | banchine 4 | raggio 19 m | nomi originali ['Termini']
+Stazione vittorio-emanuele: Vittorio Emanuele | banchine 2 | raggio 13 m | nomi originali ['Vittorio Emanuele']
+Stazione manzoni: Manzoni | banchine 2 | raggio 15 m | nomi originali ['Manzoni']
+Stazione san-giovanni: San Giovanni | banchine 4 | raggio 19 m | nomi originali ['S. Giovanni', 'San Giovanni']
+Stazione re-di-roma: Re di Roma | banchine 2 | raggio 12 m | nomi originali ['Re Di Roma']
+Stazione ponte-lungo: Ponte Lungo | banchine 2 | raggio 13 m | nomi originali ['Ponte Lungo']
+Stazione furio-camillo: Furio Camillo | banchine 2 | raggio 13 m | nomi originali ['Furio Camillo']
+Stazione colli-albani: Colli Albani | banchine 2 | raggio 12 m | nomi originali ['Colli Albani']
+Stazione cornelia: Cornelia | banchine 2 | raggio 7 m | nomi originali ['Cornelia']
+Stazione arco-di-travertino: Arco di Travertino | banchine 2 | raggio 10 m | nomi originali ['Arco Di Travertino']
+Stazione porta-furba-quadraro: Porta Furba - Quadraro | banchine 2 | raggio 10 m | nomi originali ['Porta Furba - Quadraro']
+Stazione numidio-quadrato: Numidio Quadrato | banchine 2 | raggio 14 m | nomi originali ['Numidio Quadrato']
+Stazione lucio-sestio: Lucio Sestio | banchine 2 | raggio 14 m | nomi originali ['Lucio Sestio']
+Stazione giulio-agricola: Giulio Agricola | banchine 2 | raggio 15 m | nomi originali ['Giulio Agricola']
+Stazione subaugusta: Subaugusta | banchine 2 | raggio 12 m | nomi originali ['Subaugusta']
+Stazione cinecitta: Cinecittà | banchine 2 | raggio 21 m | nomi originali ["Cinecitta'"]
+Stazione anagnina: Anagnina | banchine 2 | raggio 10 m | nomi originali ['Anagnina']
+Stazione baldo-degli-ubaldi: Baldo degli Ubaldi | banchine 2 | raggio 9 m | nomi originali ['Baldo Degli Ubaldi']
+Stazione valle-aurelia: Valle Aurelia | banchine 2 | raggio 8 m | nomi originali ['Valle Aurelia']
+Stazione cipro: Cipro | banchine 2 | raggio 7 m | nomi originali ['Cipro']
+Stazione ottaviano: Ottaviano | banchine 2 | raggio 9 m | nomi originali ['Ottaviano']
+Stazione lepanto: Lepanto | banchine 2 | raggio 9 m | nomi originali ['Lepanto']
+Stazione flaminio: Flaminio | banchine 2 | raggio 10 m | nomi originali ['Flaminio']
+Stazione spagna: Spagna | banchine 2 | raggio 13 m | nomi originali ['Spagna']
+Stazione rebibbia: Rebibbia | banchine 2 | raggio 8 m | nomi originali ['Rebibbia']
+Stazione castro-pretorio: Castro Pretorio | banchine 2 | raggio 13 m | nomi originali ['Castro Pretorio']
+Stazione cavour: Cavour | banchine 2 | raggio 19 m | nomi originali ['Cavour']
+Stazione colosseo: Colosseo | banchine 4 | raggio 16 m | nomi originali ['Colosseo', 'Colosseo/Fori Imperiali']
+Stazione circo-massimo: Circo Massimo | banchine 2 | raggio 13 m | nomi originali ['Circo Massimo']
+Stazione piramide: Piramide | banchine 2 | raggio 9 m | nomi originali ['Piramide']
+Stazione garbatella: Garbatella | banchine 2 | raggio 10 m | nomi originali ['Garbatella']
+Stazione basilica-san-paolo: Basilica San Paolo | banchine 2 | raggio 19 m | nomi originali ['Basilica San Paolo']
+Stazione marconi: Marconi | banchine 2 | raggio 9 m | nomi originali ['Marconi']
+Stazione eur-magliana: EUR Magliana | banchine 2 | raggio 6 m | nomi originali ['Eur Magliana']
+Stazione ponte-mammolo: Ponte Mammolo | banchine 2 | raggio 7 m | nomi originali ['Ponte Mammolo']
+Stazione eur-palasport: EUR Palasport | banchine 2 | raggio 7 m | nomi originali ['Eur Palasport']
+Stazione eur-fermi: EUR Fermi | banchine 2 | raggio 8 m | nomi originali ['Eur Fermi']
+Stazione laurentina: Laurentina | banchine 2 | raggio 5 m | nomi originali ['Laurentina']
+Stazione sant-agnese-annibaliano: Sant'Agnese - Annibaliano | banchine 2 | raggio 10 m | nomi originali ['S.agnese/Annibaliano']
+Stazione libia: Libia | banchine 2 | raggio 10 m | nomi originali ['Libia']
+Stazione conca-d-oro: Conca d'Oro | banchine 2 | raggio 7 m | nomi originali ["Conca D'oro"]
+Stazione jonio: Jonio | banchine 2 | raggio 11 m | nomi originali ['Jonio']
+Stazione santa-maria-del-soccorso: Santa Maria del Soccorso | banchine 2 | raggio 22 m | nomi originali ['S.m. Del Soccorso']
+Stazione pietralata: Pietralata | banchine 2 | raggio 9 m | nomi originali ['Pietralata']
+Stazione monti-tiburtini: Monti Tiburtini | banchine 2 | raggio 16 m | nomi originali ['Monti Tiburtini']
+Stazione quintiliani: Quintiliani | banchine 2 | raggio 18 m | nomi originali ['Quintiliani']
+Stazione tiburtina: Tiburtina | banchine 2 | raggio 17 m | nomi originali ['Tiburtina F.s.']
+Stazione bologna: Bologna | banchine 2 | raggio 7 m | nomi originali ['Bologna']
+Stazione policlinico: Policlinico | banchine 2 | raggio 18 m | nomi originali ['Policlinico']
+Stazione pantano: Pantano | banchine 2 | raggio 12 m | nomi originali ['Pantano']
+Stazione graniti: Graniti | banchine 2 | raggio 12 m | nomi originali ['Graniti']
+Stazione finocchio: Finocchio | banchine 2 | raggio 10 m | nomi originali ['Finocchio']
+Stazione bolognetta: Bolognetta | banchine 2 | raggio 13 m | nomi originali ['Bolognetta']
+Stazione borghesiana: Borghesiana | banchine 2 | raggio 11 m | nomi originali ['Borghesiana']
+Stazione fontana-candida: Fontana Candida | banchine 2 | raggio 13 m | nomi originali ['Fontana Candida']
+Stazione grotte-celoni: Grotte Celoni | banchine 2 | raggio 10 m | nomi originali ['Grotte Celoni']
+Stazione torre-gaia: Torre Gaia | banchine 2 | raggio 13 m | nomi originali ['Torre Gaia']
+Stazione torre-angela: Torre Angela | banchine 2 | raggio 14 m | nomi originali ['Torre Angela']
+Stazione torrenova: Torrenova | banchine 2 | raggio 15 m | nomi originali ['Torrenova']
+Stazione giardinetti: Giardinetti | banchine 2 | raggio 10 m | nomi originali ['Giardinetti']
+Stazione torre-maura: Torre Maura | banchine 2 | raggio 10 m | nomi originali ['Torre Maura']
+Stazione torre-spaccata: Torre Spaccata | banchine 2 | raggio 11 m | nomi originali ['Torre Spaccata']
+Stazione alessandrino: Alessandrino | banchine 2 | raggio 10 m | nomi originali ['Alessandrino']
+Stazione parco-di-centocelle: Parco di Centocelle | banchine 2 | raggio 7 m | nomi originali ['Parco Di Centocelle']
+Stazione mirti: Mirti | banchine 2 | raggio 9 m | nomi originali ['Mirti']
+Stazione gardenie: Gardenie | banchine 2 | raggio 8 m | nomi originali ['Gardenie']
+Stazione teano: Teano | banchine 2 | raggio 9 m | nomi originali ['Teano']
+Stazione malatesta: Malatesta | banchine 2 | raggio 6 m | nomi originali ['Malatesta']
+Stazione pigneto: Pigneto | banchine 2 | raggio 5 m | nomi originali ['Pigneto']
+Stazione lodi: Lodi | banchine 2 | raggio 7 m | nomi originali ['Lodi']
+Stazione porta-metronia: Porta Metronia | banchine 2 | raggio 11 m | nomi originali ['Metronia', 'Porta Metronia']
+Linea A (MEA): 2 sequenze diverse, la più usata da 1073 corse
+   1073 corse | 27 fermate |  18.37 km | Battistini → Anagnina | tratte in linea d'aria: 0
+   1073 corse | 27 fermate |  18.39 km | Anagnina → Battistini | tratte in linea d'aria: 0
+Linea B (MEB): 2 sequenze diverse, la più usata da 255 corse
+    255 corse | 22 fermate |  18.15 km | Laurentina → Rebibbia | tratte in linea d'aria: 0
+    255 corse | 22 fermate |  18.14 km | Rebibbia → Laurentina | tratte in linea d'aria: 0
+Linea B1 (MEB1): 2 sequenze diverse, la più usata da 254 corse
+    254 corse | 19 fermate |  17.29 km | Jonio → Laurentina | tratte in linea d'aria: 0
+    254 corse | 19 fermate |  17.30 km | Laurentina → Jonio | tratte in linea d'aria: 0
+Linea C (MEC): 2 sequenze diverse, la più usata da 243 corse
+    243 corse | 24 fermate |  20.43 km | Pantano → Colosseo | tratte in linea d'aria: 0
+    243 corse | 24 fermate |  20.42 km | Colosseo → Pantano | tratte in linea d'aria: 0
+Totale: 4 linee, 74 stazioni, 74 tratte
+Linea A | Linea A | #E27439 | 27 stazioni: Battistini, Cornelia, Baldo degli Ubaldi, Valle Aurelia, Cipro, Ottaviano, Lepanto, Flaminio, Spagna, Barberini, Repubblica, Termini, Vittorio Emanuele, Manzoni, San Giovanni, Re di Roma, Ponte Lungo, Furio Camillo, Colli Albani, Arco di Travertino, Porta Furba - Quadraro, Numidio Quadrato, Lucio Sestio, Giulio Agricola, Subaugusta, Cinecittà, Anagnina
+Linea B | Linea B | #0570B5 | 22 stazioni: Laurentina, EUR Fermi, EUR Palasport, EUR Magliana, Marconi, Basilica San Paolo, Garbatella, Piramide, Circo Massimo, Colosseo, Cavour, Termini, Castro Pretorio, Policlinico, Bologna, Tiburtina, Quintiliani, Monti Tiburtini, Pietralata, Santa Maria del Soccorso, Ponte Mammolo, Rebibbia
+Linea B1 | Linea B1 | #0570B5 | 19 stazioni: Jonio, Conca d'Oro, Libia, Sant'Agnese - Annibaliano, Bologna, Policlinico, Castro Pretorio, Termini, Cavour, Colosseo, Circo Massimo, Piramide, Garbatella, Basilica San Paolo, Marconi, EUR Magliana, EUR Palasport, EUR Fermi, Laurentina
+Linea C | Linea C | #008456 | 24 stazioni: Pantano, Graniti, Finocchio, Bolognetta, Borghesiana, Fontana Candida, Grotte Celoni, Torre Gaia, Torre Angela, Torrenova, Giardinetti, Torre Maura, Torre Spaccata, Alessandrino, Parco di Centocelle, Mirti, Gardenie, Teano, Malatesta, Pigneto, Lodi, San Giovanni, Porta Metronia, Colosseo

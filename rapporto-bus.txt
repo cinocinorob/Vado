@@ -1,0 +1,15 @@
+Linee di bus e tram: 435
+Corse: 162561
+Fermate usate: 8106; tracciati: 813 su 813
+Linee scritte: 435; sequenze con distanza in linea d'aria: 3
+Dimensione di bus.json: 609 KB
+  170 → Agricoltura: 32 fermate, 11.7 km; da Termini (ma-Mb-Fs) a Agricoltura
+  170 → Agricoltura: 31 fermate, 11.0 km; da Termini (ma-Mb-Fs) a Agricoltura
+  170 → Termini (ma-Mb-Fs): 29 fermate, 10.8 km; da Agricoltura a Termini (ma-Mb-Fs)
+  170 → Termini (ma-Mb-Fs): 28 fermate, 10.4 km; da Agricoltura a Termini (ma-Mb-Fs)
+  64 → P.za Stazione S. Pietro (fl): 15 fermate, 5.4 km; da Termini (ma-Mb-Fs) a P.za Stazione S. Pietro (fl)
+  64 → Termini (ma-Mb-Fs): 17 fermate, 5.6 km; da P.za Stazione S. Pietro (fl) a Termini (ma-Mb-Fs)
+  8 → Venezia: 16 fermate, 5.6 km; da Casaletto a Venezia
+  8 → Casaletto: 16 fermate, 5.8 km; da Venezia a Casaletto
+  H → Termini (ma-Mb-Fs): 31 fermate, 10.2 km; da Dei Capasso a Termini (ma-Mb-Fs)
+  H → Dei Capasso: 31 fermate, 10.4 km; da Termini (ma-Mb-Fs) a Dei Capasso

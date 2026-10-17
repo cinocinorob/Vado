@@ -1,0 +1,4 @@
+download 1: 81 KB in 1.5 s, mezzi 775, ora del flusso 1792265251, Last-Modified Sat, 17 Oct 2026 19:27:34 GMT, età mediana delle posizioni 45 s
+download 2: 80 KB in 1.5 s, mezzi 774, ora del flusso 1792265282, Last-Modified Sat, 17 Oct 2026 19:28:05 GMT, età mediana delle posizioni 46 s
+download 3: 80 KB in 1.5 s, mezzi 767, ora del flusso 1792265314, Last-Modified Sat, 17 Oct 2026 19:28:36 GMT, età mediana delle posizioni 48 s
+mezzi con posizione cambiata in 30 s: 603 su 774
