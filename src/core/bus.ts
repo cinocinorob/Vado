@@ -25,11 +25,13 @@ export type BusNetwork = {
 };
 
 export function buildBusNetwork(data: BusData): BusNetwork {
-  const stops = data.stops.map(([name, lat, lon], index) => ({ index, name, lat: lat / 1e5, lon: lon / 1e5 }));
+  // Le sigle tra parentesi restano maiuscole: "Termini (MA-MB-FS)", non "(ma-Mb-Fs)".
+  const tidy = (name: string) => name.replace(/\(([A-Za-z]{1,3}(?:-[A-Za-z]{1,3})*)\)/g, (_, codes: string) => `(${codes.toUpperCase()})`);
+  const stops = data.stops.map(([name, lat, lon], index) => ({ index, name: tidy(name), lat: lat / 1e5, lon: lon / 1e5 }));
   const patterns: BusPattern[] = [];
   for (const line of data.lines) {
     for (const p of line.p) {
-      patterns.push({ line: line.n, routeId: line.r ?? line.n, tram: line.t === 0, headsign: p.h, stops: p.s, meters: p.d });
+      patterns.push({ line: line.n, routeId: line.r ?? line.n, tram: line.t === 0, headsign: tidy(p.h), stops: p.s, meters: p.d });
     }
   }
   const at: [number, number][][] = stops.map(() => []);

@@ -114,3 +114,8 @@ test('tempo reale: lettura del flusso e riconoscimento del bus su cui si viaggia
   assert.equal(parked.length, 4);
   assert.equal(boardedVehicle(parked), null);
 });
+
+test('bus: sigle delle fermate in maiuscolo', () => {
+  const n = buildBusNetwork({ ...DATA, stops: [['Termini (ma-Mb-Fs)', 1, 1], ...DATA.stops.slice(1)] });
+  assert.equal(n.stops[0].name, 'Termini (MA-MB-FS)');
+});
