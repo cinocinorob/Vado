@@ -246,3 +246,10 @@ test('serie di giorni consecutivi', () => {
   assert.equal(streak([trip('2026-10-10', 0)], now), 0);
   assert.equal(streak([], now), 0);
 });
+
+test('bus riconosciuto in tempo reale: tratto verificato con la linea', () => {
+  const leg = evaluateLeg({ mode: 'tpl', gpsM: 3000, rejectedM: 0, seconds: 900, steps: null, bus: { line: '64' } });
+  assert.equal(leg.status, 'verificato');
+  assert.equal(leg.route, 'Bus 64');
+  assert.match(leg.note, /tempo reale/);
+});

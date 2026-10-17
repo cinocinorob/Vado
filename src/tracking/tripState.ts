@@ -17,6 +17,7 @@ import {
   haversineM,
   type TrackState,
 } from '../core/geo';
+import { boardedVehicle, type Sample, type Sighting } from '../core/busMatch';
 import { HOP_MIN_M, metroHop } from '../core/metro';
 import { getMode, type ModeId } from '../core/modes';
 import type { LegInput } from '../core/scoring';
@@ -52,7 +53,16 @@ export type ActiveLeg = {
    * Resta vero finché non arriva una posizione che lo decide.
    */
   handover?: boolean;
+  /**
+   * Solo con i mezzi pubblici: posizioni del telefono ogni qualche secondo
+   * (in memoria, mai su disco) e i mezzi in tempo reale trovati accanto.
+   */
+  bus?: { samples: Sample[]; sightings: Sighting[] };
 };
+
+/** Ogni quanto si tiene una posizione per il confronto con i bus. */
+export const BUS_SAMPLE_MS = 8000;
+const BUS_MAX_SAMPLES = 900;
 
 export type PathPoint = { lat: number; lon: number };
 
@@ -223,7 +233,25 @@ function applyOne(trip: ActiveTrip, fix: Fix): { trip: ActiveTrip; credited: Fix
     if (handed) return handed;
   }
   const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode));
-  return { trip: result.state === leg.track ? trip : replaceCurrent(trip, { ...leg, track: result.state }), credited: result.credited };
+  const bus = leg.mode === 'tpl' ? withSample(leg.bus, fix) : leg.bus;
+  if (result.state === leg.track && bus === leg.bus) return { trip, credited: result.credited };
+  return { trip: replaceCurrent(trip, { ...leg, track: result.state, ...(bus ? { bus } : {}) }), credited: result.credited };
+}
+
+function withSample(bus: ActiveLeg['bus'], fix: Fix): ActiveLeg['bus'] {
+  const current = bus ?? { samples: [], sightings: [] };
+  const last = current.samples[current.samples.length - 1];
+  if (last && fix.t - last.t < BUS_SAMPLE_MS) return bus;
+  if ((fix.accuracy ?? 0) > 60) return bus;
+  return { ...current, samples: [...current.samples, { t: fix.t, lat: fix.lat, lon: fix.lon }].slice(-BUS_MAX_SAMPLES) };
+}
+
+/** Mezzi in tempo reale trovati accanto al telefono nel tratto corrente. */
+export function addSightings(trip: ActiveTrip, found: Sighting[]): ActiveTrip {
+  const leg = currentLeg(trip);
+  if (leg.mode !== 'tpl' || found.length === 0) return trip;
+  const bus = leg.bus ?? { samples: [], sightings: [] };
+  return replaceCurrent(trip, { ...leg, bus: { ...bus, sightings: [...bus.sightings, ...found].slice(-300) } });
 }
 
 /** Nuove posizioni dal GPS. In pausa vengono ignorate. */
@@ -331,6 +359,12 @@ export function resumeTrip(trip: ActiveTrip, now: number): ActiveTrip {
  * Dati dei tratti nella forma che serve al punteggio.
  * @param final a tragitto concluso: accredita anche l'ultimo pezzo del tratto aperto
  */
+function busOf(leg: ActiveLeg): Pick<LegInput, 'bus'> {
+  if (leg.mode !== 'tpl' || !leg.bus) return {};
+  const found = boardedVehicle(leg.bus.sightings);
+  return found ? { bus: { line: found.routeId } } : {};
+}
+
 export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegInput[] {
   return trip.legs.map((leg) => {
     const track =
@@ -344,6 +378,7 @@ export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegIn
       stepsComplete: !leg.backgrounded,
       mocked: track.mocked,
       hops: track.hops,
+      ...busOf(leg),
     };
   });
 }
@@ -383,7 +418,11 @@ export function forDraft(trip: ActiveTrip, savedAt: number): ActiveTrip {
   return {
     ...trip,
     path: [],
-    legs: trip.legs.map((leg) => ({ ...leg, track: withoutCoordinates(leg.track) })),
+    legs: trip.legs.map((leg) => ({
+      ...leg,
+      track: withoutCoordinates(leg.track),
+      ...(leg.bus ? { bus: { samples: [], sightings: leg.bus.sightings } } : {}),
+    })),
     savedAt,
   };
 }

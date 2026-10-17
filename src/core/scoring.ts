@@ -58,6 +58,10 @@ export type LegInput = {
   hops?: { label: string; lines: string; meters: number }[];
   /** Il tratto non è stato misurato: la partenza è stata dichiarata a posteriori. */
   declared?: boolean;
+  /** Bus o tram riconosciuto con la posizione del mezzo in tempo reale. */
+  bus?: { line: string };
+  /** Viaggio in bus dichiarato a posteriori: linea e fermate (es. "Bus 64, Termini → San Pietro"). */
+  busRoute?: string;
 };
 
 export type LegResult = {
@@ -140,9 +144,13 @@ export function evaluateLeg(input: LegInput): Evaluated {
 
   // Metro: i nomi delle stazioni spiegano da dove viene la distanza.
   const hops = input.hops ?? [];
-  const route = hops.length > 0 ? hops.map((hop) => hop.label).join(', ') : undefined;
+  const route =
+    input.busRoute ?? (hops.length > 0 ? hops.map((hop) => hop.label).join(', ') : input.bus ? `Bus ${input.bus.line}` : undefined);
   if (input.declared) {
     note = 'Arrivo verificato dalla posizione, partenza dichiarata';
+  } else if (input.bus && meters > 0) {
+    status = 'verificato';
+    note = 'Bus riconosciuto con la sua posizione in tempo reale';
   } else if (hops.length > 0 && meters > 0) {
     const onNetwork = hops.reduce((sum, hop) => sum + hop.meters, 0);
     // Posizioni sparite a una stazione e ricomparse a un'altra, in un tempo da
@@ -233,7 +241,7 @@ export type Trip = TripScore & {
    * importato da Connessione Salute, 'metro' se è un viaggio in metro
    * registrato a posteriori.
    */
-  source?: 'salute' | 'metro';
+  source?: 'salute' | 'metro' | 'bus';
   /** App che aveva registrato l'attività importata. */
   sourceApp?: string;
 };

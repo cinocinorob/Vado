@@ -1,14 +1,17 @@
 /** Radice dell'app: caratteri, navigazione e registrazione del rilevamento. */
 import { Roboto_400Regular, Roboto_500Medium, Roboto_600SemiBold, Roboto_700Bold, Roboto_800ExtraBold, Roboto_900Black } from '@expo-google-fonts/roboto';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 // Importato qui perché il compito che riceve le posizioni va definito
 // all'avvio del programma, prima che venga mostrata qualsiasi schermata.
 import '../tracking/tracker';
 import '../reminders/schedule';
+import '../reminders/home';
 import { C, DARK_UI } from '../ui/theme';
 
 export default function RootLayout() {
@@ -20,6 +23,16 @@ export default function RootLayout() {
     Roboto_800ExtraBold,
     Roboto_900Black,
   });
+
+  // Toccando un promemoria si apre la schermata giusta.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const path = response.notification.request.content.data?.path;
+      if (typeof path === 'string' && path.startsWith('/')) router.push(path as never);
+    });
+    return () => sub.remove();
+  }, []);
 
   // Se i caratteri non si caricano l'app parte comunque con quelli di sistema.
   if (!loaded && !error) return <View style={{ flex: 1, backgroundColor: C.bg }} />;

@@ -297,6 +297,6 @@ const styles = StyleSheet.create({
   resultDetail: { fontFamily: F.semi, fontSize: 13, lineHeight: 18, color: C.ink },
   commute: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, paddingVertical: 12 },
   commuteTitle: { fontFamily: F.bold, fontSize: 15, color: C.text },
-  info: { flexDirection: 'row', gap: 12, borderRadius: 20, paddingVertical: 12, backgroundColor: C.limeSoft },
+  info: { flexDirection: 'row', gap: 12, borderRadius: 20, paddingVertical: 12, backgroundColor: C.card },
   cta: { position: 'absolute', left: 20, right: 20 },
 });

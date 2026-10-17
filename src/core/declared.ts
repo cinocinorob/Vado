@@ -9,19 +9,23 @@
  *
  * Funzioni pure, verificate in declared.test.ts.
  */
+import { BUS_MS, busLabel, type BusRide } from './bus';
 import { DECLARED_GAP_MS, DECLARED_PER_DAY, rideSeconds, routeLabel, routeLines, type Route } from './metro';
 import { capUsedBefore, dayKey, scoreTrip, summarizeDay, type Trip } from './scoring';
 
 export type DeclareCheck = { ok: true; left: number } | { ok: false; reason: string };
 
 /** Si può registrare adesso un viaggio in metro a posteriori? */
-export function canDeclare(trips: Trip[], now: number): DeclareCheck {
+export function canDeclare(trips: Trip[], now: number, kind: 'metro' | 'bus' = 'metro'): DeclareCheck {
   const day = dayKey(now);
-  const used = trips.filter((t) => t.day === day && t.source === 'metro').length;
+  const used = trips.filter((t) => t.day === day && t.source === kind).length;
   if (used >= DECLARED_PER_DAY) {
     return {
       ok: false,
-      reason: `Per oggi hai già registrato ${DECLARED_PER_DAY} viaggi in metro a posteriori. Per gli altri avvia il tragitto prima di scendere: la distanza viene calcolata da sola.`,
+      reason:
+        kind === 'metro'
+          ? `Per oggi hai già registrato ${DECLARED_PER_DAY} viaggi in metro a posteriori. Per gli altri avvia il tragitto prima di scendere: la distanza viene calcolata da sola.`
+          : `Per oggi hai già registrato ${DECLARED_PER_DAY} viaggi in bus a posteriori. Per gli altri avvia il tragitto quando sali: il bus viene riconosciuto da solo.`,
     };
   }
   const justCounted = trips.some(
@@ -57,4 +61,20 @@ export function declaredTrip(route: Route, opts: { now: number; commute: boolean
     },
   );
   return { ...score, id: `m${opts.now.toString(36)}`, day, startedAt, endedAt: opts.now, commute: opts.commute, source: 'metro' };
+}
+
+/** Il tragitto da salvare per un viaggio in bus o tram dichiarato che finisce adesso. */
+export function declaredBusTrip(ride: BusRide, opts: { now: number; commute: boolean; trips: Trip[] }): Trip {
+  const seconds = Math.round(ride.meters / BUS_MS);
+  const startedAt = opts.now - seconds * 1000;
+  const day = dayKey(opts.now);
+  const score = scoreTrip(
+    [{ mode: 'tpl', gpsM: ride.meters, rejectedM: 0, seconds, steps: null, declared: true, busRoute: `${busLabel(ride)}, ${ride.from} → ${ride.to}` }],
+    {
+      commute: opts.commute,
+      bonusAlreadyToday: summarizeDay(opts.trips, day).bonusAwarded,
+      capUsed: capUsedBefore(opts.trips, startedAt),
+    },
+  );
+  return { ...score, id: `b${opts.now.toString(36)}`, day, startedAt, endedAt: opts.now, commute: opts.commute, source: 'bus' };
 }

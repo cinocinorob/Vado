@@ -11,6 +11,7 @@ import { clearPauses } from '../storage/pause';
 import { loadReminders, saveReminders, type Reminders } from '../storage/reminders';
 import { loadTree, saveTree } from '../storage/tree';
 import { clearTrips } from '../storage/trips';
+import { disableHomeReminder, enableHomeReminder, homeReminderOn } from '../reminders/home';
 import { applyReminders } from '../reminders/schedule';
 import { Group, SectionTitle } from '../ui/expressive';
 import { ChevronIcon, CloseIcon } from '../ui/Icons';
@@ -38,10 +39,13 @@ export default function Impostazioni() {
   const [reminders, setReminders] = useState<Reminders | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [cleared, setCleared] = useState(false);
+  const [home, setHome] = useState(false);
+  const [homeNote, setHomeNote] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       loadReminders().then(setReminders);
+      homeReminderOn().then(setHome);
     }, []),
   );
 
@@ -56,6 +60,18 @@ export default function Impostazioni() {
     setReminders(next);
     await saveReminders(next);
     await applyReminders(clock()).catch(() => undefined);
+  }
+
+  async function toggleHome(on: boolean) {
+    setHomeNote(null);
+    if (!on) {
+      await disableHomeReminder();
+      setHome(false);
+      return;
+    }
+    const result = await enableHomeReminder();
+    setHome(result.ok);
+    setHomeNote(result.ok ? 'Fatto: casa è dove sei adesso (150 metri attorno).' : result.problem);
   }
 
   async function reset() {
@@ -131,6 +147,17 @@ export default function Impostazioni() {
           ))}
         </Group>
 
+        <Group>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>Avvisami quando esco di casa</Text>
+              <Text style={text.small}>Accendilo mentre sei a casa. Uscendo arriva un avviso per avviare il tragitto. Serve la posizione &quot;Consenti sempre&quot;.</Text>
+            </View>
+            <Toggle value={home} onChange={toggleHome} label="Avvisami quando esco di casa" />
+          </View>
+        </Group>
+        {homeNote ? <Text style={[text.small, styles.homeNote]}>{homeNote}</Text> : null}
+
         <SectionTitle title="I tuoi dati" />
         <Group>
           <Link label="Backup e cambio telefono" onPress={() => router.push('/backup')} />
@@ -175,5 +202,6 @@ const styles = StyleSheet.create({
   radioOn: { borderColor: C.text },
   dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: C.text },
   note: { gap: 10, padding: 4 },
+  homeNote: { paddingHorizontal: 6 },
   danger: { backgroundColor: C.card, borderRadius: 28, padding: 16, gap: 12 },
 });

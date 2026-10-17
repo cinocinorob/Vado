@@ -15,7 +15,7 @@ senza scaricare nulla.
 
 Formato compatto, per tenere piccolo il file:
     stops: [[nome, lat*1e5, lon*1e5], ...]
-    lines: [{"n": "64", "t": 3, "c": "colore", "p": [{"h": capolinea, "s": [indici], "d": [metri]}]}]
+    lines: [{"n": "64", "r": id della linea, "t": 3, "c": "colore", "p": [{"h": capolinea, "s": [indici], "d": [metri]}]}]
 
 Solo libreria standard di Python.
 """
@@ -118,7 +118,7 @@ def main() -> None:
             else:
                 fallback += 1
             patterns.append({"h": pretty(headsign or stops_raw[seq[-1]].get("stop_name", "")), "s": [index[s] for s in seq], "d": [round(d) for d in dist]})
-        lines_out.append({"n": route.get("route_short_name") or route_id, "t": TYPES[route["route_type"]], "c": route.get("route_color", ""), "p": patterns})
+        lines_out.append({"n": route.get("route_short_name") or route_id, "r": route_id, "t": TYPES[route["route_type"]], "c": route.get("route_color", ""), "p": patterns})
 
     say(f"Linee scritte: {len(lines_out)}; sequenze con distanza in linea d'aria: {fallback}")
     data = {"downloaded": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "stops": stops_out, "lines": lines_out}

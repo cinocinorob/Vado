@@ -114,7 +114,7 @@ export default function Oggi() {
       leg,
       bonus: 0,
       caption:
-        trip.source === 'salute' ? `Registrato da ${appName(trip.sourceApp)}` : trip.source === 'metro' ? 'Registrato a posteriori' : undefined,
+        trip.source === 'salute' ? `Registrato da ${appName(trip.sourceApp)}` : trip.source === 'metro' || trip.source === 'bus' ? 'Registrato a posteriori' : undefined,
     })),
     ...(trip.bonus > 0 ? [{ key: `${trip.id}-bonus`, trip, leg: null, bonus: trip.bonus, caption: undefined }] : []),
   ]);
@@ -228,7 +228,10 @@ export default function Oggi() {
             title="Tragitti di oggi"
             right={
               !active ? (
-                <TonalButton label="Ho preso la metro" onPress={() => router.push('/metro')} icon={<PlusIcon size={16} color={C.text} />} />
+                <View style={styles.after}>
+                  <TonalButton label="Metro" accessibilityLabel="Ho preso la metro" onPress={() => router.push('/metro')} icon={<PlusIcon size={16} color={C.text} />} />
+                  <TonalButton label="Bus" accessibilityLabel="Ho preso il bus" onPress={() => router.push('/bus')} icon={<PlusIcon size={16} color={C.text} />} />
+                </View>
               ) : undefined
             }
           />
@@ -372,6 +375,7 @@ const styles = StyleSheet.create({
   healthLinkText: { fontFamily: F.semi, fontSize: 13, color: C.text, textDecorationLine: 'underline' },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 16, backgroundColor: C.card, borderRadius: R.card },
   reset: { alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16 },
+  after: { flexDirection: 'row', gap: 6 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   gear: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center' },
   hint: { textAlign: 'center', marginTop: -2 },

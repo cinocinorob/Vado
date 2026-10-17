@@ -149,6 +149,14 @@ export function LineBadge({ line, size = 30 }: { line: string; size?: number }) 
   );
 }
 
+/** "Bus 64, Termini → San Pietro" è un bus; un percorso senza prefisso è la metro. */
+function rowTitle(route: string | undefined, fallback: string): string {
+  if (!route) return fallback;
+  if (route.startsWith('Bus')) return 'Bus';
+  if (route.startsWith('Tram')) return 'Tram';
+  return 'Metro';
+}
+
 export function LegRow({ leg, showStatus = false, caption, co2 }: { leg: LegResult; showStatus?: boolean; caption?: string; co2?: string }) {
   const mode = getMode(leg.mode);
   const detail = [distance(leg.meters), duration(leg.seconds), leg.steps != null && leg.mode === 'piedi' ? `${leg.steps} passi` : null]
@@ -158,7 +166,7 @@ export function LegRow({ leg, showStatus = false, caption, co2 }: { leg: LegResu
     <View style={styles.row}>
       <ModeBadge mode={leg.mode} />
       <View style={styles.rowText}>
-        <Text style={styles.rowTitle}>{leg.route ? 'Metro' : mode.short}</Text>
+        <Text style={styles.rowTitle}>{rowTitle(leg.route, mode.short)}</Text>
         {leg.route ? <Text style={styles.rowRoute}>{leg.route}</Text> : null}
         <Text style={styles.rowDetail}>{detail}</Text>
         {caption ? <Text style={styles.rowDetail}>{caption}</Text> : null}

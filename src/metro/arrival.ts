@@ -29,7 +29,10 @@ function timeout<T>(ms: number): Promise<T | null> {
   return new Promise((resolve) => setTimeout(() => resolve(null), ms));
 }
 
-export async function locateArrival(): Promise<Arrival> {
+export type Here = { kind: 'ok'; lat: number; lon: number } | Exclude<Arrival, { kind: 'ok' } | { kind: 'lontano' }>;
+
+/** Una lettura della posizione, verificata (non simulata, abbastanza precisa). */
+export async function locateHere(): Promise<Here> {
   try {
     const { granted } = await Location.requestForegroundPermissionsAsync();
     if (!granted) return { kind: 'permesso' };
@@ -59,6 +62,12 @@ export async function locateArrival(): Promise<Arrival> {
   const accuracy = location.coords.accuracy ?? Infinity;
   if (accuracy > ARRIVAL_MAX_ACCURACY_M) return { kind: 'incerta', accuracy };
 
-  const found = nearestStation(ROMA, { lat: location.coords.latitude, lon: location.coords.longitude }, ARRIVAL_RADIUS_M);
+  return { kind: 'ok', lat: location.coords.latitude, lon: location.coords.longitude };
+}
+
+export async function locateArrival(): Promise<Arrival> {
+  const here = await locateHere();
+  if (here.kind !== 'ok') return here;
+  const found = nearestStation(ROMA, { lat: here.lat, lon: here.lon }, ARRIVAL_RADIUS_M);
   return found ? { kind: 'ok', station: found.station, meters: found.meters } : { kind: 'lontano' };
 }

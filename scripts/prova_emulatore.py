@@ -151,8 +151,8 @@ def finish_button() -> dict | None:
         for x in range(0, width, step):
             o = header + (y * width + x) * 4
             r, g, b = raw[o], raw[o + 1], raw[o + 2]
-            # Corallo dell'app: #FF8A65.
-            if r > 235 and 120 < g < 158 and 85 < b < 120:
+            # Corallo dell'app (#FF8A65) o zucca del tema Halloween (#FF8A2A).
+            if r > 235 and 120 < g < 158 and (85 < b < 120 or 25 < b < 60):
                 row.append(x)
         if len(row) >= wide_row:
             if previous_y is None or y - previous_y > step:
@@ -640,6 +640,37 @@ def station_fix(station_id: str, north_m: float = 0.0) -> None:
     adb("emu", "geo", "fix", f"{station['lon']:.7f}", f"{lat:.7f}", "20", "12", "0", check=False)
 
 
+def check_bus() -> str:
+    """"Ho preso il bus" a una fermata del 64: compaiono le linee e, scelta una, le fermate di partenza."""
+    data = json.loads(Path("src/data/bus-roma.json").read_text(encoding="utf-8"))
+    line = next(l for l in data["lines"] if l["n"] == "64")
+    stop = data["stops"][line["p"][0]["s"][-1]]
+    lat, lon = stop[1] / 1e5, stop[2] / 1e5
+    for _ in range(3):
+        adb("emu", "geo", "fix", f"{lon:.7f}", f"{lat:.7f}", "20", "12", "0", check=False)
+        time.sleep(1)
+    button = scroll_to("Ho preso il bus")
+    if not button:
+        return "pulsante Ho preso il bus non trovato: " + visible_text()[:300]
+    tap(button)
+    chip = None
+    deadline = time.time() + 40
+    while time.time() < deadline and not chip:
+        chip = next((n for n in nodes() if n["desc"].startswith("Bus 64 verso")), None)
+        if not chip:
+            time.sleep(2)
+    if not chip:
+        shown = visible_text()
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        return "la linea 64 non compare tra quelle della fermata: " + shown[:300]
+    tap(chip)
+    asked = wait_for("Dove sei salito?", 15, "scegliendo la linea", required=False)
+    screenshot("bus-linea")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dal bus")
+    return "ok" if asked else "dopo la scelta della linea non compaiono le fermate di partenza"
+
+
 def check_metro() -> str:
     """La metro, nei due modi: registrata a posteriori e riconosciuta dentro un tragitto avviato."""
     log("metro a posteriori: sono all'uscita di EUR Fermi")
@@ -804,6 +835,7 @@ def main() -> None:
     history = check_storico()
     board = check_leaderboard()
     backup = check_backup() if board == "ok" else "non provato: manca il profilo"
+    bus = check_bus()
     metro = check_metro()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
@@ -830,7 +862,7 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; germoglio: {plant}; storico: {history}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
+        f"permessi: {answered}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
     )
     if backup != "ok":
         problems.append(f"backup: {backup}")
@@ -838,6 +870,8 @@ def main() -> None:
         problems.append(f"germoglio: {plant}")
     if history != "ok":
         problems.append(f"storico: {history}")
+    if bus != "ok":
+        problems.append(f"bus: {bus}")
     if board != "ok":
         problems.append(f"classifica: {board}")
     if metro != "ok":

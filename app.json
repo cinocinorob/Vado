@@ -48,8 +48,9 @@
         "expo-location",
         {
           "isAndroidForegroundServiceEnabled": true,
-          "isAndroidBackgroundLocationEnabled": false,
-          "locationWhenInUsePermission": "Vado usa la posizione durante un tragitto per misurare la distanza percorsa."
+          "isAndroidBackgroundLocationEnabled": true,
+          "locationWhenInUsePermission": "Vado usa la posizione durante un tragitto per misurare la distanza percorsa.",
+          "locationAlwaysAndWhenInUsePermission": "Solo se lo attivi nelle impostazioni: Vado ti avvisa quando esci di casa, per avviare il tragitto."
         }
       ],
       [

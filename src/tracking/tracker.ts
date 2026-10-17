@@ -41,6 +41,9 @@ import {
 } from './tripState';
 import { applyReminders, cancelForgotReminder, nudgeForgotReminder } from '../reminders/schedule';
 import { updateWidget } from '../widget/update';
+import { lineName } from '../core/bus';
+import { BUS_ROMA } from '../data/bus';
+import { pollBuses } from './busFeed';
 
 const LOCATION_TASK = 'vado-tragitto';
 const KEEP_AWAKE_TAG = 'vado-tragitto';
@@ -75,7 +78,10 @@ TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(LOCATION_TASK,
 /** Una posizione nuova arriva solo muovendosi di qualche metro: sposta in avanti il promemoria "hai dimenticato Termina?". */
 function movedNow(): void {
   const trip = activeTripStore.get();
-  if (trip && !trip.paused) nudgeForgotReminder(Date.now());
+  if (trip && !trip.paused) {
+    nudgeForgotReminder(Date.now());
+    pollBuses(Date.now());
+  }
 }
 
 /** Il servizio in primo piano esiste solo su Android e non dentro Expo Go. */
@@ -269,7 +275,10 @@ export async function finishTracking(): Promise<Trip | null> {
   const day = dayKey(now);
   // Se Connessione Salute è collegata, i suoi passi possono confermare i
   // tratti a piedi che il contapassi dell'app non ha coperto.
-  const inputs = await withHealthSteps(active, toLegInputs(active, now, true), now);
+  const inputs = (await withHealthSteps(active, toLegInputs(active, now, true), now)).map((input) =>
+    // Il flusso in tempo reale dà l'identificativo della linea: qui diventa il nome (es. "64").
+    input.bus ? { ...input, bus: { line: lineName(BUS_ROMA, input.bus.line) ?? input.bus.line } } : input,
+  );
   const score = scoreTrip(inputs, {
     commute: active.commute,
     bonusAlreadyToday: summarizeDay(trips, day).bonusAwarded,

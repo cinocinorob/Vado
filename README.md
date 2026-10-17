@@ -280,6 +280,37 @@ Dalla schermata Oggi, "Backup e cambio telefono":
 Il backup automatico di Android (dati delle app su Google Drive) non è disattivato, ma per Vado non è stato
 verificato: il file e il codice sono la strada provata. Regole in `src/core/backup.ts` e `src/core/recovery.ts`.
 
+## Bus e tram
+
+- **Riconoscimento in tempo reale.** In un tragitto avviato con "Metro, bus, tram", mentre ci si muove a velocità da mezzo, l'app
+  scarica circa ogni minuto il flusso pubblico delle posizioni dei bus di Roma (GTFS-Realtime di Roma Servizi per la Mobilità,
+  circa 100 KB, un migliaio di mezzi) e cerca i mezzi a meno di 90 m dal telefono nello stesso istante. Se lo stesso mezzo resta
+  accanto almeno 3 volte, per almeno 2 minuti e mezzo e 600 m, il tratto diventa "Verificato" con la linea (`src/core/busMatch.ts`).
+  Il confronto avviene sul telefono: la posizione non viene mandata a nessuno.
+- **"Ho preso il bus"** (da Oggi, dopo il viaggio): fermata di arrivo dalla posizione, linea e fermata di partenza scelte
+  dall'utente, metri lungo il percorso della linea. Due al giorno, come per la metro.
+- **Avviso all'uscita di casa** (impostazioni): un recinto virtuale di 150 m attorno a casa; uscendo arriva una notifica che apre
+  "Nuovo tragitto". Il tragitto non parte da solo: Android non lo consente dal secondo piano e una partenza in auto darebbe
+  punti falsi. Serve la posizione "Consenti sempre".
+- Linee e fermate: `src/data/bus-roma.json`, estratto da `scripts/rete_bus.py` (azione "Aggiorna la rete della metro").
+- Limite noto: per i mezzi pubblici la CO₂ evitata non toglie le emissioni del mezzo (metodo ISPRA); non ho trovato un fattore
+  per passeggero-km dei bus di Roma da una fonte affidabile.
+
+## Halloween e aspetto
+
+Impostazioni → Aspetto: automatico (Halloween dal 15 ottobre al 2 novembre, poi come il telefono), chiaro, scuro, Halloween.
+Il cambio si vede alla riapertura dell'app. Ad Halloween: cappello da strega al germoglio, pipistrelli, caramelle (un km senza
+auto, una caramella, dal 15 al 31 ottobre) con classifica nella lega, medaglia a tempo "Notte delle streghe" (un tragitto
+senza auto la sera del 31 ottobre).
+
+## Altre funzioni
+
+- Storico per settimane e mesi; pressione lunga su un tragitto per cancellarlo (anche dalla classifica).
+- Promemoria locali: Termina dimenticato (fermi da 15 minuti), pianta assetata (alle 18 del secondo giorno), sorpassi in lega
+  (controllati ogni qualche ora in secondo piano).
+- Widget per la schermata Home con i punti di oggi, la CO₂ e il pulsante Parti.
+- Presentazione al primo avvio; backup con albero, bosco e pause.
+
 ## Come viene misurata la distanza
 
 Il GPS oscilla anche da fermi e in città si sposta di lato per i riflessi sui palazzi. Il filtro in
@@ -295,7 +326,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (193 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (204 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

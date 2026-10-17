@@ -73,3 +73,16 @@ test('un tragitto a piedi appena concluso non blocca la registrazione', () => {
   };
   assert.equal(canDeclare([walk], NOW + 60_000).ok, true);
 });
+
+test('bus dichiarato: metri lungo la linea, due al giorno, separati dalla metro', async () => {
+  const { declaredBusTrip } = await import('./declared');
+  const ride = { line: '64', tram: false, from: 'Termini', to: 'San Pietro', meters: 4100, stops: 14 };
+  const trip = declaredBusTrip(ride, { now: NOW, commute: false, trips: [] });
+  assert.equal(trip.source, 'bus');
+  assert.equal(trip.legs[0].meters, 4100);
+  assert.equal(trip.legs[0].route, 'Bus 64, Termini → San Pietro');
+  assert.equal(trip.total, Math.floor(4.1 * 4));
+  const two = [trip, { ...trip, id: 'x' }];
+  assert.equal(canDeclare(two, NOW + 3_600_000, 'bus').ok, false);
+  assert.equal(canDeclare(two, NOW + 3_600_000, 'metro').ok, true);
+});

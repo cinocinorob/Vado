@@ -55,11 +55,11 @@ export async function askReminderPermission(): Promise<boolean> {
   }
 }
 
-async function schedule(id: string, title: string, body: string, when: number): Promise<void> {
+async function schedule(id: string, title: string, body: string, when: number, path: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
   await Notifications.scheduleNotificationAsync({
     identifier: id,
-    content: { title, body },
+    content: { title, body, data: { path } },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(when), channelId: CHANNEL },
   });
 }
@@ -74,7 +74,7 @@ export async function applyReminders(now: number): Promise<void> {
   if (prefs.thirsty && (await allowed())) {
     const [trips, pauses] = await Promise.all([loadTrips(), loadPauses()]);
     const when = thirstyAt(trips, now, pauses, dayKey(now));
-    if (when) await schedule(THIRSTY_ID, 'La tua pianta ha sete', 'Due giorni senza tragitti senza auto: basta una camminata e si riprende.', when);
+    if (when) await schedule(THIRSTY_ID, 'La tua pianta ha sete', 'Due giorni senza tragitti senza auto: basta una camminata e si riprende.', when, '/bosco');
   }
 
   try {
@@ -98,7 +98,7 @@ export function nudgeForgotReminder(now: number): void {
   (async () => {
     await setup();
     if (!(await loadReminders()).forgot || !(await allowed())) return;
-    await schedule(FORGOT_ID, 'Hai dimenticato Termina?', 'Il tragitto è ancora aperto ma sei fermo da un quarto d’ora.', now + FORGOT_AFTER_MS);
+    await schedule(FORGOT_ID, 'Hai dimenticato Termina?', 'Il tragitto è ancora aperto ma sei fermo da un quarto d’ora.', now + FORGOT_AFTER_MS, '/in-corso');
   })().catch(() => undefined);
 }
 
@@ -123,7 +123,7 @@ export async function checkOvertakes(now: number): Promise<void> {
     if (names.length > 0) {
       await setup();
       await Notifications.scheduleNotificationAsync({
-        content: { title: `${names.join(' e ')} ti ${names.length === 1 ? 'ha' : 'hanno'} superato`, body: `Nella lega ${league.name}. Un tragitto e torni davanti.` },
+        content: { title: `${names.join(' e ')} ti ${names.length === 1 ? 'ha' : 'hanno'} superato`, body: `Nella lega ${league.name}. Un tragitto e torni davanti.`, data: { path: '/classifica' } },
         trigger: { channelId: CHANNEL },
       });
     }
