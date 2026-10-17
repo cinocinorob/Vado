@@ -66,7 +66,7 @@ export function RoundButton({ onPress, label, children }: { onPress: () => void;
   );
 }
 
-export function ProgressBar({ value, max, label, detail, color = C.ink, track }: { value: number; max: number; label: string; detail: string; color?: string; track?: string }) {
+export function ProgressBar({ value, max, label, detail, color = C.text, track }: { value: number; max: number; label: string; detail: string; color?: string; track?: string }) {
   const ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
   return (
     <View accessibilityRole="progressbar" accessibilityLabel={`${label}: ${detail}`}>
@@ -174,8 +174,8 @@ export function LegRow({ leg, showStatus = false, caption, co2 }: { leg: LegResu
 export function BonusRow({ points }: { points: number }) {
   return (
     <View style={styles.row}>
-      <View style={[styles.badge, { width: 40, height: 40, borderRadius: 14, backgroundColor: C.ink }]}>
-        <StarIcon size={20} color={C.lime} filled />
+      <View style={[styles.badge, { width: 40, height: 40, borderRadius: 14, backgroundColor: C.strong }]}>
+        <StarIcon size={20} color={C.onStrong} filled />
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>Bonus casa-lavoro</Text>
@@ -206,10 +206,10 @@ export function ModeGrid({ selected, onSelect }: { selected: ModeId; onSelect: (
             style={[styles.tile, active ? styles.tileActive : null]}
           >
             <View style={styles.tileTop}>
-              <ModeIcon mode={mode.id} size={26} color={C.ink} />
-              <Text style={[styles.tilePoints, mode.ptPerKm === 0 && { color: C.dim }]}>{mode.ptPerKm} pt/km</Text>
+              <ModeIcon mode={mode.id} size={26} color={active ? C.ink : C.text} />
+              <Text style={[styles.tilePoints, active && { color: C.ink }, mode.ptPerKm === 0 && { color: C.dim }]}>{mode.ptPerKm} pt/km</Text>
             </View>
-            <Text style={[styles.tileLabel, active && { fontFamily: F.bold }]}>{mode.label}</Text>
+            <Text style={[styles.tileLabel, active && { fontFamily: F.bold, color: C.ink }]}>{mode.label}</Text>
           </Pressable>
         );
       })}
@@ -227,12 +227,12 @@ export function PrimaryButton({ label, onPress, icon, disabled, tone = 'lime' }:
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.primary,
-        { backgroundColor: tone === 'lime' ? C.ink : C.coral, opacity: disabled ? 0.55 : 1 },
+        { backgroundColor: tone === 'lime' ? C.strong : C.coral, opacity: disabled ? 0.55 : 1 },
         pressed && styles.pressed,
       ]}
     >
       {icon}
-      <Text style={[styles.primaryLabel, { color: tone === 'lime' ? C.lime : C.onCoral }]}>{label}</Text>
+      <Text style={[styles.primaryLabel, { color: tone === 'lime' ? C.onStrong : C.onCoral }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -282,14 +282,14 @@ export const input = {
   borderRadius: 18,
   paddingHorizontal: 16,
   backgroundColor: C.card,
-  borderColor: 'rgba(26, 29, 20, 0.22)',
+  borderColor: C.outline,
   borderWidth: BORDER,
   fontFamily: F.medium,
   fontSize: 17,
   color: C.text,
 } as const;
 
-export const PLACEHOLDER = 'rgba(26, 29, 20, 0.5)';
+export const PLACEHOLDER = C.dim;
 
 const styles = StyleSheet.create({
   statusStrip: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: C.bg },
@@ -335,11 +335,11 @@ const styles = StyleSheet.create({
   tilePoints: { fontFamily: F.bold, fontSize: 14, color: C.text },
   tileLabel: { fontFamily: F.medium, fontSize: 15, color: C.text },
   toggle: { width: 56, height: 34, borderRadius: 17, padding: 4, justifyContent: 'center', borderWidth: 2 },
-  toggleOn: { backgroundColor: C.ink, borderColor: C.ink, alignItems: 'flex-end' },
-  toggleOff: { backgroundColor: C.tonal, borderColor: '#74796D', alignItems: 'flex-start' },
+  toggleOn: { backgroundColor: C.strong, borderColor: C.strong, alignItems: 'flex-end' },
+  toggleOff: { backgroundColor: C.tonal, borderColor: C.outline, alignItems: 'flex-start' },
   knob: { borderRadius: 14 },
-  knobOn: { width: 24, height: 24, backgroundColor: C.lime },
-  knobOff: { width: 16, height: 16, marginLeft: 2, backgroundColor: '#74796D' },
+  knobOn: { width: 24, height: 24, backgroundColor: C.onStrong },
+  knobOff: { width: 16, height: 16, marginLeft: 2, backgroundColor: C.outline },
   primary: {
     height: 60,
     borderRadius: 30,

@@ -6,9 +6,23 @@ import type { ReactNode } from 'react';
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
 import type { Health, SpeciesId, Stage } from '../core/plant';
+import { HALLOWEEN_ON } from './theme';
 
 const INK = '#1A1D14';
 const WHITE = '#FFFFFF';
+/** Ad Halloween gli occhi si illuminano. */
+const EYE = HALLOWEEN_ON ? '#FFE45C' : WHITE;
+
+/** Cappello da strega, appoggiato sulla testa e un po' inclinato. */
+function WitchHat({ x, y, scale }: { x: number; y: number; scale: number }) {
+  return (
+    <G transform={`translate(${x} ${y}) rotate(14) scale(${scale})`}>
+      <Path d="M-12 0h24" stroke="#2A1838" strokeWidth={4} strokeLinecap="round" />
+      <Path d="M-8 -1L-2 -22Q0 -27 4 -24L9 -19L5 -17L7 -1Z" fill="#2A1838" />
+      <Path d="M-7.5 -4h15" stroke="#FF8A2A" strokeWidth={2.6} />
+    </G>
+  );
+}
 
 const TONES: Record<Health, { leaf: string; leafLight: string; body: string; stem: string }> = {
   forma: { leaf: '#7BD389', leafLight: '#9BE09F', body: '#2E9C7E', stem: '#2E9C7E' },
@@ -26,7 +40,17 @@ function Leaf({ x, y, side, size, color, droop }: { x: number; y: number; side: 
   return <Path d={d} fill={color} transform={droop ? `rotate(${side * droop} ${x} ${y})` : undefined} />;
 }
 
-function Face({ cx, cy, health, scale = 1 }: { cx: number; cy: number; health: Health; scale?: number }) {
+function Face(props: { cx: number; cy: number; health: Health; scale?: number }) {
+  const { cx, cy, scale = 1 } = props;
+  return (
+    <G>
+      <Eyes {...props} />
+      {HALLOWEEN_ON ? <WitchHat x={cx + 3 * scale} y={cy - 9 * scale} scale={0.85 * scale} /> : null}
+    </G>
+  );
+}
+
+function Eyes({ cx, cy, health, scale = 1 }: { cx: number; cy: number; health: Health; scale?: number }) {
   const g = 6 * scale;
   const r = 4.8 * scale;
   const mouth = 7 * scale;
@@ -49,8 +73,8 @@ function Face({ cx, cy, health, scale = 1 }: { cx: number; cy: number; health: H
   const look = health === 'sete' ? 0 : 1;
   return (
     <G>
-      <Circle cx={cx - g} cy={cy} r={r} fill={WHITE} />
-      <Circle cx={cx + g} cy={cy} r={r} fill={WHITE} />
+      <Circle cx={cx - g} cy={cy} r={r} fill={EYE} />
+      <Circle cx={cx + g} cy={cy} r={r} fill={EYE} />
       <Circle cx={cx - g + look} cy={cy + (health === 'sete' ? 1.5 : 0.6)} r={r * 0.45} fill={INK} />
       <Circle cx={cx + g + look} cy={cy + (health === 'sete' ? 1.5 : 0.6)} r={r * 0.45} fill={INK} />
       {health === 'sete' ? (

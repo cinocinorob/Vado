@@ -180,6 +180,8 @@ export const demoSource: SocialSource = {
   sync: async () => undefined,
   reset: () => resetDemo(),
   recoveryCode: async () => null,
+  forget: async () => undefined,
+  candies: async () => null,
   recover: async () => ({ ok: false, problem: "Nell'anteprima non ci sono profili da recuperare." }),
 
   async profile(): Promise<Profile | null> {

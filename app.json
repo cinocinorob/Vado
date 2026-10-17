@@ -66,6 +66,13 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      "expo-background-task",
+      [
+        "expo-notifications",
+        {
+          "color": "#C8F560"
+        }
       ]
     ]
   }

@@ -15,7 +15,8 @@ import {
   type Zone,
 } from '../core/social';
 import type { SpeciesId, TreeBadge } from '../core/plant';
-import { myTree, social, type LeagueBoard, type LeagueSummary, type MonthlyChallenge, type Profile } from '../social';
+import { candyOpen } from '../core/halloween';
+import { myTree, social, type CandyEntry, type LeagueBoard, type LeagueSummary, type MonthlyChallenge, type Profile } from '../social';
 import { leagueToOpen } from '../social/selection';
 import { loadTree, saveTree } from '../storage/tree';
 import { useActiveTrip } from '../tracking/store';
@@ -24,9 +25,10 @@ import { PlusIcon, ShareIcon } from '../ui/Icons';
 import { Mascot } from '../ui/Mascot';
 import { HeroBlock } from '../ui/Hero';
 import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, ProgressBar, Screen, input, text } from '../ui/parts';
-import { ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
+import { Avatar, ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
 import { C, F } from '../ui/theme';
 import { TreePicker } from '../ui/TreeAvatar';
+import { Candy } from '../ui/Halloween';
 
 type Section = 'leghe' | 'sfide';
 
@@ -48,6 +50,7 @@ export default function Classifica() {
   const [leagues, setLeagues] = useState<LeagueSummary[]>([]);
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [board, setBoard] = useState<LeagueBoard | null>(null);
+  const [sweets, setSweets] = useState<CandyEntry[] | null>(null);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [monthly, setMonthly] = useState<MonthlyChallenge | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -83,6 +86,7 @@ export default function Classifica() {
     setLeagues(list);
     setLeagueId(id);
     setBoard(nextBoard);
+    setSweets(id && candyOpen(at) ? await social.candies(id, at) : null);
     setChallenges(nextChallenges);
     setMonthly(nextMonthly);
     setConfirmLeave(false);
@@ -112,6 +116,7 @@ export default function Classifica() {
     setLeagueId(id);
     setConfirmLeave(false);
     setBoard(await social.board(id, clock()));
+    setSweets(candyOpen(clock()) ? await social.candies(id, clock()) : null);
     setProblem(social.problem());
   }
 
@@ -174,7 +179,7 @@ export default function Classifica() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={pulling} onRefresh={pull} colors={[C.ink]} tintColor={C.ink} />}
+        refreshControl={<RefreshControl refreshing={pulling} onRefresh={pull} colors={[C.text]} tintColor={C.text} />}
       >
         <HeroBlock
           caption={weekLabel(now)}
@@ -293,6 +298,7 @@ export default function Classifica() {
                   </Panel>
                 ) : null}
                 {ranked.length <= 3 ? <MeOnPodium ranked={ranked} /> : null}
+                {sweets && sweets.length > 0 ? <Sweets entries={sweets} mine={mine} /> : null}
                 {board.kind === 'livelli' ? <ZoneLegend /> : null}
               </>
             ) : null}
@@ -354,7 +360,7 @@ export default function Classifica() {
               ))
             )}
 
-            <PrimaryButton label="Nuova sfida" onPress={() => router.push('/sfida-nuova')} icon={<PlusIcon size={20} color={C.lime} />} />
+            <PrimaryButton label="Nuova sfida" onPress={() => router.push('/sfida-nuova')} icon={<PlusIcon size={20} color={C.onStrong} />} />
           </>
         )}
         </View>
@@ -387,6 +393,32 @@ function ZoneLegend() {
         <View style={[styles.legendDot, { backgroundColor: ZONE_DOWN }]} />
         <Text style={text.small}>Scende di livello</Text>
       </View>
+    </View>
+  );
+}
+
+/** "Dolcetto o scherzetto": la lega ordinata per caramelle (km senza auto dal 15 al 31 ottobre). */
+function Sweets({ entries, mine }: { entries: CandyEntry[]; mine: TreeBadge | null }) {
+  const sorted = [...entries].sort((a, b) => b.candies - a.candies || a.name.localeCompare(b.name, 'it'));
+  return (
+    <View style={styles.sweets}>
+      <View style={styles.sweetsHead}>
+        <Candy size={44} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.sweetsTitle}>Dolcetto o scherzetto</Text>
+          <Text style={styles.sweetsBody}>Un km senza auto, una caramella. Vince chi ne ha di più il 31 ottobre.</Text>
+        </View>
+      </View>
+      {sorted.map((e, i) => (
+        <View key={e.id} style={styles.sweetRow}>
+          <Text style={styles.sweetRank}>{i + 1}</Text>
+          <Avatar id={e.id} name={e.name} me={e.me} size={34} tree={e.me && mine ? mine : e.tree} />
+          <Text style={styles.sweetName} numberOfLines={1}>
+            {e.me ? 'Tu' : e.name}
+          </Text>
+          <Text style={styles.sweetCount}>{e.candies}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -470,6 +502,14 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: GUTTER, paddingTop: 18, gap: 18 },
   sections: { marginTop: 14 },
   heroTabs: { padding: 0, marginTop: 14 },
+  sweets: { backgroundColor: C.deep, borderRadius: 28, padding: 16, gap: 8 },
+  sweetsHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  sweetsTitle: { fontFamily: F.bold, fontSize: 17, color: '#FFF3C4' },
+  sweetsBody: { fontFamily: F.medium, fontSize: 13, lineHeight: 18, color: C.onInkDim },
+  sweetRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 },
+  sweetRank: { width: 20, fontFamily: F.displayBold, fontSize: 16, color: C.onInk },
+  sweetName: { flex: 1, fontFamily: F.semi, fontSize: 15, color: C.onInk },
+  sweetCount: { fontFamily: F.displayBold, fontSize: 18, color: '#FFC48A' },
   pickTitle: { fontFamily: F.bold, fontSize: 15, color: C.text, marginTop: 4 },
   invite: { backgroundColor: C.tonal, height: 44, paddingLeft: 12, paddingRight: 16, borderRadius: 22, flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   inviteText: { fontFamily: F.bold, fontSize: 14, color: C.text },
@@ -485,7 +525,7 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   code: { gap: 10, alignItems: 'stretch' },
-  codeValue: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, letterSpacing: 6, color: C.ink },
+  codeValue: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, letterSpacing: 6, color: C.text },
   leave: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12 },
   monthly: { gap: 12 },
   monthlyHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },

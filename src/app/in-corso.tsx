@@ -237,9 +237,9 @@ function TrackView({ path, gpsUsable, paused }: { path: PathPoint[]; gpsUsable: 
       {size.w > 0 ? (
         <Svg width={size.w} height={size.h}>
           {/* Il percorso è una strada: bordo a inchiostro, corsia lime. */}
-          <Polyline points={line} fill="none" stroke={C.ink} strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" />
+          <Polyline points={line} fill="none" stroke={C.deep} strokeWidth={16} strokeLinecap="round" strokeLinejoin="round" />
           <Polyline points={line} fill="none" stroke={C.lime} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" />
-          <Circle cx={pts[0].x} cy={pts[0].y} r={8} fill={C.card} stroke={C.ink} strokeWidth={3} />
+          <Circle cx={pts[0].x} cy={pts[0].y} r={8} fill={C.card} stroke={C.text} strokeWidth={3} />
           <G transform={`translate(${(last.x - 28).toFixed(1)} ${(last.y - 28).toFixed(1)}) scale(0.583)`}>
             <MascotShapes disc={C.coral} />
           </G>
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   map: { flex: 1, minHeight: 140, marginVertical: 12, backgroundColor: C.card, borderRadius: R.card, overflow: 'hidden' },
   waiting: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, paddingHorizontal: 24 },
   notice: { fontFamily: F.bold, fontSize: 12.5, lineHeight: 17, color: C.alert, marginBottom: 10 },
-  sheet: { borderRadius: R.hero, padding: 20, gap: 16, marginBottom: 6, backgroundColor: C.ink },
+  sheet: { borderRadius: R.hero, padding: 20, gap: 16, marginBottom: 6, backgroundColor: C.deep },
   pointsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   pointsLine: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   points: { fontFamily: F.displayBold, fontSize: 76, lineHeight: 82, letterSpacing: -2, color: C.lime },

@@ -330,16 +330,23 @@ def shown_distance() -> float | None:
 
 
 def summary_distance() -> float | None:
-    """Distanza del tratto nella schermata di riepilogo ("205 m · 4 min")."""
-    for node in nodes():
-        for value in (node["text"], node["desc"]):
-            match = re.match(r"(\d+(?:[.,]\d+)?)\s(km|m) · ", value)
-            if match:
-                number = float(match.group(1).replace(",", "."))
-                meters = number * 1000 if match.group(2) == "km" else number
-                # La riga del tratto è in metri sotto il chilometro: è la più precisa.
-                if match.group(2) == "m" or meters >= 1000:
-                    return meters
+    """Distanza del tratto nella schermata di riepilogo ("205 m · 4 min").
+
+    La riga del tratto può stare sotto la medaglia nuova: se non si vede, si
+    scorre la schermata un po' alla volta.
+    """
+    for attempt in range(5):
+        for node in nodes():
+            for value in (node["text"], node["desc"]):
+                match = re.match(r"(\d+(?:[.,]\d+)?)\s(km|m) · ", value)
+                if match:
+                    number = float(match.group(1).replace(",", "."))
+                    meters = number * 1000 if match.group(2) == "km" else number
+                    # La riga del tratto è in metri sotto il chilometro: è la più precisa.
+                    if match.group(2) == "m" or meters >= 1000:
+                        return meters
+        adb("shell", "input", "swipe", "540", "1500", "540", "900", "300")
+        time.sleep(0.8)
     return None
 
 
@@ -451,7 +458,9 @@ def check_leaderboard() -> str:
 
 def check_backup() -> str:
     """Schermata Backup: il codice di recupero si vede, e creare il file non fa chiudere l'app."""
-    log("apro Backup")
+    log("apro Backup dalle impostazioni")
+    if not open_settings():
+        return "impostazioni non trovate: " + visible_text()[:300]
     link = scroll_to("Backup e cambio telefono", swipes=10)
     if not link:
         return "collegamento a Backup non trovato: " + visible_text()[:300]
@@ -480,7 +489,35 @@ def check_backup() -> str:
     if not result:
         return "dopo la condivisione non compare la conferma del backup: " + visible_text()[:400]
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    time.sleep(1)
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi da Backup")
+    return "ok"
+
+
+def open_settings() -> bool:
+    """Da Oggi: torna in cima e apre le impostazioni (l'ingranaggio accanto al germoglio)."""
+    for _ in range(4):
+        adb("shell", "input", "swipe", "540", "900", "540", "1700", "300")
+        time.sleep(0.4)
+    gear = wait_for("Impostazioni", 15, "cercando le impostazioni", exact=True, required=False)
+    if not gear:
+        return False
+    tap(gear)
+    return wait_for("Aspetto", 15, "aprendo le impostazioni", exact=True, required=False) is not None
+
+
+def check_storico() -> str:
+    """Lo storico si apre e mostra le settimane."""
+    link = scroll_to("Storico: settimane e mesi", swipes=10)
+    if not link:
+        return "collegamento allo storico non trovato: " + visible_text()[:300]
+    tap(link)
+    if not wait_for("Punti per settimana", 15, "aprendo lo storico", required=False):
+        return "lo storico non si apre: " + visible_text()[:300]
+    screenshot("storico")
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dallo storico")
     return "ok"
 
 
@@ -529,10 +566,7 @@ def clean_server() -> str:
         server("vado_delete_account", {"p_secret": friend_secret})
     except Exception as error:
         notes.append(f"secondo partecipante non cancellato ({error})")
-    for _ in range(4):
-        adb("shell", "input", "swipe", "540", "900", "540", "1500", "300")
-        time.sleep(0.5)
-    reset = scroll_to("Azzera i dati di prova", swipes=10)
+    reset = scroll_to("Azzera tutti i dati", swipes=10) if open_settings() else None
     if not reset:
         notes.append("pulsante Azzera non trovato: il profilo ProvaCI resta sul server")
     else:
@@ -696,7 +730,11 @@ def main() -> None:
 
     log("apro l'app")
     adb("shell", "monkey", "-p", PACKAGE, "-c", "android.intent.category.LAUNCHER", "1")
-    wait_for("Inizia un tragitto", 90, "all'apertura")
+    welcome = wait_for("Salta la presentazione", 90, "all'apertura", required=False)
+    if welcome:
+        screenshot("benvenuto")
+        tap(welcome)
+    wait_for("Inizia un tragitto", 60, "all'apertura")
     screenshot("oggi")
 
     log("apro Nuovo tragitto")
@@ -763,6 +801,7 @@ def main() -> None:
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
 
     plant = check_bosco()
+    history = check_storico()
     board = check_leaderboard()
     backup = check_backup() if board == "ok" else "non provato: manca il profilo"
     metro = check_metro()
@@ -791,12 +830,14 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; germoglio: {plant}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
+        f"permessi: {answered}; germoglio: {plant}; storico: {history}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
     )
     if backup != "ok":
         problems.append(f"backup: {backup}")
     if plant != "ok":
         problems.append(f"germoglio: {plant}")
+    if history != "ok":
+        problems.append(f"storico: {history}")
     if board != "ok":
         problems.append(f"classifica: {board}")
     if metro != "ok":

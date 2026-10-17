@@ -137,7 +137,7 @@ export default function HoPresoLaMetro() {
               <Text style={text.caption}>Sei arrivato a</Text>
               {arrival === null ? (
                 <View style={styles.searching}>
-                  <ActivityIndicator color={C.ink} />
+                  <ActivityIndicator color={C.text} />
                   <Text style={text.body}>Cerco la stazione dove ti trovi…</Text>
                 </View>
               ) : arrival.kind === 'ok' ? (
@@ -203,8 +203,8 @@ export default function HoPresoLaMetro() {
                           accessibilityLabel={station.name}
                           style={[styles.stop, selected && styles.stopOn]}
                         >
-                          <Text style={[styles.stopName, selected && { fontFamily: F.bold }]}>{station.name}</Text>
-                          <View style={[styles.radio, selected && styles.radioOn]}>{selected ? <CheckIcon size={14} /> : null}</View>
+                          <Text style={[styles.stopName, selected && { fontFamily: F.bold, color: C.ink }]}>{station.name}</Text>
+                          <View style={[styles.radio, selected && styles.radioOn]}>{selected ? <CheckIcon size={14} color={C.ink} /> : null}</View>
                         </Pressable>
                       );
                     })}
@@ -290,11 +290,11 @@ const styles = StyleSheet.create({
   stop: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, borderRadius: 14 },
   stopOn: { backgroundColor: C.limeSoft },
   stopName: { flex: 1, fontFamily: F.semi, fontSize: 15, color: C.text },
-  radio: { width: 26, height: 26, borderRadius: 13, borderWidth: 2.5, borderColor: C.ink, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  radio: { width: 26, height: 26, borderRadius: 13, borderWidth: 2.5, borderColor: C.outline, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   radioOn: { backgroundColor: C.lime },
   result: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.lime },
-  resultTitle: { fontFamily: F.displayBold, fontSize: 19, lineHeight: 23, color: C.text },
-  resultDetail: { fontFamily: F.semi, fontSize: 13, lineHeight: 18, color: C.text },
+  resultTitle: { fontFamily: F.displayBold, fontSize: 19, lineHeight: 23, color: C.ink },
+  resultDetail: { fontFamily: F.semi, fontSize: 13, lineHeight: 18, color: C.ink },
   commute: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, paddingVertical: 12 },
   commuteTitle: { fontFamily: F.bold, fontSize: 15, color: C.text },
   info: { flexDirection: 'row', gap: 12, borderRadius: 20, paddingVertical: 12, backgroundColor: C.limeSoft },

@@ -49,7 +49,7 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
 function Tab({ label, active, onPress, icon }: { label: string; active: boolean; onPress: () => void; icon: (color: string) => React.ReactNode }) {
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: active }} accessibilityLabel={label} style={styles.tab}>
-      <View style={[styles.indicator, active && styles.indicatorOn]}>{icon(C.ink)}</View>
+      <View style={[styles.indicator, active && styles.indicatorOn]}>{icon(active ? C.ink : C.text)}</View>
       <Text style={[styles.tabLabel, active && styles.tabLabelOn]}>{label}</Text>
     </Pressable>
   );
@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', gap: 4 },
   indicator: { width: 64, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   indicatorOn: { backgroundColor: C.lime },
-  tabLabel: { fontFamily: F.medium, fontSize: 12, color: '#45493D' },
-  tabLabelOn: { fontFamily: F.bold, color: C.ink },
+  tabLabel: { fontFamily: F.medium, fontSize: 12, color: C.dim },
+  tabLabelOn: { fontFamily: F.bold, color: C.text },
   fab: {
     position: 'absolute',
     right: 16,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     boxShadow: '0px 6px 16px 0px rgba(58, 19, 6, 0.22)',
     zIndex: 2,
   },
-  fabActive: { backgroundColor: C.ink },
+  fabActive: { backgroundColor: C.deep },
   fabLabel: { fontFamily: F.bold, fontSize: 16, color: C.onCoral },
   pressed: { transform: [{ scale: 0.96 }] },
 });

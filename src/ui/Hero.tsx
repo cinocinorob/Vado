@@ -28,7 +28,7 @@ export function HeroBlock({
   title,
   right,
   children,
-  color = C.lime,
+  color = C.hero,
   style,
 }: {
   caption: string;
@@ -55,12 +55,12 @@ export function StickerChip({ children, label }: { children: ReactNode; label?: 
   );
 }
 
-export const chipText = { fontFamily: F.bold, fontSize: 13, color: C.lime } as const;
+export const chipText = { fontFamily: F.bold, fontSize: 13, color: C.onStrong } as const;
 
 const styles = StyleSheet.create({
   header: { minHeight: 64, flexDirection: 'row', alignItems: 'flex-end', gap: 12, paddingHorizontal: 20 },
   caption: { fontFamily: F.medium, fontSize: 14, color: C.dim },
-  title: { fontFamily: F.displayBold, fontSize: 42, lineHeight: 48, letterSpacing: -1, color: C.ink },
+  title: { fontFamily: F.displayBold, fontSize: 42, lineHeight: 48, letterSpacing: -1, color: C.text },
   block: { marginTop: 16, marginHorizontal: 16, borderRadius: R.hero, padding: 20, overflow: 'hidden' },
-  chip: { height: 36, paddingLeft: 10, paddingRight: 14, borderRadius: 18, backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  chip: { height: 36, paddingLeft: 10, paddingRight: 14, borderRadius: 18, backgroundColor: C.strong, flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

@@ -67,7 +67,7 @@ export function Chip({ label, active, onPress, icon }: { label: string; active?:
       style={[styles.chip, active ? styles.chipActive : null]}
     >
       {icon}
-      <Text style={styles.chipText} numberOfLines={1}>
+      <Text style={[styles.chipText, active && { color: C.ink }]} numberOfLines={1}>
         {label}
       </Text>
     </Pressable>
@@ -141,10 +141,10 @@ export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked
       accessible
       accessibilityLabel={`${entry.rank}º: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti${zoneText ? `, ${zoneText.toLowerCase()}` : ''}`}
     >
-      <Text style={styles.rowRank}>{entry.rank}</Text>
+      <Text style={[styles.rowRank, entry.me && { color: C.ink }]}>{entry.rank}</Text>
       <Avatar id={entry.id} name={entry.name} me={entry.me} tree={entry.tree} />
       <View style={styles.rowText}>
-        <Text style={styles.rowName} numberOfLines={1}>
+        <Text style={[styles.rowName, entry.me && { color: C.ink }]} numberOfLines={1}>
           {entry.me ? 'Tu' : entry.name}
         </Text>
         <Text style={[styles.rowDetail, entry.me && { color: C.ink }]} numberOfLines={1}>
@@ -153,7 +153,7 @@ export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked
       </View>
       {zone === 'sale' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_UP }]} /> : null}
       {zone === 'scende' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_DOWN }]} /> : null}
-      <Text style={styles.rowPoints}>{entry.points}</Text>
+      <Text style={[styles.rowPoints, entry.me && { color: C.ink }]}>{entry.points}</Text>
       <View style={styles.rowTrend}>{entry.trend ? <TrendIcon trend={entry.trend} /> : null}</View>
     </View>
   );
@@ -207,7 +207,7 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
   else verdict = `${winnerNames.length === 1 ? 'Ha vinto' : 'Hanno vinto'} ${winnerNames.join(' e ')}`;
 
   return (
-    <View style={[styles.card, over && state.won && { backgroundColor: C.lime }]}>
+    <View style={[styles.card, over && state.won && { borderWidth: 3, borderColor: C.lime }]}>
       <View style={styles.cardHead}>
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle} accessibilityRole="header">
@@ -217,7 +217,7 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
         </View>
         {onRemove && over ? (
           <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Elimina la sfida ${challenge.title}`} hitSlop={10} style={styles.cardRemove}>
-            <TrashIcon size={18} color={C.ink} />
+            <TrashIcon size={18} color={C.text} />
           </Pressable>
         ) : null}
       </View>
@@ -250,9 +250,9 @@ const styles = StyleSheet.create({
 
   segmented: { height: 48, flexDirection: 'row', gap: 2 },
   segment: { flex: 1, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center' },
-  segmentActive: { backgroundColor: C.ink },
-  segmentText: { fontFamily: F.bold, fontSize: 14, color: C.ink },
-  segmentTextActive: { color: C.lime },
+  segmentActive: { backgroundColor: C.strong },
+  segmentText: { fontFamily: F.bold, fontSize: 14, color: C.text },
+  segmentTextActive: { color: C.onStrong },
 
   chip: {
     backgroundColor: C.tonal,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   chipActive: { backgroundColor: C.lime },
-  chipText: { fontFamily: F.semi, fontSize: 14, color: C.ink },
+  chipText: { fontFamily: F.semi, fontSize: 14, color: C.text },
 
   podium: { height: 256, flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
   podiumColumn: { flex: 1, alignItems: 'center', gap: 6 },

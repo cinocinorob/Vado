@@ -82,13 +82,13 @@ export function WeekStrip({ activeDays, now }: { activeDays: ReadonlySet<string>
       {days.map((day, i) => {
         const done = activeDays.has(day.key);
         const today = i === 6;
-        const fill = done ? (today ? C.ink : C.lime) : C.tonal;
+        const fill = done ? (today ? C.strong : C.lime) : C.tonal;
         return (
           <View key={day.key} style={styles.weekDay}>
             <Svg width={34} height={34} viewBox="0 0 96 96">
               <Path d={SHAPES[WEEK_SHAPES[i]]} fill={fill} />
               {done ? (
-                <Path d="M30 50l12 12 24-26" fill="none" stroke={today ? C.lime : C.ink} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
+                <Path d="M30 50l12 12 24-26" fill="none" stroke={today ? C.onStrong : C.ink} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
               ) : null}
             </Svg>
             <Text style={[styles.weekLabel, today && styles.weekToday]}>{day.label}</Text>
@@ -136,13 +136,13 @@ export function ShapeBadge({ shape, color, size, children }: { shape: ShapeId; c
 const styles = StyleSheet.create({
   groupRow: { backgroundColor: C.card, paddingHorizontal: 16, overflow: 'hidden' },
   tonal: { height: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: C.tonal, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  tonalLabel: { fontFamily: F.semi, fontSize: 13, color: '#2E3424' },
+  tonalLabel: { fontFamily: F.semi, fontSize: 13, color: C.text },
   section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 40, paddingHorizontal: 4, marginTop: 8 },
   sectionTitle: { fontFamily: F.bold, fontSize: 17, color: C.text },
   week: { flexDirection: 'row', backgroundColor: C.card, borderRadius: R.card, paddingTop: 14, paddingBottom: 10, paddingHorizontal: 6 },
   weekDay: { flex: 1, alignItems: 'center', gap: 6 },
   weekLabel: { fontFamily: F.medium, fontSize: 12, color: C.dim },
-  weekToday: { fontFamily: F.bold, color: C.ink },
+  weekToday: { fontFamily: F.bold, color: C.text },
   co2: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -113,3 +113,28 @@ test('pausa: congela l\'aspetto, i giorni in pausa non contano, dura al massimo 
   // Avviarla due volte non crea doppioni.
   assert.equal(startPause(open, TODAY).length, 1);
 });
+
+test('Halloween: caramelle dal 15 al 31 ottobre, un km senza auto ciascuna', async () => {
+  const { candies, candyOpen } = await import('./halloween');
+  const { isHalloweenSeason, resolveLook, isWitchingHour } = await import('./look');
+  const at = (m: number, d: number, h = 12) => new Date(2026, m, d, h).getTime();
+  const t = (end: number, legs: LegResult[]): Trip => ({ ...trip(dayKey(end), legs), startedAt: end - 600000, endedAt: end });
+  const list = [
+    t(at(9, 14), [leg('piedi', 5000)]),
+    t(at(9, 16), [leg('piedi', 1500), leg('tpl', 2600)]),
+    t(at(9, 20), [leg('auto', 9000)]),
+    t(at(9, 21), [leg('carsharing', 3000), leg('bici', 900)]),
+    t(at(10, 1), [leg('piedi', 3000)]),
+  ];
+  assert.equal(candies(list, at(9, 25)), 5);
+  assert.equal(candyOpen(at(9, 31, 23)), true);
+  assert.equal(candyOpen(at(10, 1)), false);
+  assert.equal(isHalloweenSeason(at(9, 17)), true);
+  assert.equal(isHalloweenSeason(at(10, 2)), true);
+  assert.equal(isHalloweenSeason(at(10, 3)), false);
+  assert.equal(resolveLook('auto', at(9, 17), false), 'halloween');
+  assert.equal(resolveLook('auto', at(11, 1), true), 'scuro');
+  assert.equal(resolveLook('chiaro', at(9, 17), true), 'chiaro');
+  assert.equal(isWitchingHour(at(9, 31, 18)), true);
+  assert.equal(isWitchingHour(at(9, 31, 12)), false);
+});

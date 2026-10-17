@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import { useEased } from './motion';
 import { waveArc, waveLine } from './shapes';
 import { C } from './theme';
 
@@ -15,9 +16,9 @@ const clamp = (n: number) => Math.min(1, Math.max(0, n));
 export function WavyRing({
   size,
   ratio,
-  color = C.ink,
-  overColor = C.coral,
-  track = 'rgba(26, 29, 20, 0.12)',
+  color = C.text,
+  overColor = C.over,
+  track = C.faint,
   stroke = 9,
 }: {
   size: number;
@@ -28,8 +29,10 @@ export function WavyRing({
   stroke?: number;
 }) {
   const r = 90;
-  const first = clamp(ratio);
-  const over = clamp(ratio - 1);
+  // L'anello si riempie quando compare e quando cambia.
+  const shown = useEased(ratio, 900);
+  const first = clamp(shown);
+  const over = clamp(shown - 1);
   return (
     <Svg width={size} height={size} viewBox="0 0 220 220">
       <Circle cx={110} cy={110} r={r} fill="none" stroke={track} strokeWidth={stroke} />
@@ -42,8 +45,8 @@ export function WavyRing({
 /** Barra: tratto ondulato fino al valore, poi binario piatto con il punto di arrivo. */
 export function WavyBar({
   ratio,
-  color = C.ink,
-  track = 'rgba(26, 29, 20, 0.14)',
+  color = C.text,
+  track = C.faint,
   height = 16,
   stroke = 5,
   style,

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SPECIES, type SpeciesId, type TreeBadge } from '../core/plant';
 import { ShapeBadge } from './expressive';
+import { buzz } from './motion';
 import { Sprout, Tree } from './Sprout';
 import { C, F } from './theme';
 
@@ -36,7 +37,10 @@ export function TreePicker({ value, onChange }: { value: SpeciesId | null; onCha
         return (
           <Pressable
             key={s.id}
-            onPress={() => onChange(s.id)}
+            onPress={() => {
+              buzz('tocco');
+              onChange(s.id);
+            }}
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
             accessibilityLabel={s.name}
@@ -54,8 +58,8 @@ export function TreePicker({ value, onChange }: { value: SpeciesId | null; onCha
 }
 
 const styles = StyleSheet.create({
-  count: { position: 'absolute', right: -2, bottom: -2, paddingHorizontal: 3, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' },
-  countText: { fontFamily: F.displayBold, color: C.lime, includeFontPadding: false },
+  count: { position: 'absolute', right: -2, bottom: -2, paddingHorizontal: 3, backgroundColor: C.strong, alignItems: 'center', justifyContent: 'center' },
+  countText: { fontFamily: F.displayBold, color: C.onStrong, includeFontPadding: false },
   picker: { flexDirection: 'row', gap: 4 },
   option: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderRadius: 20, backgroundColor: C.tonal },
   optionOn: { backgroundColor: C.lime },

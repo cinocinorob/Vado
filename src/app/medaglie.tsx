@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { isHalloweenSeason } from '../core/look';
 import { badgeStates, nextBadge, progressLabel, type BadgeState } from '../core/badges';
 import type { Trip } from '../core/scoring';
 import { loadTrips } from '../storage/trips';
@@ -43,12 +44,16 @@ export default function Medaglie() {
     }, []),
   );
 
-  const badges = badgeStates(trips, now);
+  const all = badgeStates(trips, now);
+  // Le medaglie a tempo non contano nel totale: compaiono quando si possono prendere o quando le hai.
+  const badges = all.filter((b) => !b.seasonal);
+  const seasonal = all.filter((b) => b.seasonal && (b.unlocked || isHalloweenSeason(now)));
   const unlocked = badges.filter((b) => b.unlocked).length;
   const next = nextBadge(badges);
 
-  const earned = badges.filter((b) => b.unlocked);
+  const earned = [...badges.filter((b) => b.unlocked), ...seasonal.filter((b) => b.unlocked)];
   const todo = badges.filter((b) => !b.unlocked && b.id !== next?.id).sort((x, y) => y.ratio - x.ratio);
+  const timed = seasonal.filter((b) => !b.unlocked);
   const missing = next ? remaining(next) : '';
 
   return (
@@ -114,6 +119,23 @@ export default function Medaglie() {
             </>
           ) : null}
 
+          {timed.length > 0 ? (
+            <>
+              <SectionTitle title="Medaglia a tempo" />
+              <Group>
+                {timed.map((badge) => (
+                  <View key={badge.id} style={styles.row}>
+                    <Medal id={badge.id} look="in-corso" size={54} label={medalLabel(badge)} />
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowName}>{badge.name}</Text>
+                      <Text style={text.small}>{badge.goal}. Si prende solo quella sera.</Text>
+                    </View>
+                  </View>
+                ))}
+              </Group>
+            </>
+          ) : null}
+
           <Text style={[text.small, styles.rule]}>
             Contano solo i tratti validi. Per le medaglie a numero di tragitti servono almeno 500 metri con quel mezzo.
           </Text>
@@ -139,8 +161,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
   next: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
   nextText: { flex: 1, gap: 4, alignItems: 'flex-start' },
-  nextChip: { height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.ink, justifyContent: 'center' },
-  nextCaption: { fontFamily: F.bold, fontSize: 12, color: C.coralSoft },
+  nextChip: { height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: C.strong, justifyContent: 'center' },
+  nextCaption: { fontFamily: F.bold, fontSize: 12, color: C.onStrong },
   nextName: { fontFamily: F.displayBold, fontSize: 27, lineHeight: 32, color: C.onCoral },
   nextGoal: { fontFamily: F.medium, fontSize: 14, lineHeight: 19, color: C.onCoralDim },
   shelf: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: C.card, borderRadius: 32, paddingVertical: 16, paddingHorizontal: 6, rowGap: 14 },

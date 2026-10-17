@@ -2,10 +2,11 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { ModeId } from '../core/modes';
+import { C } from './theme';
 
 type IconProps = { size?: number; color?: string };
 
-function Stroke({ size = 24, color = '#1A1D14', width = 2.2, children }: IconProps & { width?: number; children: React.ReactNode }) {
+function Stroke({ size = 24, color = C.text, width = 2.2, children }: IconProps & { width?: number; children: React.ReactNode }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
       {children}
@@ -89,7 +90,7 @@ export function ModeIcon({ mode, ...props }: IconProps & { mode: ModeId }) {
   }
 }
 
-export function PlayIcon({ size = 24, color = '#1A1D14' }: IconProps) {
+export function PlayIcon({ size = 24, color = C.text }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Path d="M8 5l11 7-11 7V5z" />
@@ -97,7 +98,7 @@ export function PlayIcon({ size = 24, color = '#1A1D14' }: IconProps) {
   );
 }
 
-export function PauseIcon({ size = 18, color = '#1A1D14' }: IconProps) {
+export function PauseIcon({ size = 18, color = C.text }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={6} y={5} width={4} height={14} rx={1.5} />
@@ -106,7 +107,7 @@ export function PauseIcon({ size = 18, color = '#1A1D14' }: IconProps) {
   );
 }
 
-export function StopIcon({ size = 18, color = '#1A1D14' }: IconProps) {
+export function StopIcon({ size = 18, color = C.text }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Rect x={6} y={6} width={12} height={12} rx={2.5} />
@@ -268,6 +269,24 @@ export function TrashIcon(props: IconProps) {
       <Path d="M5 7h14" />
       <Path d="M9 7V4.5h6V7" />
       <Path d="M7 7l1 13h8l1-13" />
+    </Stroke>
+  );
+}
+
+export function GearIcon(props: IconProps) {
+  return (
+    <Stroke width={2} {...props}>
+      <Circle cx={12} cy={12} r={3} />
+      <Path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" />
+      <Circle cx={12} cy={12} r={6.5} />
+    </Stroke>
+  );
+}
+
+export function ChartIcon(props: IconProps) {
+  return (
+    <Stroke width={2.2} {...props}>
+      <Path d="M5 20V11M12 20V5M19 20v-6" />
     </Stroke>
   );
 }

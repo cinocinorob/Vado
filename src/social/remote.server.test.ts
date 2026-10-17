@@ -146,6 +146,24 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   assert.deepEqual(byId.get(flavia.id)?.tree, { species: 'ulivo', stage: 'piantina', trees: 2 });
   assert.equal(byId.get(robbie.id)?.tree, null);
   assert.deepEqual((await a.source.rivals(now))[0].tree, { species: 'ulivo', stage: 'piantina', trees: 2 });
+
+  // --- caramelle: metri senza auto inviati con i punti (ogni tragitto di prova fa 1 km) ---
+  const sweets = await a.source.candies(league.id, recent + 5000);
+  assert.ok(sweets);
+  const sweetById = new Map((sweets ?? []).map((e) => [e.id, e.candies]));
+  // Le caramelle contano solo dal 15 al 31 ottobre: fuori stagione possono essere zero.
+  assert.ok((sweetById.get(robbie.id) ?? -1) >= 0);
+
+  // --- un tragitto cancellato sul telefono sparisce anche dalla classifica ---
+  const removedTrip = a.trips.pop();
+  assert.ok(removedTrip);
+  await a.source.forget([removedTrip.id], now + 20_000);
+  const afterRemoval = await a.source.board(league.id, now);
+  assert.equal(afterRemoval?.entries.find((e) => e.id === robbie.id)?.points, 50 - removedTrip.total);
+  // Rimesso il tragitto, i punti tornano (serve per il resto della prova).
+  a.trips.push(removedTrip);
+  await a.source.sync(now + 30_000);
+  assert.equal((await a.source.board(league.id, now))?.entries.find((e) => e.id === robbie.id)?.points, 50);
   assert.equal(byId.get(flavia.id)?.points, 45);
   assert.equal(byId.get(flavia.id)?.me, false);
   assert.equal(byId.get(flavia.id)?.name, flavia.nickname);

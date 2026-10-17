@@ -8,7 +8,8 @@ import { View } from 'react-native';
 // Importato qui perché il compito che riceve le posizioni va definito
 // all'avvio del programma, prima che venga mostrata qualsiasi schermata.
 import '../tracking/tracker';
-import { C } from '../ui/theme';
+import '../reminders/schedule';
+import { C, DARK_UI } from '../ui/theme';
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -25,7 +26,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style={DARK_UI ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg }, animation: 'fade' }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="classifica" options={{ animation: 'none' }} />
@@ -39,6 +40,10 @@ export default function RootLayout() {
         <Stack.Screen name="riservatezza" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="backup" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="bosco" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="impostazioni" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="storico" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="benvenuto" options={{ animation: 'fade', gestureEnabled: false }} />
+        <Stack.Screen name="bus" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

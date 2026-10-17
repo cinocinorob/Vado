@@ -32,8 +32,9 @@ import {
   type Challenger,
   type Entry,
 } from '../core/social';
+import { candyMeters, candySeason } from '../core/halloween';
 import { decodeRecovery, encodeRecovery } from '../core/recovery';
-import type { LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
+import type { CandyEntry, LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
 
 export type RemoteConfig = {
   /** Indirizzo delle funzioni, senza barra finale. */
@@ -98,6 +99,10 @@ type State = {
   pushed: string[];
   /** Ultimo avatar inviato, per non rimandarlo uguale. */
   tree?: string;
+  /** I tragitti già inviati hanno anche i metri (per le caramelle). */
+  metersSent?: boolean;
+  /** Tragitti cancellati sul telefono da togliere anche dal server. */
+  removed?: string[];
 };
 
 const EMPTY: State = { secret: null, profile: null, pushed: [] };
@@ -226,17 +231,30 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     const state = await load();
     if (!state.secret || !state.profile) return;
     const trips = await config.loadTrips();
-    const sent = new Set(state.pushed);
+    // La prima volta con i metri si rimandano tutti i tragitti recenti: il server aggiorna solo quelli senza.
+    const sent = new Set(state.metersSent ? state.pushed : []);
     const fresh = trips.filter((t) => t.total > 0 && t.endedAt >= now - PUSH_WINDOW_MS && !sent.has(t.id));
     if (fresh.length === 0) return;
     await call('vado_push_scores', {
       p_secret: state.secret,
-      p_scores: fresh.map((t) => ({ id: t.id, at: new Date(t.endedAt).toISOString(), points: t.total, mode: tripMode(t) })),
+      p_scores: fresh.map((t) => ({ id: t.id, at: new Date(t.endedAt).toISOString(), points: t.total, mode: tripMode(t), meters: Math.round(candyMeters(t)) })),
     });
     // Si ricordano solo i tragitti che esistono ancora e sono abbastanza recenti da poter essere rimandati.
     const alive = new Set(trips.filter((t) => t.endedAt >= now - PUSH_WINDOW_MS).map((t) => t.id));
-    const pushed = [...state.pushed.filter((id) => alive.has(id)), ...fresh.map((t) => t.id)];
-    await save({ ...(await load()), pushed });
+    const pushed = [...new Set([...state.pushed.filter((id) => alive.has(id)), ...fresh.map((t) => t.id)])];
+    await save({ ...(await load()), pushed, metersSent: true });
+  }
+
+  /** Toglie dal server i punti dei tragitti cancellati. Se il server non è aggiornato, riprova la volta dopo. */
+  async function pushRemovals(): Promise<void> {
+    const state = await load();
+    if (!state.secret || !state.profile || !state.removed?.length) return;
+    try {
+      await call('vado_remove_scores', { p_secret: state.secret, p_ids: state.removed });
+      await save({ ...(await load()), removed: [] });
+    } catch {
+      // Resta in coda.
+    }
   }
 
   /**
@@ -263,7 +281,8 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
   function sync(now: number, force = false): Promise<void> {
     if (syncing) return syncing;
     if (!force && now - lastSync < SYNC_EVERY_MS) return Promise.resolve();
-    syncing = pushTrips(now)
+    syncing = pushRemovals()
+      .then(() => pushTrips(now))
       .then(() => pushTree())
       .then(() => {
         lastSync = now;
@@ -324,6 +343,28 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     },
 
     sync: (now: number) => sync(now, true),
+
+    async forget(ids: string[], now: number): Promise<void> {
+      const state = await load();
+      const gone = new Set(ids);
+      await save({ ...state, pushed: state.pushed.filter((id) => !gone.has(id)), removed: [...new Set([...(state.removed ?? []), ...ids])].slice(-500) });
+      await sync(now, true);
+    },
+
+    async candies(leagueId: string, now: number): Promise<CandyEntry[] | null> {
+      const { from, to } = candySeason(now);
+      try {
+        const rows = await mine<{ id: string; name: string; me: boolean; tree?: TreeRow; candies: number }[] | null>('vado_candies', {
+          p_league: leagueId,
+          p_from: new Date(from).toISOString(),
+          p_to: new Date(to).toISOString(),
+        });
+        return rows ? rows.map((r) => ({ id: r.id, name: r.name, me: r.me, tree: toTree(r.tree), candies: Math.floor(Number(r.candies) || 0) })) : null;
+      } catch {
+        // Server non ancora aggiornato o rete assente: la scheda non compare.
+        return null;
+      }
+    },
 
     async leagues(now: number): Promise<LeagueSummary[]> {
       await sync(now);

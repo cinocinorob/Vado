@@ -63,3 +63,13 @@ test('si aggiungono solo i tragitti che mancano: rimettere lo stesso file non ra
 test('nome del file con la data', () => {
   assert.equal(backupName(NOW), 'vado-backup-2026-10-12.json');
 });
+
+test('il backup porta anche albero, bosco e pause', () => {
+  const plant = { species: 'ulivo' as const, history: ['pino' as const], pauses: [{ from: '2026-10-10', to: '2026-10-12' }] };
+  const text = JSON.stringify(buildBackup([], null, Date.now(), plant));
+  const parsed = parseBackup(text);
+  assert.ok(parsed.ok);
+  assert.deepEqual(parsed.ok && parsed.plant, plant);
+  const old = parseBackup(JSON.stringify(buildBackup([], null, Date.now())));
+  assert.equal(old.ok && old.plant, null);
+});

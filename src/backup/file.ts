@@ -10,6 +10,8 @@ import * as Sharing from 'expo-sharing';
 
 import { backupName, buildBackup, newTrips, parseBackup } from '../core/backup';
 import { social } from '../social';
+import { loadPauses, savePauses } from '../storage/pause';
+import { loadTree, saveTree } from '../storage/tree';
 import { loadTrips, saveTrips } from '../storage/trips';
 
 export type Outcome = { ok: true; message: string } | { ok: false; problem: string } | { ok: 'annullato' };
@@ -22,7 +24,8 @@ export async function exportBackup(now: number): Promise<Outcome> {
     const file = new File(Paths.cache, backupName(now));
     if (file.exists) file.delete();
     file.create();
-    file.write(JSON.stringify(buildBackup(trips, recovery, now)));
+    const [tree, pauses] = await Promise.all([loadTree(), loadPauses()]);
+    file.write(JSON.stringify(buildBackup(trips, recovery, now, { species: tree.species, history: tree.history, pauses })));
     await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Salva il backup di Vado' });
     const count = trips.length === 1 ? '1 tragitto' : `${trips.length} tragitti`;
     return { ok: true, message: `Backup creato con ${count}${recovery ? ' e il codice di recupero della classifica' : ''}. Controlla di averlo salvato dove l'hai mandato.` };
@@ -49,6 +52,16 @@ export async function importBackup(): Promise<Outcome> {
   const parts = [
     added.length === 0 ? 'Nessun tragitto nuovo: erano già tutti sul telefono.' : `${added.length === 1 ? 'Aggiunto 1 tragitto' : `Aggiunti ${added.length} tragitti`}.`,
   ];
+  if (parsed.plant) {
+    // Albero e bosco: si prendono dal file solo se qui non ce ne sono già.
+    const tree = await loadTree();
+    if (!tree.species && parsed.plant.species) {
+      await saveTree({ species: parsed.plant.species, history: tree.history.length >= parsed.plant.history.length ? tree.history : parsed.plant.history });
+      parts.push('Albero e bosco ritrovati.');
+    }
+    const pauses = await loadPauses();
+    if (pauses.length === 0 && parsed.plant.pauses.length > 0) await savePauses(parsed.plant.pauses);
+  }
   if (parsed.ignored > 0) parts.push(`${parsed.ignored} righe del file erano rovinate e sono state saltate.`);
 
   if (parsed.recovery) {

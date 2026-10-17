@@ -8,7 +8,7 @@ import Svg, { G, Path } from 'react-native-svg';
 
 import type { BadgeId } from '../core/badges';
 import { SHAPES, type ShapeId } from './shapes';
-import { F } from './theme';
+import { C, F } from './theme';
 
 const INK = '#1A1D14';
 
@@ -96,6 +96,17 @@ const LOOKS: Record<BadgeId, Look> = {
     ),
   },
   maratoneta: { shape: 'pent', color: '#FFB59E', number: '42', numberSize: 0.34 },
+  // Luna e pipistrello.
+  'notte-streghe': {
+    shape: 'burst',
+    color: '#C9B3FF',
+    art: (
+      <Picto>
+        <Path d="M15 3a8 8 0 1 0 6 12 7 7 0 0 1-6-12z" />
+        <Path d="M3 9l2-2 1.5 1.5L8 7l1.5 1.5L11 7l2 2-2.5.5L10 11 8 10l-2 1-.5-1.5z" />
+      </Picto>
+    ),
+  },
 };
 
 export type MedalLook = 'sbloccata' | 'in-corso' | 'bloccata';
@@ -106,7 +117,7 @@ export function Medal({ id, look, size = 76, label }: { id: BadgeId; look: Medal
   return (
     <View style={{ width: size, height: size }} accessible accessibilityRole="image" accessibilityLabel={label}>
       <Svg width={size} height={size} viewBox="0 0 96 96" style={StyleSheet.absoluteFill}>
-        <Path d={SHAPES[shape]} fill={look === 'bloccata' ? '#E3E8D3' : color} opacity={look === 'in-corso' ? 0.5 : 1} />
+        <Path d={SHAPES[shape]} fill={look === 'bloccata' ? C.tonal : color} opacity={look === 'in-corso' ? 0.5 : 1} />
         {art ? <G opacity={inkOpacity}>{art}</G> : null}
       </Svg>
       {number ? (

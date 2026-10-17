@@ -8,6 +8,7 @@
  *
  * Funzioni pure, verificate in backup.test.ts.
  */
+import { isSpecies, type Pause, type SpeciesId } from './plant';
 import type { Trip } from './scoring';
 
 export const BACKUP_VERSION = 1;
@@ -19,11 +20,15 @@ export type Backup = {
   trips: Trip[];
   /** Codice di recupero della classifica, se l'utente aveva un profilo. */
   recovery: string | null;
+  /** Il germoglio: albero scelto, specie degli alberi del bosco e pause. Dalla versione 1 dell'app con il bosco. */
+  plant?: Extra;
 };
 
-export function buildBackup(trips: Trip[], recovery: string | null, now: number): Backup {
+export type Extra = { species: SpeciesId | null; history: SpeciesId[]; pauses: Pause[] };
+
+export function buildBackup(trips: Trip[], recovery: string | null, now: number, plant?: Extra): Backup {
   const sorted = [...trips].sort((a, b) => a.endedAt - b.endedAt);
-  return { app: 'vado', version: BACKUP_VERSION, exportedAt: new Date(now).toISOString(), trips: sorted, recovery };
+  return { app: 'vado', version: BACKUP_VERSION, exportedAt: new Date(now).toISOString(), trips: sorted, recovery, ...(plant ? { plant } : {}) };
 }
 
 /** Nome del file: "vado-backup-2026-10-12.json". */
@@ -49,7 +54,22 @@ function isTrip(value: unknown): value is Trip {
   );
 }
 
-export type Parsed = { ok: true; trips: Trip[]; recovery: string | null; ignored: number } | { ok: false; problem: string };
+export type Parsed = { ok: true; trips: Trip[]; recovery: string | null; ignored: number; plant: Extra | null } | { ok: false; problem: string };
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function readExtra(value: unknown): Extra | null {
+  if (!value || typeof value !== 'object') return null;
+  const v = value as Record<string, unknown>;
+  const pauses = Array.isArray(v.pauses)
+    ? v.pauses.filter((p): p is Pause => !!p && typeof p.from === 'string' && DAY.test(p.from) && (p.to === null || (typeof p.to === 'string' && DAY.test(p.to))))
+    : [];
+  return {
+    species: isSpecies(v.species) ? v.species : null,
+    history: Array.isArray(v.history) ? v.history.filter(isSpecies) : [],
+    pauses: pauses.map((p) => ({ from: p.from, to: p.to })),
+  };
+}
 
 export function parseBackup(text: string): Parsed {
   let data: unknown;
@@ -71,6 +91,7 @@ export function parseBackup(text: string): Parsed {
     trips,
     recovery: typeof backup.recovery === 'string' && backup.recovery.length > 0 ? backup.recovery : null,
     ignored: backup.trips.length - trips.length,
+    plant: readExtra(backup.plant),
   };
 }
 

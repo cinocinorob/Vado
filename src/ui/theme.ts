@@ -4,11 +4,17 @@
  * bordo con angoli molto tondi e a volte asimmetrici, forme a lobi, numeri
  * grandi e pesanti.
  *
- * Regola per i colori dei testi: sul chiaro si scrive in inchiostro; lime e
- * corallo sono riempimenti, mai colori di testo su bianco (non si leggono).
- * Il lime come testo va solo su fondo inchiostro.
+ * Tre tavolozze con gli stessi nomi: chiara, scura e Halloween.
+ * Regole: `text`/`dim` sui fondi e sulle schede; `ink` sopra i riempimenti
+ * vivaci (lime, corallo, menta, pastelli), scuro in ogni tema; `strong` per i
+ * riempimenti forti con sopra `onStrong`.
  */
-export const C = {
+import { Appearance } from 'react-native';
+
+import { resolveLook, type Look } from '../core/look';
+import { readLookChoice } from '../storage/lookFile';
+
+const LIGHT = {
   /** Fondo delle schermate. */
   bg: '#F7F9EE',
   /** Fondo delle schede. */
@@ -17,8 +23,17 @@ export const C = {
   tonal: '#E3E8D3',
   /** Barra di navigazione in basso. */
   navBg: '#ECF0E0',
-  /** Inchiostro: testi e riempimenti scuri. */
+  /** Scuro per i contenuti sopra i riempimenti vivaci (lime, corallo, menta, pastelli). Scuro in tutti i temi. */
   ink: '#1A1D14',
+  /** Superficie scura in ogni tema (cronometro del tragitto, serie di giorni), con sopra lime e bianco. */
+  deep: '#1A1D14',
+  /** Riempimento forte (etichette, pulsante principale, interruttore acceso), con sopra onStrong. */
+  strong: '#1A1D14',
+  onStrong: '#C8F560',
+  /** Il blocco principale in cima a Oggi e al riepilogo. */
+  hero: '#C8F560',
+  /** Secondo giro dell'anello, oltre l'obiettivo. */
+  over: '#FF8A65',
   lime: '#C8F560',
   /** Lime chiaro per le righe selezionate. */
   limeSoft: '#E9FAC0',
@@ -33,21 +48,86 @@ export const C = {
   mint: '#CDEFE6',
   onMint: '#04241D',
   onMintDim: '#0D4A3E',
+  /** Verde per testi su schede (CO₂, verificato). */
   teal: '#1F6B5A',
-  /** Testo principale (sul chiaro). */
+  /** Testo principale, su fondo e schede. */
   text: '#1A1D14',
-  /** Testo secondario: contrasto oltre 6:1 su bianco. */
+  /** Testo secondario. */
   dim: '#4F5545',
+  /** Contorni e binari sulle schede. */
+  outline: '#74796D',
   /** Riempimenti neutri: binari delle barre, sagome bloccate. */
   faint: 'rgba(26, 29, 20, 0.12)',
   /** Linee di separazione. */
   line: 'rgba(26, 29, 20, 0.10)',
-  /** Testo su fondo inchiostro. */
+  /** Testo su fondo scuro fisso. */
   onInk: '#FFFFFF',
   onInkDim: 'rgba(255, 255, 255, 0.82)',
-  /** Corallo scuro per avvisi scritti su fondo chiaro (contrasto 4,6:1 su bianco). */
+  /** Avvisi scritti su fondo e schede. */
   alert: '#B83A17',
-} as const;
+};
+
+export type Palette = typeof LIGHT;
+
+const DARK: Palette = {
+  ...LIGHT,
+  bg: '#12140F',
+  card: '#1E2119',
+  tonal: '#2E3327',
+  navBg: '#191C15',
+  deep: '#0A0B08',
+  strong: '#C8F560',
+  onStrong: '#1A1D14',
+  limeSoft: '#D5F29A',
+  coralSoft: '#FFC9B6',
+  mint: '#A9DCCF',
+  teal: '#8ED9C6',
+  text: '#EEF1E6',
+  dim: '#B4BAA8',
+  outline: '#8D9383',
+  faint: 'rgba(238, 241, 230, 0.16)',
+  line: 'rgba(238, 241, 230, 0.12)',
+  alert: '#FF9C85',
+};
+
+/** La notte di Halloween: viola notte, zucca e lime "slime". */
+const HALLOWEEN: Palette = {
+  ...DARK,
+  bg: '#15101C',
+  card: '#221A2C',
+  tonal: '#352A44',
+  navBg: '#1B1424',
+  ink: '#170F1E',
+  deep: '#0C0711',
+  strong: '#B8F23A',
+  onStrong: '#170F1E',
+  hero: '#FF8A2A',
+  over: '#B98CFF',
+  lime: '#B8F23A',
+  limeSoft: '#D6F59A',
+  onLime: '#24310A',
+  coral: '#FF8A2A',
+  coralSoft: '#FFC48A',
+  onCoral: '#2A1205',
+  onCoralDim: '#5A2A08',
+  mint: '#BFB0E8',
+  onMint: '#1C1233',
+  onMintDim: '#3A2A63',
+  teal: '#C7B6FF',
+  text: '#F3EEF8',
+  dim: '#B8AECB',
+  outline: '#8E82A3',
+  faint: 'rgba(243, 238, 248, 0.16)',
+  line: 'rgba(243, 238, 248, 0.12)',
+  alert: '#FF9C85',
+};
+
+/** L'aspetto scelto all'avvio. Cambiarlo richiede di riaprire l'app. */
+export const LOOK: Look = resolveLook(readLookChoice(), Date.now(), Appearance.getColorScheme() === 'dark');
+export const HALLOWEEN_ON = LOOK === 'halloween';
+export const DARK_UI = LOOK !== 'chiaro';
+
+export const C: Palette = LOOK === 'halloween' ? HALLOWEEN : LOOK === 'scuro' ? DARK : LIGHT;
 
 /** Roboto, il carattere di Android, nei pesi pieni che usa Material 3 Expressive. */
 export const F = {

@@ -125,3 +125,17 @@ test('etichette di avanzamento', () => {
   assert.equal(progressLabel(state([trip(0, [['treno', 12.34]])], 'capotreno')), '12,3 di 100 km');
   assert.equal(progressLabel(state([trip(0, [['piedi', 1]]), trip(1, [['piedi', 1]])], 'sette-su-sette')), '2 di 7 giorni');
 });
+
+test('Notte delle streghe: solo la sera del 31 ottobre, senza auto', () => {
+  const evening = new Date(2026, 9, 31, 19, 0).getTime();
+  const noon = new Date(2026, 9, 31, 12, 0).getTime();
+  const mk = (end: number, meters: number): Trip => ({
+    id: String(end), day: '2026-10-31', startedAt: end - 900000, endedAt: end, commute: false,
+    legs: [{ mode: 'piedi', meters, seconds: 900, steps: null, status: 'verificato', note: '', rawPoints: 5, points: 5 }],
+    legPoints: 5, bonus: 0, total: 5, meters, carFreeMeters: meters, capUsed: 0,
+  });
+  const get = (trips: Trip[]) => badgeStates(trips, evening).find((b) => b.id === 'notte-streghe');
+  assert.equal(get([mk(noon, 2000)])?.unlocked, false);
+  assert.equal(get([mk(evening, 300)])?.unlocked, false);
+  assert.equal(get([mk(evening, 2000)])?.unlocked, true);
+});

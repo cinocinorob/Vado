@@ -39,6 +39,7 @@ import {
   switchMode,
   toLegInputs,
 } from './tripState';
+import { applyReminders, cancelForgotReminder, nudgeForgotReminder } from '../reminders/schedule';
 
 const LOCATION_TASK = 'vado-tragitto';
 const KEEP_AWAKE_TAG = 'vado-tragitto';
@@ -67,7 +68,14 @@ TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(LOCATION_TASK,
   if (error || !data?.locations?.length) return;
   const fixes = data.locations.map(toFix);
   activeTripStore.update((trip) => applyFixes(trip, fixes));
+  movedNow();
 });
+
+/** Una posizione nuova arriva solo muovendosi di qualche metro: sposta in avanti il promemoria "hai dimenticato Termina?". */
+function movedNow(): void {
+  const trip = activeTripStore.get();
+  if (trip && !trip.paused) nudgeForgotReminder(Date.now());
+}
 
 /** Il servizio in primo piano esiste solo su Android e non dentro Expo Go. */
 function serviceAvailable(): boolean {
@@ -87,7 +95,7 @@ const FRESH_STEPS_WAIT_MS = 2500;
  * schermo spento. Da Android 13 va chiesto il permesso; se viene negato il
  * servizio funziona lo stesso, ma senza notifica nella tendina.
  */
-async function askNotifications(): Promise<void> {
+export async function askNotifications(): Promise<void> {
   if (Platform.OS !== 'android' || Number(Platform.Version) < 33) return;
   try {
     await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
@@ -139,6 +147,7 @@ async function startLocation(): Promise<boolean> {
   }
   watcher = await Location.watchPositionAsync(LOCATION_OPTIONS, (location) => {
     activeTripStore.update((trip) => applyFixes(trip, [toFix(location)]));
+    movedNow();
   });
   await activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
   return false;
@@ -171,7 +180,7 @@ function startSteps(): void {
   });
 }
 
-async function askLocation(): Promise<boolean> {
+export async function askLocation(): Promise<boolean> {
   try {
     const { granted } = await Location.requestForegroundPermissionsAsync();
     return granted;
@@ -180,7 +189,7 @@ async function askLocation(): Promise<boolean> {
   }
 }
 
-async function askSteps(): Promise<boolean> {
+export async function askSteps(): Promise<boolean> {
   try {
     if (!(await Pedometer.isAvailableAsync())) return false;
     const { granted } = await Pedometer.requestPermissionsAsync();
@@ -236,6 +245,7 @@ export async function changeMode(mode: ModeId): Promise<void> {
 }
 
 export function pauseTracking(): void {
+  cancelForgotReminder();
   activeTripStore.update((trip) => pauseTrip(trip, Date.now()), true);
 }
 
@@ -276,11 +286,14 @@ export async function finishTracking(): Promise<Trip | null> {
   await saveTrip(trip);
   await stopSensors();
   activeTripStore.set(null);
+  cancelForgotReminder();
+  applyReminders(Date.now()).catch(() => undefined);
   return trip;
 }
 
 /** Annulla il tragitto senza salvarlo. */
 export async function discardTracking(): Promise<void> {
+  cancelForgotReminder();
   await stopSensors();
   activeTripStore.set(null);
 }

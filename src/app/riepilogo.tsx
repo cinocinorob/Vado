@@ -1,7 +1,7 @@
 /** Riepilogo a fine tragitto: punti, tratti e perché valgono quanto valgono. */
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { newlyUnlocked, type BadgeState } from '../core/badges';
@@ -16,10 +16,20 @@ import Svg, { Path } from 'react-native-svg';
 import { Group, SectionTitle } from '../ui/expressive';
 import { HeroBlock } from '../ui/Hero';
 import { Medal } from '../ui/Medal';
+import { buzz } from '../ui/motion';
 import { BonusRow, Header, LegRow, PrimaryButton, Screen, text } from '../ui/parts';
 import { SHAPES } from '../ui/shapes';
 import { Sprout, Tree } from '../ui/Sprout';
 import { C, F, R } from '../ui/theme';
+
+/** La medaglia entra con un piccolo rimbalzo. */
+function Pop({ style, children }: { style: StyleProp<ViewStyle>; children: ReactNode }) {
+  const [scale] = useState(() => new Animated.Value(0.4));
+  useEffect(() => {
+    Animated.spring(scale, { toValue: 1, friction: 4, tension: 60, useNativeDriver: true }).start();
+  }, [scale]);
+  return <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>;
+}
 
 type Growth = { text: string; stage: Stage; tree: SpeciesId | null; species?: SpeciesId };
 
@@ -55,7 +65,9 @@ export default function Riepilogo() {
       // Le medaglie che questo tragitto ha fatto scattare.
       if (found) {
         const before = all.filter((t) => t.id !== found.id);
-        setMedals(newlyUnlocked(before, [found], found.endedAt));
+        const unlocked = newlyUnlocked(before, [found], found.endedAt);
+        setMedals(unlocked);
+        buzz(unlocked.length > 0 ? 'premio' : 'fatto');
         setGrowth(growthBetween(before, all, found.endedAt, tree.species ?? DEFAULT_SPECIES));
         setTotalG(totalCo2(all));
       }
@@ -93,24 +105,16 @@ export default function Riepilogo() {
         </HeroBlock>
 
         <View style={styles.body}>
-          <SectionTitle title="Tratti" />
-          <Group>
-            {[
-              ...trip.legs.map((leg, i) => <LegRow key={i} leg={leg} showStatus />),
-              ...(trip.bonus > 0 ? [<BonusRow key="bonus" points={trip.bonus} />] : []),
-            ]}
-          </Group>
-
           {medals.map((medal) => (
             <View key={medal.id} style={styles.prize} accessible accessibilityLabel={`Nuova medaglia: ${medal.name}. ${medal.goal}`}>
-              <View style={styles.halo}>
+              <Pop style={styles.halo}>
                 <Svg width={200} height={200} viewBox="0 0 96 96" style={StyleSheet.absoluteFill}>
                   <Path d={SHAPES.cookie12} fill={C.card} transform="rotate(11 48 48)" />
                 </Svg>
                 <View>
                   <Medal id={medal.id} look="sbloccata" size={156} label={`Medaglia ${medal.name}`} />
                 </View>
-              </View>
+              </Pop>
               <View style={styles.prizeChip}>
                 <Text style={styles.prizeCaption}>Nuova medaglia</Text>
               </View>
@@ -118,6 +122,14 @@ export default function Riepilogo() {
               <Text style={styles.prizeGoal}>{medal.goal}</Text>
             </View>
           ))}
+
+          <SectionTitle title="Tratti" />
+          <Group>
+            {[
+              ...trip.legs.map((leg, i) => <LegRow key={i} leg={leg} showStatus />),
+              ...(trip.bonus > 0 ? [<BonusRow key="bonus" points={trip.bonus} />] : []),
+            ]}
+          </Group>
 
           {growth ? (
             <View style={styles.growth}>
@@ -176,8 +188,8 @@ const styles = StyleSheet.create({
   heroDetail: { fontFamily: F.medium, fontSize: 14, color: C.onLime, marginTop: 4 },
   prize: { backgroundColor: C.lime, borderRadius: R.hero, alignItems: 'center', paddingVertical: 22, paddingHorizontal: 20 },
   halo: { width: 200, height: 200, alignItems: 'center', justifyContent: 'center' },
-  prizeChip: { height: 30, paddingHorizontal: 14, borderRadius: 15, backgroundColor: C.ink, justifyContent: 'center', marginTop: 10 },
-  prizeCaption: { fontFamily: F.bold, fontSize: 13, color: C.lime },
+  prizeChip: { height: 30, paddingHorizontal: 14, borderRadius: 15, backgroundColor: C.strong, justifyContent: 'center', marginTop: 10 },
+  prizeCaption: { fontFamily: F.bold, fontSize: 13, color: C.onStrong },
   prizeName: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, color: C.ink, textAlign: 'center', marginTop: 10 },
   prizeGoal: { fontFamily: F.medium, fontSize: 16, color: C.onLime, textAlign: 'center', marginTop: 4 },
   growth: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.card, borderRadius: R.card, padding: 12, paddingRight: 18 },

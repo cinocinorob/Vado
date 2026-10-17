@@ -66,6 +66,8 @@ create table if not exists vado.scores (
   primary key (user_id, trip_id)
 );
 create index if not exists scores_user_time on vado.scores (user_id, ended_at);
+-- Metri senza auto del tragitto, per le caramelle di Halloween. Aggiunta dopo.
+alter table vado.scores add column if not exists meters integer not null default 0 check (meters between 0 and 500000);
 
 create table if not exists vado.challenges (
   id uuid primary key default gen_random_uuid(),
@@ -257,8 +259,9 @@ begin
   if p_scores is null or jsonb_typeof(p_scores) <> 'array' or jsonb_array_length(p_scores) > 500 then
     raise exception 'dati-non-validi';
   end if;
-  insert into vado.scores (user_id, trip_id, ended_at, points, mode)
-    select v_user, left(s ->> 'id', 40), (s ->> 'at')::timestamptz, (s ->> 'points')::integer, left(s ->> 'mode', 12)
+  insert into vado.scores (user_id, trip_id, ended_at, points, mode, meters)
+    select v_user, left(s ->> 'id', 40), (s ->> 'at')::timestamptz, (s ->> 'points')::integer, left(s ->> 'mode', 12),
+      least(500000, greatest(0, coalesce((s ->> 'meters')::integer, 0)))
     from jsonb_array_elements(p_scores) s
     where coalesce(s ->> 'id', '') <> ''
       -- Un tragitto vale al massimo 60 punti più 10 di bonus.
@@ -266,10 +269,49 @@ begin
       -- Niente tragitti nel futuro, né più vecchi di due mesi.
       and (s ->> 'at')::timestamptz <= now() + interval '10 minutes'
       and (s ->> 'at')::timestamptz >= now() - interval '60 days'
-    on conflict (user_id, trip_id) do nothing;
+    -- Un tragitto già presente aggiorna solo i metri (per chi l'aveva mandato prima che esistessero).
+    on conflict (user_id, trip_id) do update set meters = excluded.meters where vado.scores.meters = 0;
   get diagnostics v_saved = row_count;
   delete from vado.scores where user_id = v_user and ended_at < now() - interval '70 days';
   return json_build_object('saved', v_saved);
+end $$;
+
+-- Toglie i punti dei tragitti cancellati dal telefono.
+create or replace function public.vado_remove_scores(p_secret text, p_ids text[]) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+  v_removed integer;
+begin
+  if p_ids is null or cardinality(p_ids) > 500 then
+    raise exception 'dati-non-validi';
+  end if;
+  delete from vado.scores where user_id = v_user and trip_id = any (p_ids);
+  get diagnostics v_removed = row_count;
+  return json_build_object('removed', v_removed);
+end $$;
+
+-- Caramelle di Halloween in una lega: un km senza auto, una caramella.
+create or replace function public.vado_candies(p_secret text, p_league uuid, p_from timestamptz, p_to timestamptz) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+begin
+  if not exists (select 1 from vado.members where league_id = p_league and user_id = v_user) then
+    return null;
+  end if;
+  return (
+    select coalesce(json_agg(json_build_object(
+      'id', u.id,
+      'name', u.nickname,
+      'me', u.id = v_user,
+      'tree', vado.tree_json(u.tree, u.stage, u.trees),
+      'candies', coalesce((select sum(s.meters) from vado.scores s
+        where s.user_id = u.id and s.ended_at >= p_from and s.ended_at < p_to), 0) / 1000
+    ) order by m.joined_at), '[]'::json)
+    from vado.members m join vado.users u on u.id = m.user_id
+    where m.league_id = p_league
+  );
 end $$;
 
 create or replace function public.vado_leagues(p_secret text) returns json

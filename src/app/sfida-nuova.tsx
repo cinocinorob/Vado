@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   rival: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingHorizontal: 8, borderRadius: 14 },
   rivalOn: { backgroundColor: C.limeSoft },
   rivalName: { flex: 1, fontFamily: F.bold, fontSize: 15, color: C.text },
-  check: { width: 28, height: 28, borderRadius: 14, borderWidth: 2.5, borderColor: C.ink, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
+  check: { width: 28, height: 28, borderRadius: 14, borderWidth: 2.5, borderColor: C.outline, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center' },
   checkOn: { backgroundColor: C.lime },
   problem: { fontFamily: F.bold, fontSize: 14, lineHeight: 20, color: C.alert },
   cta: { position: 'absolute', left: 20, right: 20 },

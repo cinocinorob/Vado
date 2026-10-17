@@ -61,6 +61,9 @@ export type MonthlyChallenge = {
   people: number;
 };
 
+/** Caramelle di Halloween di un partecipante della lega. */
+export type CandyEntry = { id: string; name: string; me: boolean; tree: TreeBadge | null; candies: number };
+
 export type Result<T> = { ok: true; value: T } | { ok: false; problem: string };
 
 export interface SocialSource {
@@ -72,6 +75,10 @@ export interface SocialSource {
   sync(now: number): Promise<void>;
   /** Cancella il profilo, qui e sul server. */
   reset(): Promise<void>;
+  /** Toglie dal server i punti di tragitti cancellati sul telefono. */
+  forget(ids: string[], now: number): Promise<void>;
+  /** Classifica delle caramelle di Halloween in una lega; null se non disponibile. */
+  candies(leagueId: string, now: number): Promise<CandyEntry[] | null>;
   /** Codice da annotare per ritrovare il profilo su un altro telefono; null se non c'è un profilo. */
   recoveryCode(): Promise<string | null>;
   /** Ritrova un profilo dal suo codice di recupero. Sostituisce quello eventualmente presente su questo telefono. */

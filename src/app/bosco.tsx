@@ -106,7 +106,7 @@ export default function Bosco() {
           title="Il tuo germoglio"
           right={
             <RoundButton onPress={() => router.back()} label="Chiudi">
-              <CloseIcon size={20} color={C.ink} />
+              <CloseIcon size={20} color={C.text} />
             </RoundButton>
           }
         />
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   totalLabel: { fontFamily: F.semi, fontSize: 13, color: C.dim },
-  totalValue: { fontFamily: F.displayBold, fontSize: 36, lineHeight: 42, color: C.ink },
+  totalValue: { fontFamily: F.displayBold, fontSize: 36, lineHeight: 42, color: C.text },
   totalBody: { fontFamily: F.medium, fontSize: 14, lineHeight: 20, color: C.dim },
   forest: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: C.card, borderRadius: R.card, padding: 10, rowGap: 8 },
   tree: { width: '25%', alignItems: 'center', gap: 2 },

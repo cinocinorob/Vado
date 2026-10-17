@@ -8,6 +8,7 @@
  * premere Avvia e Termina dieci volte.
  */
 import type { ModeId } from './modes';
+import { isWitchingHour } from './look';
 import { getMode } from './modes';
 import { dayKey, type LegResult, type Trip } from './scoring';
 
@@ -25,7 +26,8 @@ export type BadgeId =
   | 'scossa'
   | 'capotreno'
   | 'in-condivisione'
-  | 'maratoneta';
+  | 'maratoneta'
+  | 'notte-streghe';
 
 export type BadgeUnit = 'tragitti' | 'km' | 'giorni';
 
@@ -36,6 +38,8 @@ export type Badge = {
   goal: string;
   target: number;
   unit: BadgeUnit;
+  /** Medaglia a tempo: si prende solo in un periodo dell'anno e non conta nel totale. */
+  seasonal?: boolean;
 };
 
 export type BadgeState = Badge & {
@@ -56,6 +60,14 @@ export const BADGES: readonly Badge[] = [
   { id: 'capotreno', name: 'Capotreno', goal: '100 km in treno', target: 100, unit: 'km' },
   { id: 'in-condivisione', name: 'In condivisione', goal: '5 viaggi in car sharing', target: 5, unit: 'tragitti' },
   { id: 'maratoneta', name: 'Maratoneta', goal: '42 km a piedi', target: 42, unit: 'km' },
+  {
+    id: 'notte-streghe',
+    name: 'Notte delle streghe',
+    goal: 'Un tragitto senza auto la sera del 31 ottobre',
+    target: 1,
+    unit: 'tragitti',
+    seasonal: true,
+  },
 ];
 
 const valid = (leg: LegResult) => leg.status !== 'anomalo' && leg.meters > 0;
@@ -153,6 +165,10 @@ function progress(id: BadgeId, trips: Trip[], now: number): number {
       return tripsWith(trips, 'carsharing');
     case 'maratoneta':
       return kmWith(trips, ['piedi']);
+    case 'notte-streghe':
+      return trips.filter(
+        (t) => (isWitchingHour(t.startedAt) || isWitchingHour(t.endedAt)) && !usesPrivateCar(t) && !hasAnomaly(t) && t.carFreeMeters >= MIN_LEG_M,
+      ).length;
   }
 }
 
