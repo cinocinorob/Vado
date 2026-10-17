@@ -73,6 +73,24 @@
         {
           "color": "#C8F560"
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Oggi",
+              "label": "Vado, oggi",
+              "description": "Punti di oggi, CO₂ evitata e il pulsante Parti",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
+        }
       ]
     ]
   }

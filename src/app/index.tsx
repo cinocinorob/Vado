@@ -12,6 +12,7 @@ import { DAILY_GOAL, dayKey, streak, summarizeDay, type Trip } from '../core/sco
 import { connectHealth, refreshHealth, type HealthState } from '../health/sync';
 import { openHealthSettings } from '../health/connect';
 import { applyReminders } from '../reminders/schedule';
+import { updateWidget } from '../widget/update';
 import { social } from '../social';
 import { deleteTrip, loadTrips } from '../storage/trips';
 import { welcomeSeen } from '../storage/welcome';
@@ -76,6 +77,7 @@ export default function Oggi() {
       social.sync(Date.now()).catch(() => undefined);
       // Il promemoria della pianta si sposta in avanti a ogni apertura.
       applyReminders(Date.now()).catch(() => undefined);
+      updateWidget(Date.now()).catch(() => undefined);
       // Se Connessione Salute è collegata, si leggono i passi di oggi e le
       // attività nuove. Succede solo qui, ad app aperta.
       refreshHealth(Date.now())

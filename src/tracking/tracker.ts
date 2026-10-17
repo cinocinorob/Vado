@@ -40,6 +40,7 @@ import {
   toLegInputs,
 } from './tripState';
 import { applyReminders, cancelForgotReminder, nudgeForgotReminder } from '../reminders/schedule';
+import { updateWidget } from '../widget/update';
 
 const LOCATION_TASK = 'vado-tragitto';
 const KEEP_AWAKE_TAG = 'vado-tragitto';
@@ -288,6 +289,7 @@ export async function finishTracking(): Promise<Trip | null> {
   activeTripStore.set(null);
   cancelForgotReminder();
   applyReminders(Date.now()).catch(() => undefined);
+  updateWidget(Date.now()).catch(() => undefined);
   return trip;
 }
 
