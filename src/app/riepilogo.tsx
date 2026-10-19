@@ -148,26 +148,6 @@ export default function Riepilogo() {
             </View>
           ))}
 
-          {won.map((run) => (
-            <View key={run.id} style={styles.won} accessible>
-              <Text style={styles.wonCaption}>{run.id.startsWith('s-') ? 'Sfida della settimana completata' : 'Sfida del mese completata'}</Text>
-              <Text style={styles.wonTitle}>{run.title}</Text>
-              <Text style={styles.wonGoal}>{run.goal}</Text>
-            </View>
-          ))}
-
-          {stages
-            ? stages.stages.map((stage) => (
-                <View key={stage.name} style={styles.postcard} accessible>
-                  <Text style={styles.postCaption}>
-                    {stages.journey}: {stages.finished && stage === stages.stages[stages.stages.length - 1] ? 'arrivato!' : 'nuova tappa'}
-                  </Text>
-                  <Text style={styles.postTitle}>{stage.name}</Text>
-                  <Text style={styles.postText}>{stage.card}</Text>
-                </View>
-              ))
-            : null}
-
           <SectionTitle title="Tratti" />
           <Group>
             {[
@@ -196,6 +176,25 @@ export default function Riepilogo() {
                 ) : null}
               </View>
               <Text style={styles.co2Note}>Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA).</Text>
+            </View>
+          ) : null}
+
+          {won.map((run) => (
+            <View key={run.id} style={styles.won} accessible>
+              <Text style={styles.wonCaption}>{run.id.startsWith('s-') ? 'Sfida della settimana completata' : 'Sfida del mese completata'}</Text>
+              <Text style={styles.wonTitle}>{run.title}</Text>
+              <Text style={styles.wonGoal}>{run.goal}</Text>
+            </View>
+          ))}
+
+          {stages && stages.stages.length > 0 ? (
+            <View style={styles.postcard} accessible>
+              <Text style={styles.postCaption}>
+                {stages.journey}: {stages.finished ? 'arrivato!' : stages.stages.length > 1 ? `${stages.stages.length} tappe nuove` : 'nuova tappa'}
+              </Text>
+              <Text style={styles.postTitle}>{stages.stages[stages.stages.length - 1].name}</Text>
+              <Text style={styles.postText}>{stages.stages[stages.stages.length - 1].card}</Text>
+              {stages.stages.length > 1 ? <Text style={styles.postMore}>Le altre cartoline sono in Percorsi.</Text> : null}
             </View>
           ) : null}
 
@@ -238,6 +237,7 @@ const styles = StyleSheet.create({
   postcard: { backgroundColor: C.card, borderRadius: 18, borderWidth: 2, borderColor: C.teal, borderStyle: 'dashed', padding: 18, gap: 4 },
   postCaption: { fontFamily: F.semi, fontSize: 13, color: C.teal },
   postTitle: { fontFamily: F.displayBold, fontSize: 24, lineHeight: 29, color: C.text },
+  postMore: { fontFamily: F.semi, fontSize: 13, color: C.dim, marginTop: 4 },
   postText: { fontFamily: F.medium, fontSize: 14.5, lineHeight: 21, color: C.text },
   scroll: { paddingBottom: 116 },
   body: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
