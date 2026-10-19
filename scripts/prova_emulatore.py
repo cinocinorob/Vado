@@ -444,7 +444,7 @@ def check_leaderboard() -> str:
 
     tap(wait_for("Sfide", 20, "aprendo le sfide", exact=True))
     time.sleep(2)
-    challenges = wait_for("Sfida di", 30, "aprendo le sfide", required=False)
+    challenges = wait_for("Sfida del mese", 30, "aprendo le sfide", required=False)
     check_alive("aprendo le sfide")
     screenshot("classifica-sfide")
     if not challenges:
