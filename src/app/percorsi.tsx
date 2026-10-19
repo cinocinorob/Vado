@@ -114,7 +114,7 @@ export default function Percorsi() {
                       <View style={styles.stageText}>
                         <View style={styles.stageHead}>
                           <Text style={[styles.stageName, !reached && { color: C.dim }]}>{stage.name}</Text>
-                          <Text style={text.small}>km {stage.km}</Text>
+                          <Text style={text.small}>km {String(stage.km).replace(".", ",")}</Text>
                         </View>
                         {reached ? (
                           <View style={styles.card}>
