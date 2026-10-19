@@ -16,6 +16,7 @@ import {
 } from '../core/social';
 import type { TreeBadge } from '../core/plant';
 import { CrownIcon, TrashIcon, TrendIcon } from './Icons';
+import { hasMedal, Medal } from './Medal';
 import { TreeAvatar } from './TreeAvatar';
 import { C, F, card } from './theme';
 
@@ -151,10 +152,22 @@ export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked
           {detail}
         </Text>
       </View>
+      <ShowcaseMini items={entry.showcase} />
       {zone === 'sale' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_UP }]} /> : null}
       {zone === 'scende' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_DOWN }]} /> : null}
       <Text style={[styles.rowPoints, entry.me && { color: C.ink }]}>{entry.points}</Text>
       <View style={styles.rowTrend}>{entry.trend ? <TrendIcon trend={entry.trend} /> : null}</View>
+    </View>
+  );
+}
+
+/** Le medaglie in vetrina di un partecipante, piccole, accanto ai punti. */
+export function ShowcaseMini({ items, size = 20 }: { items?: { id: string; level: number }[]; size?: number }) {
+  const shown = (items ?? []).filter((s) => hasMedal(s.id));
+  if (shown.length === 0) return null;
+  return (
+    <View style={styles.mini} importantForAccessibility="no-hide-descendants">
+      {shown.map((s) => (hasMedal(s.id) ? <Medal key={s.id} id={s.id} look="sbloccata" size={size} level={s.level} label="" /> : null))}
     </View>
   );
 }
@@ -246,6 +259,7 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
 }
 
 const styles = StyleSheet.create({
+  mini: { flexDirection: 'row', gap: 1, marginRight: 4 },
   avatarText: { fontFamily: F.displayBold, color: C.ink },
 
   segmented: { height: 48, flexDirection: 'row', gap: 2 },

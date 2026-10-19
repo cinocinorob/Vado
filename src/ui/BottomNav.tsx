@@ -3,10 +3,10 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HomeIcon, MedalIcon, PlayIcon, TrophyIcon } from './Icons';
+import { HomeIcon, MedalIcon, PlayIcon, RouteIcon, TrophyIcon } from './Icons';
 import { C, F } from './theme';
 
-export type Section = 'oggi' | 'classifica' | 'medaglie';
+export type Section = 'oggi' | 'classifica' | 'medaglie' | 'percorsi';
 
 const BAR = 80;
 const FAB = 64;
@@ -41,6 +41,7 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
         <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
         <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
         <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
+        <Tab label="Percorsi" active={current === 'percorsi'} onPress={() => go('percorsi')} icon={(color) => <RouteIcon size={22} color={color} />} />
       </View>
     </>
   );

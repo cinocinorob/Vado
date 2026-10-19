@@ -96,6 +96,99 @@ const LOOKS: Record<BadgeId, Look> = {
     ),
   },
   maratoneta: { shape: 'pent', color: '#FFB59E', number: '42', numberSize: 0.34 },
+/* Le medaglie aggiunte con i gradi. */
+  'mattiniero': {
+    shape: 'sunny',
+    color: '#FFE07A',
+    art: (
+      <Picto>
+        <Path d="M3 18h18M6 18a6 6 0 0 1 12 0M12 7V4M5.5 10.5 4 9M18.5 10.5 20 9" />
+      </Picto>
+    ),
+  },
+  'occhio-di-falco': {
+    shape: 'pill',
+    color: '#B9DDF7',
+    art: (
+      <Picto>
+        <Path d="M6 4h12a2 2 0 0 1 2 2v10H4V6a2 2 0 0 1 2-2zM4 11h16M7 19v-3M17 19v-3M8 14h.01M16 14h.01" />
+      </Picto>
+    ),
+  },
+  'polmone-verde': {
+    shape: 'flower8',
+    color: '#9FE3B5',
+    art: (
+      <Picto>
+        <Path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15zM5 19l8-8" />
+      </Picto>
+    ),
+  },
+  'boscaiolo': {
+    shape: 'cookie12',
+    color: '#7FD8C6',
+    art: (
+      <Picto>
+        <Path d="M12 3l6 9h-4l4 6H6l4-6H6zM12 18v3" />
+      </Picto>
+    ),
+  },
+  'settimana-perfetta': {
+    shape: 'hept',
+    color: '#C8F560',
+    art: (
+      <Picto>
+        <Path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M9 15l2 2 4-4" />
+      </Picto>
+    ),
+  },
+  'campione-del-mese': {
+    shape: 'burst',
+    color: '#FFE07A',
+    art: (
+      <Picto>
+        <Path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8" />
+      </Picto>
+    ),
+  },
+  'podio': {
+    shape: 'clover4',
+    color: '#FFB59E',
+    art: (
+      <Picto>
+        <Path d="M3 20v-6h6v6M9 20V10h6v10M15 20v-4h6v4" />
+      </Picto>
+    ),
+  },
+  'fuori-porta': {
+    shape: 'cookie6',
+    color: '#B9DDF7',
+    art: (
+      <Picto>
+        <Path d="M3 19l6-10 4 6 3-4 5 8z" />
+      </Picto>
+    ),
+  },
+  'lunga-distanza': {
+    shape: 'pent',
+    color: '#E3D7FF',
+    art: (
+      <Picto>
+        <Path d="M8 21L11 3M16 21L13 3M12 7v2M12 13v2M12 18v2" />
+      </Picto>
+    ),
+  },
+  'viaggiatore': {
+    shape: 'sunny',
+    color: '#FFB59E',
+    art: (
+      <Picto>
+        <Path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2 5-5 2 2-5z" />
+      </Picto>
+    ),
+  },
+  diecimila: { shape: 'cookie9', color: '#9FE3B5', number: '10K', numberSize: 0.3 },
+  centurione: { shape: 'hept', color: '#FFE07A', number: '100', numberSize: 0.3 },
   // Luna e pipistrello.
   'notte-streghe': {
     shape: 'burst',
@@ -111,13 +204,24 @@ const LOOKS: Record<BadgeId, Look> = {
 
 export type MedalLook = 'sbloccata' | 'in-corso' | 'bloccata';
 
-export function Medal({ id, look, size = 76, label }: { id: BadgeId; look: MedalLook; size?: number; label: string }) {
+/** Colori del bordo per grado: bronzo, argento, oro. */
+export const TIER_COLORS = ['#C98A55', '#B9C4CC', '#F2C94C'] as const;
+
+/** Vero se questa versione dell'app sa disegnare la medaglia (una più nuova può averne altre). */
+export function hasMedal(id: string): id is BadgeId {
+  return Object.prototype.hasOwnProperty.call(LOOKS, id);
+}
+
+export function Medal({ id, look, size = 76, label, level = 0 }: { id: BadgeId; look: MedalLook; size?: number; label: string; level?: number }) {
   const { shape, color, art, number, numberSize = 0.4 } = LOOKS[id];
   const inkOpacity = look === 'sbloccata' ? 1 : look === 'in-corso' ? 0.55 : 0.3;
   return (
     <View style={{ width: size, height: size }} accessible accessibilityRole="image" accessibilityLabel={label}>
       <Svg width={size} height={size} viewBox="0 0 96 96" style={StyleSheet.absoluteFill}>
         <Path d={SHAPES[shape]} fill={look === 'bloccata' ? C.tonal : color} opacity={look === 'in-corso' ? 0.5 : 1} />
+        {level > 0 && look === 'sbloccata' ? (
+          <Path d={SHAPES[shape]} fill="none" stroke={TIER_COLORS[level - 1]} strokeWidth={5} transform="translate(4.8 4.8) scale(0.9)" />
+        ) : null}
         {art ? <G opacity={inkOpacity}>{art}</G> : null}
       </Svg>
       {number ? (

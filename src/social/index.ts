@@ -10,6 +10,7 @@ import * as Crypto from 'expo-crypto';
 
 import { plantState, type TreeBadge } from '../core/plant';
 import { loadPauses } from '../storage/pause';
+import { showcaseFor } from '../storage/showcase';
 import { loadTree } from '../storage/tree';
 import { loadTrips } from '../storage/trips';
 import { SERVER } from './config';
@@ -40,6 +41,7 @@ export const social: SocialSource = remoteSource({
   },
   loadTrips,
   loadTree: myTree,
+  loadShowcase: async () => showcaseFor(await loadTrips(), Date.now()),
   newSecret,
 });
 

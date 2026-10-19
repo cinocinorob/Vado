@@ -160,9 +160,26 @@ export type Entry = {
   mainMode?: ModeId | null;
   /** L'albero scelto e la sua crescita, per l'avatar. */
   tree?: TreeBadge | null;
+  /** Fino a tre medaglie in vetrina, con il grado. */
+  showcase?: Showcase[];
   /** Posizione nella rilevazione precedente, per la freccia su/giù. */
   previousRank?: number;
 };
+
+export type Showcase = { id: string; level: number };
+
+/** "maratoneta:2,podio:1" → [{ id: 'maratoneta', level: 2 }, …]; testo non valido → nessuna medaglia. */
+export function parseShowcase(text: unknown): Showcase[] {
+  if (typeof text !== 'string' || !/^([a-z-]{2,24}:[1-3](,[a-z-]{2,24}:[1-3]){0,2})?$/.test(text) || text === '') return [];
+  return text.split(',').map((part) => {
+    const [id, level] = part.split(':');
+    return { id, level: Number(level) };
+  });
+}
+
+export function showcaseText(items: Showcase[]): string {
+  return items.slice(0, 3).map((i) => `${i.id}:${i.level}`).join(',');
+}
 
 export type Trend = 'su' | 'giu' | 'stabile';
 

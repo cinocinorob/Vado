@@ -44,6 +44,7 @@ export default function RootLayout() {
         <Stack.Screen name="index" />
         <Stack.Screen name="classifica" options={{ animation: 'none' }} />
         <Stack.Screen name="medaglie" options={{ animation: 'none' }} />
+        <Stack.Screen name="percorsi" options={{ animation: 'none' }} />
         <Stack.Screen name="lega-nuova" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="sfida-nuova" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="nuovo" options={{ animation: 'slide_from_bottom' }} />

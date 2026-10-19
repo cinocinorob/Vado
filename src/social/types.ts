@@ -5,7 +5,7 @@
  * vive solo sul telefono e serve per le prove delle schermate.
  */
 import type { TreeBadge } from '../core/plant';
-import type { Challenge, ChallengeKind, Entry, Tier, TierState } from '../core/social';
+import type { Challenge, ChallengeKind, Entry, Showcase, Tier, TierState } from '../core/social';
 
 export type Profile = {
   id: string;
@@ -61,6 +61,9 @@ export type MonthlyChallenge = {
   people: number;
 };
 
+/** Punti e km senza auto di un partecipante in un periodo (la sfida del mese). */
+export type PeriodEntry = { id: string; name: string; me: boolean; tree: TreeBadge | null; showcase: Showcase[]; points: number; km: number };
+
 /** Caramelle di Halloween di un partecipante della lega. */
 export type CandyEntry = { id: string; name: string; me: boolean; tree: TreeBadge | null; candies: number };
 
@@ -77,6 +80,8 @@ export interface SocialSource {
   reset(): Promise<void>;
   /** Toglie dal server i punti di tragitti cancellati sul telefono. */
   forget(ids: string[], now: number): Promise<void>;
+  /** Classifica di una lega su un periodo; null se non disponibile. */
+  periodBoard(leagueId: string, from: number, to: number): Promise<PeriodEntry[] | null>;
   /** Classifica delle caramelle di Halloween in una lega; null se non disponibile. */
   candies(leagueId: string, now: number): Promise<CandyEntry[] | null>;
   /** Codice da annotare per ritrovare il profilo su un altro telefono; null se non c'è un profilo. */

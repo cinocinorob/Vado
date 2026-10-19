@@ -14,18 +14,24 @@ import {
   type Ranked,
   type Zone,
 } from '../core/social';
+import { challengeProgress, monthlyAt, type ChallengeRun } from '../core/challenges';
 import type { SpeciesId, TreeBadge } from '../core/plant';
+import { monthStart } from '../core/social';
 import { candyOpen } from '../core/halloween';
-import { myTree, social, type CandyEntry, type LeagueBoard, type LeagueSummary, type MonthlyChallenge, type Profile } from '../social';
+import { myTree, social, type CandyEntry, type LeagueBoard, type LeagueSummary, type Profile } from '../social';
+import { recordWins } from '../social/history';
 import { leagueToOpen } from '../social/selection';
+import type { PeriodEntry } from '../social/types';
+import { loadTrips } from '../storage/trips';
 import { loadTree, saveTree } from '../storage/tree';
 import { useActiveTrip } from '../tracking/store';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PlusIcon, ShareIcon } from '../ui/Icons';
 import { Mascot } from '../ui/Mascot';
 import { HeroBlock } from '../ui/Hero';
-import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, ProgressBar, Screen, input, text } from '../ui/parts';
-import { Avatar, ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
+import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, Screen, input, text } from '../ui/parts';
+import { WavyBar } from '../ui/Wavy';
+import { Avatar, ChallengeCard, ShowcaseMini, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
 import { C, F } from '../ui/theme';
 import { TreePicker } from '../ui/TreeAvatar';
 import { Candy } from '../ui/Halloween';
@@ -52,7 +58,8 @@ export default function Classifica() {
   const [board, setBoard] = useState<LeagueBoard | null>(null);
   const [sweets, setSweets] = useState<CandyEntry[] | null>(null);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [monthly, setMonthly] = useState<MonthlyChallenge | null>(null);
+  const [monthly, setMonthly] = useState<ChallengeRun | null>(null);
+  const [monthBoard, setMonthBoard] = useState<PeriodEntry[] | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [pulling, setPulling] = useState(false);
@@ -78,11 +85,16 @@ export default function Classifica() {
     }
     const list = await social.leagues(at);
     const id = wanted && list.some((l) => l.id === wanted) ? wanted : (list[0]?.id ?? null);
-    const [nextBoard, nextChallenges, nextMonthly] = await Promise.all([
+    const [nextBoard, nextChallenges, trips, nextMonthBoard] = await Promise.all([
       id ? social.board(id, at) : Promise.resolve(null),
       social.challenges(at),
-      social.monthly(at),
+      loadTrips(),
+      id ? social.periodBoard(id, monthStart(at), at).catch(() => null) : Promise.resolve(null),
     ]);
+    const nextMonthly = monthlyAt(trips, at);
+    setMonthBoard(nextMonthBoard);
+    // Le vittorie (settimane chiuse in lega, sfide finite) si annotano qui, in sottofondo.
+    recordWins(at, nextChallenges).catch(() => undefined);
     setLeagues(list);
     setLeagueId(id);
     setBoard(nextBoard);
@@ -323,32 +335,7 @@ export default function Classifica() {
           </>
         ) : (
           <>
-            {monthly ? (
-              <Panel style={styles.monthly}>
-                <View style={styles.monthlyHead}>
-                  <Mascot size={60} tilt={-6} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.tierTitle} accessibilityRole="header">
-                      {monthly.title}
-                    </Text>
-                    <Text style={text.small}>
-                      {monthly.target} punti entro fine mese · mancano {timeLeft(monthly.endsAt, now)}
-                    </Text>
-                  </View>
-                </View>
-                <ProgressBar
-                  value={monthly.points}
-                  max={monthly.target}
-                  label={monthly.points >= monthly.target ? 'Traguardo raggiunto' : 'I tuoi punti del mese'}
-                  detail={`${monthly.points} di ${monthly.target}`}
-                />
-                <Text style={text.small}>
-                  {monthly.people === 1
-                    ? 'Questo mese sei il primo a fare punti.'
-                    : `${monthly.reached} su ${monthly.people} persone attive questo mese ci sono già arrivate.`}
-                </Text>
-              </Panel>
-            ) : null}
+            {monthly ? <MonthPanel run={monthly} entries={monthBoard} league={board?.name ?? null} now={now} /> : null}
 
             {challenges.length === 0 ? (
               <Panel>
@@ -368,6 +355,50 @@ export default function Classifica() {
 
       <BottomNav current="classifica" tripActive={!!active} />
     </Screen>
+  );
+}
+
+/** La sfida del mese: il proprio avanzamento e, se c'è una lega, la classifica del mese. */
+function MonthPanel({ run, entries, league, now }: { run: ChallengeRun; entries: PeriodEntry[] | null; league: string | null; now: number }) {
+  const byKm = run.metric.startsWith('km') || run.metric === 'co2';
+  const list = (entries ?? []).filter((e) => e.points > 0 || e.km > 0 || e.me).sort((a, b) => (byKm ? b.km - a.km : b.points - a.points)).slice(0, 10);
+  const value = (e: PeriodEntry) => (byKm ? `${String(Math.floor(e.km * 10) / 10).replace('.', ',')} km` : `${e.points} punti`);
+  return (
+    <Panel style={styles.monthly}>
+      <View style={styles.monthlyHead}>
+        <Mascot size={60} tilt={-6} />
+        <View style={{ flex: 1 }}>
+          <Text style={text.small}>Sfida del mese</Text>
+          <Text style={styles.tierTitle} accessibilityRole="header">
+            {run.title}
+          </Text>
+          <Text style={text.small}>
+            {run.goal} · {run.done ? 'completata' : `mancano ${timeLeft(run.to, now)}`}
+          </Text>
+        </View>
+      </View>
+      <WavyBar ratio={run.ratio} color={run.done ? C.teal : C.text} height={18} stroke={6} />
+      <Text style={text.small}>{challengeProgress(run)}</Text>
+      {league && list.length > 1 ? (
+        <View style={{ gap: 2 }}>
+          <Divider />
+          <Text style={[text.small, { fontFamily: F.bold, marginTop: 6 }]}>
+            Questo mese in {league}, per {byKm ? 'km senza auto' : 'punti'}
+          </Text>
+          {list.map((e, i) => (
+            <View key={e.id} style={styles.monthRow} accessible accessibilityLabel={`${i + 1}º: ${e.me ? 'tu' : e.name}, ${value(e)}`}>
+              <Text style={[styles.monthRank, e.me && { color: C.text }]}>{i + 1}</Text>
+              <Avatar id={e.id} name={e.name} me={e.me} tree={e.tree} />
+              <Text style={[styles.monthName, e.me && { fontFamily: F.bold }]} numberOfLines={1}>
+                {e.me ? 'Tu' : e.name}
+              </Text>
+              <ShowcaseMini items={e.showcase} size={18} />
+              <Text style={styles.monthValue}>{value(e)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </Panel>
   );
 }
 
@@ -528,6 +559,10 @@ const styles = StyleSheet.create({
   codeValue: { fontFamily: F.displayBold, fontSize: 34, lineHeight: 40, letterSpacing: 6, color: C.text },
   leave: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 12 },
   monthly: { gap: 12 },
+  monthRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  monthRank: { width: 20, fontFamily: F.bold, fontSize: 14, color: C.dim, textAlign: 'center' },
+  monthName: { flex: 1, fontFamily: F.medium, fontSize: 15, color: C.text },
+  monthValue: { fontFamily: F.bold, fontSize: 14, color: C.text },
   monthlyHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   nickname: { gap: 14 },
   empty: { alignItems: 'center', gap: 12 },

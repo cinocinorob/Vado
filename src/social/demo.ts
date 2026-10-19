@@ -182,6 +182,7 @@ export const demoSource: SocialSource = {
   recoveryCode: async () => null,
   forget: async () => undefined,
   candies: async () => null,
+  periodBoard: async () => null,
   recover: async () => ({ ok: false, problem: "Nell'anteprima non ci sono profili da recuperare." }),
 
   async profile(): Promise<Profile | null> {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { formatCo2, legCo2, tripCo2 } from '../core/co2';
+import { monthlyAt, weeklyAt } from '../core/challenges';
 import { candies, candyOpen } from '../core/halloween';
 import { isHalloweenSeason } from '../core/look';
 import { appName } from '../core/health';
@@ -21,6 +22,7 @@ import { restoreTracking } from '../tracking/tracker';
 import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer } from '../ui/format';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
+import { PersonalChallenges } from '../ui/ChallengeCard';
 import { Co2Card, Group, SectionTitle, ShapeBadge, TonalButton, WeekStrip } from '../ui/expressive';
 import { PageTitle } from '../ui/Hero';
 import { ChartIcon, ChevronIcon, FlameIcon, GearIcon, HeartIcon, PlusIcon } from '../ui/Icons';
@@ -313,6 +315,9 @@ export default function Oggi() {
           ) : null}
 
           {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
+
+          <SectionTitle title="Le tue sfide" />
+          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} onPress={() => router.push('/medaglie')} />
 
           <Pressable onPress={() => router.push('/storico')} accessibilityRole="button" style={styles.history}>
             <ChartIcon size={20} />

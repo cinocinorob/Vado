@@ -139,3 +139,15 @@ test('Notte delle streghe: solo la sera del 31 ottobre, senza auto', () => {
   assert.equal(get([mk(evening, 300)])?.unlocked, false);
   assert.equal(get([mk(evening, 2000)])?.unlocked, true);
 });
+
+test('gradi: bronzo, argento e oro con traguardi crescenti', () => {
+  const walks = Array.from({ length: 12 }, (_, i) => trip(i, [['piedi', 9]]));
+  const m = state(walks, 'maratoneta');
+  assert.equal(m.level, 2);
+  assert.equal(m.target, 250);
+  assert.equal(m.goalText, '250 km a piedi');
+  assert.equal(m.complete, false);
+  const up = newlyUnlocked(walks.slice(0, 11), walks.slice(11), NOW);
+  assert.deepEqual(up.map((b) => [b.id, b.level]), [['maratoneta', 2]].filter(() => 11 * 9 < 100));
+  assert.equal(badgeStates([], NOW, { podiums: 6, journeys: 0 }).find((b) => b.id === 'podio')?.level, 2);
+});

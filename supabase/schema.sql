@@ -38,6 +38,9 @@ create table if not exists vado.users (
 alter table vado.users add column if not exists tree text check (tree in ('pino', 'cipresso', 'leccio', 'ulivo', 'platano'));
 alter table vado.users add column if not exists stage smallint not null default 0 check (stage between 0 and 2);
 alter table vado.users add column if not exists trees integer not null default 0 check (trees between 0 and 100000);
+-- La vetrina: fino a tre medaglie scelte, con il grado ("maratoneta:2,podio:1").
+alter table vado.users add column if not exists showcase text not null default ''
+  check (showcase ~ '^([a-z-]{2,24}:[1-3](,[a-z-]{2,24}:[1-3]){0,2})?$');
 
 create table if not exists vado.leagues (
   id uuid primary key default gen_random_uuid(),
@@ -169,6 +172,7 @@ language sql stable security definer set search_path = '' as $$
         'name', u.nickname,
         'me', u.id = p_user,
         'tree', vado.tree_json(u.tree, u.stage, u.trees),
+        'showcase', u.showcase,
         'team', p.team,
         'points', coalesce(t.points, 0),
         'mode', t.mode,
@@ -231,6 +235,43 @@ declare
   v_user uuid := vado.who(p_secret);
 begin
   return (select json_build_object('id', u.id, 'nickname', u.nickname) from vado.users u where u.id = v_user);
+end $$;
+
+-- La vetrina delle medaglie, per la classifica.
+create or replace function public.vado_set_showcase(p_secret text, p_showcase text) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+begin
+  if p_showcase is null or p_showcase !~ '^([a-z-]{2,24}:[1-3](,[a-z-]{2,24}:[1-3]){0,2})?$' then
+    raise exception 'dati-non-validi';
+  end if;
+  update vado.users set showcase = p_showcase where id = v_user;
+  return json_build_object('ok', true);
+end $$;
+
+-- Classifica di una lega su un periodo qualsiasi (la sfida del mese): punti e metri senza auto.
+create or replace function public.vado_period_board(p_secret text, p_league uuid, p_from timestamptz, p_to timestamptz) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+begin
+  if not exists (select 1 from vado.members where league_id = p_league and user_id = v_user) then
+    return null;
+  end if;
+  return (
+    select coalesce(json_agg(json_build_object(
+      'id', u.id,
+      'name', u.nickname,
+      'me', u.id = v_user,
+      'tree', vado.tree_json(u.tree, u.stage, u.trees),
+      'showcase', u.showcase,
+      'points', coalesce((select sum(s.points) from vado.scores s where s.user_id = u.id and s.ended_at >= p_from and s.ended_at < p_to), 0),
+      'meters', coalesce((select sum(s.meters) from vado.scores s where s.user_id = u.id and s.ended_at >= p_from and s.ended_at < p_to), 0)
+    ) order by m.joined_at), '[]'::json)
+    from vado.members m join vado.users u on u.id = m.user_id
+    where m.league_id = p_league
+  );
 end $$;
 
 -- L'albero scelto e la crescita della pianta, per l'avatar in classifica.
@@ -350,6 +391,7 @@ begin
         'name', u.nickname,
         'me', u.id = v_user,
         'tree', vado.tree_json(u.tree, u.stage, u.trees),
+        'showcase', u.showcase,
         'points', coalesce((select sum(s.points) from vado.scores s
           where s.user_id = u.id and s.ended_at >= p_from and s.ended_at < p_to), 0),
         'before', coalesce((select sum(s.points) from vado.scores s

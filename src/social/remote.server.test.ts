@@ -42,7 +42,7 @@ function trip(points: number, endedAt: number, mode: ModeId = 'piedi'): Trip {
   };
 }
 
-type Phone = { source: RemoteSource; trips: Trip[]; tree: { current: TreeBadge | null } };
+type Phone = { source: RemoteSource; trips: Trip[]; tree: { current: TreeBadge | null }; showcase: { current: string } };
 
 const phones: Phone[] = [];
 
@@ -51,6 +51,7 @@ function phone(): Phone {
   const memory = new Map<string, string>();
   const trips: Trip[] = [];
   const tree: { current: TreeBadge | null } = { current: null };
+  const showcase = { current: '' };
   const source = remoteSource({
     rest: SERVER ?? '',
     key: KEY,
@@ -61,9 +62,10 @@ function phone(): Phone {
     },
     loadTrips: async () => trips,
     loadTree: async () => tree.current,
+    loadShowcase: async () => showcase.current,
     newSecret: async () => randomBytes(32).toString('hex'),
   });
-  const created = { source, trips, tree };
+  const created = { source, trips, tree, showcase };
   phones.push(created);
   return created;
 }
@@ -174,6 +176,23 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   assert.ok(hers);
   assert.equal(hers.entries.find((e) => e.me)?.id, flavia.id);
   assert.equal(hers.entries.find((e) => e.id === robbie.id)?.points, 50);
+
+  // --- vetrina delle medaglie e classifica del mese ---
+  b.showcase.current = 'podio:1,maratoneta:2';
+  await b.source.sync(now + 40_000);
+  const withShowcase = await a.source.board(league.id, now);
+  assert.deepEqual(withShowcase?.entries.find((e) => e.id === flavia.id)?.showcase, [
+    { id: 'podio', level: 1 },
+    { id: 'maratoneta', level: 2 },
+  ]);
+  const period = await a.source.periodBoard(league.id, now - 8 * 86_400_000, now + 60_000);
+  assert.ok(period, 'vado_period_board non risponde');
+  const pById = new Map(period.map((e) => [e.id, e]));
+  assert.equal(pById.get(robbie.id)?.points, 50);
+  assert.equal(pById.get(robbie.id)?.me, true);
+  assert.ok((pById.get(robbie.id)?.km ?? 0) > 0);
+  assert.equal(pById.get(flavia.id)?.points, 45);
+  assert.equal(pById.get(flavia.id)?.showcase.length, 2);
 
   // --- sfida a traguardo: contano solo i punti fatti dopo l'inizio ---
   const duel = value(await a.source.createChallenge({ title: 'Testa a testa', kind: 'traguardo', target: 40, days: 0, teams: false, opponents: [flavia.id] }, now));

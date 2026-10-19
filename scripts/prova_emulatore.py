@@ -507,6 +507,26 @@ def open_settings() -> bool:
     return wait_for("Aspetto", 15, "aprendo le impostazioni", exact=True, required=False) is not None
 
 
+def check_percorsi() -> str:
+    """Si apre la scheda Percorsi, si parte per un viaggio e compaiono le tappe."""
+    tap_label("Percorsi")
+    if not wait_for("Scegli un viaggio", 20, "aprendo i percorsi", required=False):
+        return "la schermata dei percorsi non si apre: " + visible_text()[:300]
+    screenshot("percorsi")
+    start = find("Parti per I sette colli")
+    if not start:
+        return "pulsante per partire non trovato: " + visible_text()[:300]
+    tap(start)
+    if not wait_for("Tappe:", 15, "partendo per un viaggio", required=False):
+        return "dopo la partenza non compaiono le tappe: " + visible_text()[:300]
+    if "Campidoglio" not in visible_text():
+        return "la prima tappa non risulta raggiunta: " + visible_text()[:300]
+    screenshot("percorsi-in-corso")
+    tap_label("Oggi")
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dai percorsi")
+    return "ok"
+
+
 def check_storico() -> str:
     """Lo storico si apre e mostra le settimane."""
     link = scroll_to("Storico: settimane e mesi", swipes=10)
@@ -827,10 +847,15 @@ def main() -> None:
     wait_for("sbloccate", 30, "aprendo le medaglie")
     screenshot("medaglie")
     medals = visible_text()
+    # La medaglia presa sta nella vetrina o nello scaffale, più in basso.
+    if "Primo passo" not in medals:
+        scroll_to("Primo passo", swipes=8)
+        medals += " | " + visible_text()
     log(f"medaglie: {medals}")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalle medaglie")
 
+    journeys = check_percorsi()
     plant = check_bosco()
     history = check_storico()
     board = check_leaderboard()
@@ -858,16 +883,18 @@ def main() -> None:
             problems.append(f"distanza gonfiata: {total:.0f} m su {walked:.0f} m veri")
     if first is not None and second is not None and second <= first:
         problems.append(f"la distanza non è cresciuta ad app nascosta: {first} → {second} m")
-    if "Primo passo" not in medals or "1 di 9" not in medals:
+    if "Primo passo" not in medals or not re.search(r"\b1 di \d+ sbloccate", medals):
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
+        f"permessi: {answered}; percorsi: {journeys}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
     )
     if backup != "ok":
         problems.append(f"backup: {backup}")
     if plant != "ok":
         problems.append(f"germoglio: {plant}")
+    if journeys != "ok":
+        problems.append(f"percorsi: {journeys}")
     if history != "ok":
         problems.append(f"storico: {history}")
     if bus != "ok":

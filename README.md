@@ -14,7 +14,7 @@ decise insieme. Tragitti e posizioni restano sul telefono; al server va solo ci�
 | Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | CO₂ evitata (servono fattori di emissione con fonte) |
 | Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Tema scuro (la grafica è solo chiara) |
 | Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Riconoscimento automatico del mezzo |
-| Medaglie: nove, con avanzamento | |
+| Medaglie a tre gradi, vetrina, sfide della settimana e del mese, vittorie, percorsi virtuali | |
 | Metro di Roma: distanza calcolata sulla rete, anche registrata a posteriori | Metro di altre città; bus e treni in galleria |
 | Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
 | Classifica, leghe con invito e sfide tra persone vere | Lega a livelli automatica; segnalazione di soprannomi e nomi offensivi |
@@ -141,25 +141,50 @@ Stato di un tratto:
 - **Non valido:** i dati contraddicono il mezzo (troppo veloce, troppo pochi passi, posizione simulata da
   un'altra app). Zero punti e niente bonus.
 
-## Medaglie
+## Medaglie, sfide personali e percorsi
 
-Sono nove e si calcolano ogni volta dallo storico dei tragitti (`src/core/badges.ts`): non esiste un elenco
-salvato che possa andare fuori sincronia.
+**Medaglie** (`src/core/badges.ts`): 21, più quella a tempo di Halloween. Quasi tutte hanno tre gradi, bronzo,
+argento e oro, con traguardi crescenti. Si ricalcolano ogni volta dallo storico dei tragitti, quindi non vanno
+fuori sincronia. Le tre medaglie scelte per la **vetrina** compaiono accanto al nome in classifica.
 
-| Medaglia | Come si prende |
+| Medaglia | Bronzo / argento / oro |
 |---|---|
-| Primo passo | Un tragitto a piedi di almeno 200 m |
-| Re della metro | 10 tragitti con i mezzi pubblici |
-| Due ruote | 50 km in bici, elettrica compresa |
-| Sette su sette | 7 giorni di fila con un tragitto senza auto privata e nessuno in auto privata |
-| Pendolare d'oro | 20 tragitti casa-lavoro senza auto privata |
-| Scossa | 10 tragitti in bici elettrica |
-| Capotreno | 100 km in treno |
-| In condivisione | 5 tragitti in car sharing |
-| Maratoneta | 42 km a piedi |
+| Primo passo | il primo tragitto a piedi (200 m) |
+| Re della metro | 10 / 50 / 150 viaggi con i mezzi |
+| Due ruote | 50 / 250 / 1000 km in bici |
+| Sette su sette | 7 / 30 / 100 giorni di fila senza auto |
+| Pendolare d'oro | 20 / 100 / 250 tragitti casa-lavoro |
+| Scossa | 10 / 50 / 150 tragitti in bici elettrica |
+| Capotreno | 100 / 500 / 2000 km in treno |
+| In condivisione | 5 / 25 / 75 viaggi in car sharing |
+| Maratoneta | 42 / 100 / 250 km a piedi |
+| Mattiniero | 5 / 20 / 60 tragitti prima delle 8 |
+| Occhio di falco | 3 / 15 / 50 bus riconosciuti in tempo reale |
+| Polmone verde | 10 / 50 / 200 kg di CO₂ evitata |
+| Boscaiolo | 1 / 3 / 10 alberi nel bosco |
+| Settimana perfetta | 1 / 5 / 20 sfide della settimana |
+| Campione del mese | 1 / 3 / 6 sfide del mese |
+| Podio | 1 / 5 / 20 settimane sul podio della lega |
+| Fuori porta | 5 / 20 / 50 tragitti nel fine settimana |
+| Lunga distanza | 1 / 5 / 20 tragitti di almeno 10 km |
+| Diecimila | 1 / 10 / 30 giorni con 10.000 passi nei tragitti |
+| Centurione | 1 / 5 / 20 giorni da almeno 100 punti |
+| Viaggiatore | 1 / 2 / 4 percorsi virtuali completati |
 
 Contano solo i tratti validi. Per le medaglie a numero di tragitti il tratto con quel mezzo deve essere di almeno
 500 m, altrimenti basterebbe premere Avvia e Termina dieci volte.
+
+**Sfide personali** (`src/core/challenges.ts`): una della settimana (otto che ruotano ogni lunedì) e una del mese
+(dodici, una per mese: a ottobre "Ottobre da paura", 120 km senza auto). Si vedono in Oggi e in Medaglie; in
+Classifica la sfida del mese ha anche la graduatoria del mese della lega.
+
+**Vittorie:** piazzamenti di fine settimana nelle leghe, sfide con gli amici, sfide personali e percorsi finiti.
+Il server tiene i punti per 70 giorni, quindi lo storico si salva sul telefono quando si apre la classifica
+(fino a 8 settimane indietro) e va nel backup.
+
+**Percorsi** (`src/core/journeys.ts`): viaggi virtuali che avanzano con i km fatti senza auto dal giorno in cui
+si parte: I sette colli (10 km), Il Tevere (405), Via Appia (540), Via Francigena (940). A ogni tappa si apre una
+cartolina con una breve notizia sul luogo. Le distanze sono indicative.
 
 ## Classifica, leghe e sfide
 
@@ -268,7 +293,7 @@ subito prima di scendere e subito dopo essere risaliti. Le soglie sono in `src/c
 
 Dalla schermata Oggi, "Backup e cambio telefono":
 
-- **Crea il backup:** un file JSON con tutti i tragitti e il codice di recupero della classifica, passato al
+- **Crea il backup:** un file JSON con tutti i tragitti, il germoglio, percorsi, vittorie e vetrina e il codice di recupero della classifica, passato al
   foglio di condivisione di Android (Drive, una chat, un'email). Vado non ne tiene copia.
 - **Scegli il file:** sul telefono nuovo i tragitti del file si aggiungono a quelli presenti (mai sovrascritti,
   rimettere lo stesso file non raddoppia nulla); se sul telefono non c'è un profilo della classifica, torna anche
@@ -326,7 +351,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (204 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (210 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti
@@ -429,7 +454,7 @@ src/social/     classifica, leghe e sfide: collegamento al server (e sorgente di
 supabase/       istruzioni che creano tabelle e funzioni del server
 src/storage/    storico dei tragitti e impostazioni, sul telefono
 src/ui/         colori, caratteri, icone, mascotte, medaglie, componenti
-src/app/        le schermate: Oggi, Nuovo tragitto, In corso, Riepilogo, Classifica, Medaglie, Riservatezza…
+src/app/        le schermate: Oggi, Nuovo tragitto, In corso, Riepilogo, Classifica, Medaglie, Percorsi, Riservatezza…
 scripts/        la prova automatica su telefono simulato
 .github/        la ricetta con cui GitHub costruisce, prova e pubblica l'app
 ```

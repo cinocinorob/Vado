@@ -73,3 +73,23 @@ test('il backup porta anche albero, bosco e pause', () => {
   const old = parseBackup(JSON.stringify(buildBackup([], null, Date.now())));
   assert.equal(old.ok && old.plant, null);
 });
+
+test('backup: percorsi, vittorie e vetrina si leggono, si ripuliscono e si uniscono senza doppioni', async () => {
+  const { readProgress, mergeProgress } = await import('./backup');
+  const file = readProgress({
+    journeys: { current: { id: 'tevere', startedAt: 5 }, done: [{ id: 'colli', startedAt: 1, doneAt: 2 }, { id: 3 }] },
+    wins: { leagues: [{ league: 'Ufficio', leagueId: 'L', week: 100, rank: 1, people: 4, points: 90 }, 'rotto'], duels: [{ id: 'd1', title: 'Chi cammina', won: true, endsAt: 9 }] },
+    showcase: ['podio', 7, 'maratoneta'],
+  });
+  assert.ok(file);
+  assert.equal(file.journeys.done.length, 1);
+  assert.equal(file.wins.leagues.length, 1);
+  assert.deepEqual(file.showcase, ['podio', 'maratoneta']);
+  const here = { journeys: { current: null, done: [{ id: 'colli', startedAt: 1, doneAt: 2 }] }, wins: { leagues: [], duels: [] }, showcase: null };
+  const merged = mergeProgress(here, file);
+  assert.equal(merged.journeys.done.length, 1);
+  assert.equal(merged.journeys.current?.id, 'tevere');
+  assert.equal(merged.wins.duels.length, 1);
+  assert.deepEqual(merged.showcase, ['podio', 'maratoneta']);
+  assert.equal(readProgress('niente'), null);
+});

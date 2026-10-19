@@ -4,10 +4,14 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { newlyUnlocked, type BadgeState } from '../core/badges';
+import { TIER_NAMES, goalFor, newlyUnlocked, type BadgeState } from '../core/badges';
+import { monthlyAt, weeklyAt, type ChallengeRun } from '../core/challenges';
+import { journeyById, journeyRun, type Stage as JourneyStage } from '../core/journeys';
 import { formatCo2, totalCo2, treeTime, tripCo2 } from '../core/co2';
 import { DEFAULT_SPECIES, plantState, speciesName, type SpeciesId, type Stage } from '../core/plant';
 import { TRIP_CAP, type Trip } from '../core/scoring';
+import { loadJourneys, settleJourney } from '../storage/journey';
+import { loadBadgeContext } from '../storage/showcase';
 import { loadTree } from '../storage/tree';
 import { loadTrips } from '../storage/trips';
 import { duration, km } from '../ui/format';
@@ -55,23 +59,44 @@ export default function Riepilogo() {
   const [medals, setMedals] = useState<BadgeState[]>([]);
   const [growth, setGrowth] = useState<Growth | null>(null);
   const [totalG, setTotalG] = useState(0);
+  const [stages, setStages] = useState<{ journey: string; stages: JourneyStage[]; finished: boolean } | null>(null);
+  const [won, setWon] = useState<ChallengeRun[]>([]);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([loadTrips(), loadTree()]).then(([all, tree]) => {
-      if (!alive) return;
+    (async () => {
+      const [all, tree, journeys] = await Promise.all([loadTrips(), loadTree(), loadJourneys()]);
       const found = all.find((t) => t.id === id) ?? null;
+      // Il percorso virtuale: le tappe raggiunte con questo tragitto, e se è finito lo si archivia.
+      let journeyNews: { journey: string; stages: JourneyStage[]; finished: boolean } | null = null;
+      let finished = false;
+      if (found && journeys.current) {
+        const j = journeyById(journeys.current.id);
+        if (j) {
+          const before = all.filter((t) => t.id !== found.id);
+          const a = journeyRun(j, before, journeys.current.startedAt);
+          const b = journeyRun(j, all, journeys.current.startedAt);
+          finished = b.done && !a.done;
+          if (b.reached > a.reached) journeyNews = { journey: j.name, stages: j.stages.slice(a.reached, b.reached), finished };
+        }
+      }
+      if (finished) await settleJourney(all);
+      const ctx = await loadBadgeContext();
+      if (!alive) return;
       setTrip(found);
-      // Le medaglie che questo tragitto ha fatto scattare.
+      // Le medaglie (o i gradi) che questo tragitto ha fatto scattare.
       if (found) {
         const before = all.filter((t) => t.id !== found.id);
-        const unlocked = newlyUnlocked(before, [found], found.endedAt);
+        const unlocked = newlyUnlocked(before, [found], found.endedAt, { ...ctx, journeys: ctx.journeys - (finished ? 1 : 0) });
         setMedals(unlocked);
         buzz(unlocked.length > 0 ? 'premio' : 'fatto');
         setGrowth(growthBetween(before, all, found.endedAt, tree.species ?? DEFAULT_SPECIES));
         setTotalG(totalCo2(all));
+        setStages(journeyNews);
+        const at = found.endedAt;
+        setWon([weeklyAt, monthlyAt].map((f) => [f(before, at), f(all, at)] as const).filter(([a, b]) => b.done && !a.done).map(([, b]) => b));
       }
-    });
+    })().catch(() => undefined);
     return () => {
       alive = false;
     };
@@ -106,22 +131,42 @@ export default function Riepilogo() {
 
         <View style={styles.body}>
           {medals.map((medal) => (
-            <View key={medal.id} style={styles.prize} accessible accessibilityLabel={`Nuova medaglia: ${medal.name}. ${medal.goal}`}>
+            <View key={medal.id} style={styles.prize} accessible accessibilityLabel={`${prizeCaption(medal)}: ${medal.name}. ${goalFor(medal, medal.tiers[medal.level - 1])}`}>
               <Pop style={styles.halo}>
                 <Svg width={200} height={200} viewBox="0 0 96 96" style={StyleSheet.absoluteFill}>
                   <Path d={SHAPES.cookie12} fill={C.card} transform="rotate(11 48 48)" />
                 </Svg>
                 <View>
-                  <Medal id={medal.id} look="sbloccata" size={156} label={`Medaglia ${medal.name}`} />
+                  <Medal id={medal.id} look="sbloccata" size={156} level={medal.level} label={`Medaglia ${medal.name}`} />
                 </View>
               </Pop>
               <View style={styles.prizeChip}>
-                <Text style={styles.prizeCaption}>Nuova medaglia</Text>
+                <Text style={styles.prizeCaption}>{prizeCaption(medal)}</Text>
               </View>
               <Text style={styles.prizeName}>{medal.name}</Text>
-              <Text style={styles.prizeGoal}>{medal.goal}</Text>
+              <Text style={styles.prizeGoal}>{goalFor(medal, medal.tiers[medal.level - 1])}</Text>
             </View>
           ))}
+
+          {won.map((run) => (
+            <View key={run.id} style={styles.won} accessible>
+              <Text style={styles.wonCaption}>{run.id.startsWith('s-') ? 'Sfida della settimana completata' : 'Sfida del mese completata'}</Text>
+              <Text style={styles.wonTitle}>{run.title}</Text>
+              <Text style={styles.wonGoal}>{run.goal}</Text>
+            </View>
+          ))}
+
+          {stages
+            ? stages.stages.map((stage) => (
+                <View key={stage.name} style={styles.postcard} accessible>
+                  <Text style={styles.postCaption}>
+                    {stages.journey}: {stages.finished && stage === stages.stages[stages.stages.length - 1] ? 'arrivato!' : 'nuova tappa'}
+                  </Text>
+                  <Text style={styles.postTitle}>{stage.name}</Text>
+                  <Text style={styles.postText}>{stage.card}</Text>
+                </View>
+              ))
+            : null}
 
           <SectionTitle title="Tratti" />
           <Group>
@@ -180,7 +225,20 @@ export default function Riepilogo() {
   );
 }
 
+function prizeCaption(medal: BadgeState): string {
+  if (medal.tiers.length <= 1) return 'Nuova medaglia';
+  return medal.level === 1 ? 'Nuova medaglia: bronzo' : `Grado ${TIER_NAMES[medal.level - 1].toLowerCase()}`;
+}
+
 const styles = StyleSheet.create({
+  won: { backgroundColor: C.coral, borderRadius: R.card, padding: 18, gap: 2 },
+  wonCaption: { fontFamily: F.semi, fontSize: 13, color: C.onCoralDim },
+  wonTitle: { fontFamily: F.displayBold, fontSize: 24, lineHeight: 29, color: C.onCoral },
+  wonGoal: { fontFamily: F.medium, fontSize: 14, color: C.onCoralDim },
+  postcard: { backgroundColor: C.card, borderRadius: 18, borderWidth: 2, borderColor: C.teal, borderStyle: 'dashed', padding: 18, gap: 4 },
+  postCaption: { fontFamily: F.semi, fontSize: 13, color: C.teal },
+  postTitle: { fontFamily: F.displayBold, fontSize: 24, lineHeight: 29, color: C.text },
+  postText: { fontFamily: F.medium, fontSize: 14.5, lineHeight: 21, color: C.text },
   scroll: { paddingBottom: 116 },
   body: { paddingHorizontal: 16, paddingTop: 12, gap: 12 },
   heroPoints: { fontFamily: F.displayBold, fontSize: 96, lineHeight: 104, letterSpacing: -3, color: C.ink },

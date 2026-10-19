@@ -25,6 +25,7 @@ import {
   monthName,
   monthStart,
   normalizeCode,
+  parseShowcase,
   rankEntries,
   weekEnd,
   weekStart,
@@ -34,7 +35,7 @@ import {
 } from '../core/social';
 import { candyMeters, candySeason } from '../core/halloween';
 import { decodeRecovery, encodeRecovery } from '../core/recovery';
-import type { CandyEntry, LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
+import type { CandyEntry, PeriodEntry, LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
 
 export type RemoteConfig = {
   /** Indirizzo delle funzioni, senza barra finale. */
@@ -49,6 +50,8 @@ export type RemoteConfig = {
   loadTrips(): Promise<Trip[]>;
   /** L'avatar da mostrare agli altri: albero scelto e crescita. null se non c'è ancora un albero scelto. */
   loadTree?(): Promise<TreeBadge | null>;
+  /** La vetrina da mostrare agli altri, come "maratoneta:2,podio:1". */
+  loadShowcase?(): Promise<string>;
   /** Chiave segreta nuova: almeno 32 caratteri imprevedibili. */
   newSecret(): Promise<string>;
   fetch?: typeof fetch;
@@ -99,6 +102,8 @@ type State = {
   pushed: string[];
   /** Ultimo avatar inviato, per non rimandarlo uguale. */
   tree?: string;
+  /** Ultima vetrina inviata. */
+  showcase?: string;
   /** I tragitti già inviati hanno anche i metri (per le caramelle). */
   metersSent?: boolean;
   /** Tragitti cancellati sul telefono da togliere anche dal server. */
@@ -108,9 +113,9 @@ type State = {
 const EMPTY: State = { secret: null, profile: null, pushed: [] };
 
 type TreeRow = { species?: unknown; stage?: unknown; trees?: unknown } | null | undefined;
-type BoardRow = { id: string; name: string; me: boolean; points: number; before: number; mode: string | null; tree?: TreeRow };
+type BoardRow = { id: string; name: string; me: boolean; points: number; before: number; mode: string | null; tree?: TreeRow; showcase?: string };
 type ChallengeRow = Omit<Challenge, 'people'> & {
-  people: { id: string; name: string; me: boolean; team: 0 | 1; points: number; mode: string | null; reachedAt: number | null; tree?: TreeRow }[];
+  people: { id: string; name: string; me: boolean; team: 0 | 1; points: number; mode: string | null; reachedAt: number | null; tree?: TreeRow; showcase?: string }[];
 };
 
 /** L'avatar come arriva dal server; null se manca o non è valido (server non ancora aggiornato). */
@@ -194,7 +199,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     if (code === 'non-registrato' && !options.probe) {
       // Il profilo è stato cancellato dal server: qui si torna alla scelta del soprannome.
       const state = await load();
-      await save({ ...state, profile: null, pushed: [], tree: undefined });
+      await save({ ...state, profile: null, pushed: [], tree: undefined, showcase: undefined });
     }
     throw new ServerError(code, code === 'non-pronto' ? NOT_READY : (PROBLEMS[code] ?? `Il server ha risposto con un errore (${code}).`));
   }
@@ -245,6 +250,21 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     await save({ ...(await load()), pushed, metersSent: true });
   }
 
+  /** Manda la vetrina se è cambiata. Come per l'albero, un server non aggiornato non è un problema. */
+  async function pushShowcase(): Promise<void> {
+    if (!config.loadShowcase) return;
+    try {
+      const state = await load();
+      if (!state.secret || !state.profile) return;
+      const text = await config.loadShowcase();
+      if (text === state.showcase) return;
+      await call('vado_set_showcase', { p_secret: state.secret, p_showcase: text });
+      await save({ ...(await load()), showcase: text });
+    } catch {
+      // Riprova alla prossima sincronizzazione.
+    }
+  }
+
   /** Toglie dal server i punti dei tragitti cancellati. Se il server non è aggiornato, riprova la volta dopo. */
   async function pushRemovals(): Promise<void> {
     const state = await load();
@@ -284,6 +304,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     syncing = pushRemovals()
       .then(() => pushTrips(now))
       .then(() => pushTree())
+      .then(() => pushShowcase())
       .then(() => {
         lastSync = now;
       })
@@ -308,6 +329,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       reachedAt: p.reachedAt,
       team: p.team,
       tree: toTree(p.tree),
+      showcase: parseShowcase(p.showcase),
     }));
     // L'utente per primo, come nelle schermate.
     people.sort((a, b) => Number(b.me === true) - Number(a.me === true));
@@ -337,7 +359,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
         // prossimo tentativo si ritrova lo stesso profilo invece di crearne un altro.
         if (!state.secret) await save({ ...state, secret });
         const profile = await call<Profile>('vado_register', { p_secret: secret, p_nickname: nickname });
-        await save({ ...(await load()), secret, profile, tree: undefined });
+        await save({ ...(await load()), secret, profile, tree: undefined, showcase: undefined });
         return profile;
       });
     },
@@ -349,6 +371,20 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       const gone = new Set(ids);
       await save({ ...state, pushed: state.pushed.filter((id) => !gone.has(id)), removed: [...new Set([...(state.removed ?? []), ...ids])].slice(-500) });
       await sync(now, true);
+    },
+
+    async periodBoard(leagueId: string, from: number, to: number): Promise<PeriodEntry[] | null> {
+      try {
+        const rows = await mine<{ id: string; name: string; me: boolean; tree?: TreeRow; showcase?: string; points: number; meters: number }[] | null>(
+          'vado_period_board',
+          { p_league: leagueId, p_from: new Date(from).toISOString(), p_to: new Date(to).toISOString() },
+        );
+        return rows
+          ? rows.map((r) => ({ id: r.id, name: r.name, me: r.me, tree: toTree(r.tree), showcase: parseShowcase(r.showcase), points: Number(r.points) || 0, km: (Number(r.meters) || 0) / 1000 }))
+          : null;
+      } catch {
+        return null;
+      }
     },
 
     async candies(leagueId: string, now: number): Promise<CandyEntry[] | null> {
@@ -375,7 +411,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       await sync(now);
       const from = weekStart(now);
       const endsAt = weekEnd(now);
-      return read(`lega:${leagueId}`, null, async () => {
+      return read(`lega:${leagueId}:${from}`, null, async () => {
         const row = await mine<{ id: string; name: string; code: string; entries: BoardRow[] } | null>('vado_board', {
           p_league: leagueId,
           p_from: new Date(from).toISOString(),
@@ -392,6 +428,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
           me: e.me,
           mainMode: (e.mode as ModeId | null) ?? null,
           tree: toTree(e.tree),
+          showcase: parseShowcase(e.showcase),
           previousRank: earlier.get(e.id),
         }));
         return { ...summary(row), entries, endsAt };
@@ -412,7 +449,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
 
     async leaveLeague(leagueId: string): Promise<void> {
       await write(() => mine('vado_leave_league', { p_league: leagueId }));
-      cache.delete(`lega:${leagueId}`);
+      for (const key of [...cache.keys()]) if (key.startsWith(`lega:${leagueId}:`)) cache.delete(key);
     },
 
     async rivals(): Promise<Person[]> {

@@ -184,6 +184,17 @@ export function MedalIcon(props: IconProps) {
   );
 }
 
+/** Sentiero con partenza e arrivo. */
+export function RouteIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Circle cx={6} cy={19} r={2} />
+      <Path d="M8 19h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16" />
+      <Path d="M18 2.5v5l3-2.5z" />
+    </Stroke>
+  );
+}
+
 export function HeartIcon(props: IconProps) {
   return (
     <Stroke {...props}>
