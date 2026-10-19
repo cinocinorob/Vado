@@ -537,7 +537,12 @@ def check_storico() -> str:
         return "lo storico non si apre: " + visible_text()[:300]
     screenshot("storico")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
-    wait_for("Tragitti di oggi", 30, "tornando a Oggi dallo storico")
+    # Oggi era scorsa fino in fondo: si torna in cima.
+    wait_for("Storico: settimane e mesi", 30, "tornando a Oggi dallo storico")
+    for _ in range(5):
+        adb("shell", "input", "swipe", "540", "700", "540", "1700", "300")
+        time.sleep(0.8)
+    wait_for("Tragitti di oggi", 30, "tornando in cima a Oggi")
     return "ok"
 
 
