@@ -1,7 +1,7 @@
 /** Schermata "Tragitto in corso": percorso, punti che maturano, pausa e fine. */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Polyline } from 'react-native-svg';
 
@@ -9,8 +9,8 @@ import { getMode, type ModeId } from '../core/modes';
 import { COMMUTE_BONUS, COMMUTE_MIN_M, TRIP_CAP, capUsedBefore, dayKey, scoreTrip, summarizeDay, type Trip } from '../core/scoring';
 import { loadTrips } from '../storage/trips';
 import { useActiveTrip } from '../tracking/store';
-import { changeMode, finishTracking, pauseTracking, resumeTracking } from '../tracking/tracker';
-import { currentLeg, legElapsedMs, toLegInputs, type PathPoint } from '../tracking/tripState';
+import { changeMode, confirmTransit, finishTracking, pauseTracking, rejectTransit, resumeTracking } from '../tracking/tracker';
+import { STILL_ON_BOARD_MS, currentLeg, legElapsedMs, pendingTransit, toLegInputs, type PathPoint } from '../tracking/tripState';
 import { clock, distance, integer, speed } from '../ui/format';
 import { PauseIcon, PlayIcon, StarIcon, StopIcon, SwapIcon } from '../ui/Icons';
 import { Mascot, MascotShapes } from '../ui/Mascot';
@@ -54,11 +54,31 @@ export default function InCorso() {
   const totalSeconds = trip.legs.reduce((sum, l) => sum + legElapsedMs(l, now), 0) / 1000;
   const bonusPending = trip.commute && !bonusAlready && score.bonus === 0 && score.meters < COMMUTE_MIN_M;
 
-  async function finish() {
+  const transit = pendingTransit(trip);
+  const onBoard = !!transit && transit.leg === leg && now - transit.fast.endT < STILL_ON_BOARD_MS;
+
+  /** Prima di chiudere: un pezzo troppo veloce per il mezzo dichiarato era su un mezzo pubblico? */
+  function finish() {
+    if (!transit) {
+      close(false);
+      return;
+    }
+    const km = (transit.fast.rejectedM / 1000).toFixed(1).replace('.', ',');
+    Alert.alert(
+      'Eri su un mezzo pubblico?',
+      `Circa ${km} km sono troppo veloci per "${getMode(transit.leg.mode).label}". Se eri su bus, tram o metro, li conto come mezzi pubblici; altrimenti quel tratto non vale punti.`,
+      [
+        { text: 'No', style: 'cancel', onPress: () => close(false) },
+        { text: 'Sì, mezzi pubblici', onPress: () => close(true) },
+      ],
+    );
+  }
+
+  async function close(transitConfirmed: boolean) {
     setFinishing(true);
     setProblem(null);
     try {
-      const done = await finishTracking();
+      const done = await finishTracking({ transit: transitConfirmed });
       if (done) router.replace({ pathname: '/riepilogo', params: { id: done.id } });
       else router.dismissTo('/');
     } catch {
@@ -108,6 +128,23 @@ export default function InCorso() {
         <Text style={styles.notice} accessibilityRole="alert">
           {problem}
         </Text>
+      ) : null}
+
+      {transit ? (
+        <View style={styles.transit} accessibilityRole="alert">
+          <Text style={styles.transitTitle}>{onBoard ? 'Sei su un mezzo pubblico?' : 'Eri su un mezzo pubblico?'}</Text>
+          <Text style={styles.transitBody}>
+            Stai andando troppo veloce per &quot;{getMode(transit.leg.mode).label}&quot;. Se sei su bus, tram o metro, conto quel pezzo come mezzi pubblici.
+          </Text>
+          <View style={styles.transitRow}>
+            <Pressable onPress={rejectTransit} accessibilityRole="button" style={({ pressed }) => [styles.transitNo, pressed && { opacity: 0.8 }]}>
+              <Text style={styles.transitNoText}>No</Text>
+            </Pressable>
+            <Pressable onPress={confirmTransit} accessibilityRole="button" style={({ pressed }) => [styles.transitYes, pressed && { opacity: 0.85 }]}>
+              <Text style={styles.transitYesText}>Sì, mezzi pubblici</Text>
+            </Pressable>
+          </View>
+        </View>
       ) : null}
 
       <Panel style={styles.sheet}>
@@ -250,6 +287,14 @@ function TrackView({ path, gpsUsable, paused }: { path: PathPoint[]; gpsUsable: 
 }
 
 const styles = StyleSheet.create({
+  transit: { backgroundColor: C.coral, borderRadius: R.card, padding: 16, gap: 6, marginBottom: 10 },
+  transitTitle: { fontFamily: F.displayBold, fontSize: 20, color: C.onCoral },
+  transitBody: { fontFamily: F.medium, fontSize: 14, lineHeight: 19, color: C.onCoralDim },
+  transitRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  transitNo: { height: 44, paddingHorizontal: 20, borderRadius: 22, backgroundColor: 'rgba(58, 19, 6, 0.12)', justifyContent: 'center' },
+  transitNoText: { fontFamily: F.bold, fontSize: 15, color: C.onCoral },
+  transitYes: { flex: 1, height: 44, borderRadius: 22, backgroundColor: C.strong, alignItems: 'center', justifyContent: 'center' },
+  transitYesText: { fontFamily: F.bold, fontSize: 15, color: C.onStrong },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   modeChip: { backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, paddingLeft: 8, paddingRight: 16, borderRadius: 28 },
   modeLabel: { fontFamily: F.bold, fontSize: 15, color: C.text },

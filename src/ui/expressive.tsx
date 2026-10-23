@@ -82,7 +82,7 @@ export function WeekStrip({ activeDays, now }: { activeDays: ReadonlySet<string>
       {days.map((day, i) => {
         const done = activeDays.has(day.key);
         const today = i === 6;
-        const fill = done ? (today ? C.strong : C.lime) : C.tonal;
+        const fill = done ? (today ? C.strong : C.lime) : C.faint;
         return (
           <View key={day.key} style={styles.weekDay}>
             <Svg width={34} height={34} viewBox="0 0 96 96">
@@ -113,7 +113,7 @@ export function Co2Card({ grams, meters, title, plant, onPress }: { grams: numbe
         <Text style={styles.co2Body}>{body}</Text>
       </View>
       <View style={styles.co2Plant}>
-        <Sprout size={84} stage={plant.stage} health={plant.health} species={plant.species} label="Il tuo germoglio" />
+        <Sprout size={84} stage={plant.stage} health={plant.health} species={plant.species} label="Il tuo germoglio" crop />
       </View>
     </Pressable>
   );

@@ -12,12 +12,16 @@ import {
   applyFixes,
   applySteps,
   currentLeg,
+  dismissTransit,
   enterBackground,
   forDraft,
   legSpans,
   legSteps,
   pauseTrip,
+  pendingTransit,
   resumeTrip,
+  settleTransit,
+  splitTransit,
   startTrip,
   switchMode,
   toLegInputs,
@@ -402,4 +406,116 @@ test('cambio sottoterra e uscita lontano dalle stazioni: linea d’aria ai mezzi
   assert.ok(transit.gpsM > 3000, String(transit.gpsM));
   assert.equal(walk.rejectedM, 0);
   assert.ok(walk.gpsM < 60, String(walk.gpsM));
+});
+
+// ---------- mezzo pubblico dimenticato ----------
+
+test('metro con il tratto ancora "A piedi": riconosciuta dalle stazioni e spostata ai mezzi pubblici', () => {
+  const route = routeBetween(ROMA, 'flaminio', 'eur-fermi');
+  assert.ok(route);
+  const ride = 25 * 60_000;
+  let trip = startTrip({ ...START, mode: 'piedi', now: T0 });
+  const approach = walkFrom('flaminio', -260, 220, T0);
+  trip = applyFixes(trip, approach);
+  const out = approach[approach.length - 1].t + ride;
+  const after = walkFrom('eur-fermi', 30, 300, out);
+  trip = applyFixes(trip, after);
+  const end = after[after.length - 1].t + 2000;
+
+  // Senza riattribuzione il tratto a piedi sarebbe scartato.
+  const plain = scoreTrip(toLegInputs(trip, end, true), { commute: false, bonusAlreadyToday: false });
+  assert.equal(plain.legs[0].status, 'anomalo');
+
+  const fixed = settleTransit(trip, end, 'metro');
+  const inputs = toLegInputs(fixed, end, true);
+  assert.deepEqual(inputs.map((l) => l.mode), ['piedi', 'tpl', 'piedi']);
+  const [walkIn, metro, walkOut] = inputs;
+  assert.ok(walkIn.gpsM > 150 && walkIn.gpsM < 240, String(walkIn.gpsM));
+  assert.deepEqual(metro.hops?.map((h) => h.label), ['Flaminio → EUR Fermi']);
+  assert.ok(metro.gpsM >= route.meters - 10 && metro.gpsM < route.meters + 300, `${metro.gpsM} / ${route.meters}`);
+  assert.ok(metro.seconds > 24 * 60 && metro.seconds < 26 * 60, String(metro.seconds));
+  assert.equal(walkOut.rejectedM, 0);
+  assert.ok(walkOut.gpsM > 200 && walkOut.gpsM < 320, String(walkOut.gpsM));
+  const score = scoreTrip(inputs, { commute: false, bonusAlreadyToday: false });
+  assert.deepEqual(score.legs.map((l) => l.status === 'anomalo'), [false, false, false]);
+  assert.equal(score.legs[1].route, 'Flaminio → EUR Fermi');
+  // Un viaggio in metro riconosciuto non richiede domande.
+  assert.equal(pendingTransit(trip), null);
+  // Già durante il tragitto: il tratto corrente torna "A piedi" dopo la metro.
+  const live = splitTransit(trip, end, 'metro');
+  assert.equal(live.legs.length, 3);
+  assert.equal(currentLeg(live).mode, 'piedi');
+  assert.equal(currentLeg(live).closed, false);
+});
+
+test('uscito dalla metro con il tratto "A piedi" e chiuso subito: la metro conta lo stesso', () => {
+  let trip = startTrip({ ...START, mode: 'piedi', now: T0 });
+  const approach = walkFrom('termini', -200, 160, T0);
+  trip = applyFixes(trip, approach);
+  const out = approach[approach.length - 1].t + 9 * 60_000;
+  trip = applyFixes(trip, [atStation('san-giovanni', -40, out)]);
+  const fixed = settleTransit(trip, out + 2000, 'metro');
+  const inputs = toLegInputs(fixed, out + 2000, true);
+  assert.deepEqual(inputs.map((l) => l.mode), ['piedi', 'tpl', 'piedi']);
+  assert.ok((inputs[1].hops?.length ?? 0) === 1);
+  const score = scoreTrip(inputs, { commute: false, bonusAlreadyToday: false });
+  assert.ok(score.legs.every((l) => l.status !== 'anomalo'));
+});
+
+test('bus con il tratto "A piedi": si chiede, e se confermato i km veloci vanno ai mezzi pubblici', () => {
+  const sim = new Sim();
+  let trip = begin(sim);
+  trip = sim.move(trip, 500, 1.4);
+  trip = applySteps(trip, 700);
+  trip = sim.move(trip, 3000, 8);
+  trip = sim.move(trip, 300, 1.4);
+  trip = applySteps(trip, 1150);
+  const end = sim.t + 1000;
+
+  const plain = scoreTrip(toLegInputs(trip, end, true), FIRST);
+  assert.equal(plain.legs[0].status, 'anomalo');
+  const pending = pendingTransit(trip);
+  assert.ok(pending, 'il pezzo veloce va segnalato');
+  near(pending.fast.rejectedM, 3000, 250);
+
+  // "No": niente cambia e non si chiede più.
+  const no = dismissTransit(trip);
+  assert.equal(pendingTransit(no), null);
+  assert.equal(settleTransit(no, end, 'tutti').legs.length, 1);
+
+  // "Sì": tre tratti, nessuno scartato, il tempo del bus sta sul bus.
+  const yes = settleTransit(trip, end, 'tutti');
+  const inputs = toLegInputs(yes, end, true);
+  assert.deepEqual(inputs.map((l) => l.mode), ['piedi', 'tpl', 'piedi']);
+  near(inputs[0].gpsM, 500, 60);
+  near(inputs[1].gpsM, 3000, 150);
+  near(inputs[2].gpsM, 300, 60);
+  near(inputs[1].seconds, 3000 / 8, 30);
+  // I passi vanno ai due pezzi a piedi, in proporzione.
+  assert.equal((inputs[0].steps ?? 0) + (inputs[2].steps ?? 0), 1149);
+  const score = scoreTrip(inputs, FIRST);
+  assert.deepEqual(score.legs.map((l) => l.status), ['verificato', 'dichiarato', 'verificato']);
+});
+
+test('ancora sul bus quando si conferma: il tratto dei mezzi pubblici resta aperto e continua', () => {
+  const sim = new Sim();
+  let trip = begin(sim);
+  trip = sim.move(trip, 400, 1.4);
+  trip = applySteps(trip, 560);
+  trip = sim.move(trip, 2000, 8);
+  trip = splitTransit(trip, sim.t + 1000, 'tutti');
+  assert.deepEqual(trip.legs.map((l) => [l.mode, l.closed]), [['piedi', true], ['tpl', false]]);
+  trip = sim.move(trip, 1000, 8);
+  const inputs = toLegInputs(trip, sim.t + 1000, true);
+  near(inputs[1].gpsM, 3000, 200);
+  assert.equal(inputs[1].rejectedM, 0);
+  assert.ok(scoreTrip(inputs, FIRST).legs.every((l) => l.status !== 'anomalo'));
+});
+
+test('un salto isolato del GPS a piedi non viene scambiato per un mezzo pubblico', () => {
+  const sim = new Sim();
+  let trip = begin(sim);
+  trip = sim.move(trip, 1500, 1.4);
+  assert.equal(pendingTransit(trip), null);
+  assert.equal(splitTransit(trip, sim.t, 'tutti').legs.length, 1);
 });

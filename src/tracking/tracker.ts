@@ -31,6 +31,9 @@ import { activeTripStore } from './store';
 import {
   afterRestart,
   applyFixes,
+  dismissTransit,
+  settleTransit,
+  splitTransit,
   applySteps,
   enterBackground,
   pauseTrip,
@@ -38,6 +41,7 @@ import {
   startTrip,
   switchMode,
   toLegInputs,
+  type ActiveTrip,
 } from './tripState';
 import { applyReminders, cancelForgotReminder, nudgeForgotReminder } from '../reminders/schedule';
 import { updateWidget } from '../widget/update';
@@ -71,9 +75,28 @@ function toFix(location: Location.LocationObject): Fix {
 TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(LOCATION_TASK, async ({ data, error }) => {
   if (error || !data?.locations?.length) return;
   const fixes = data.locations.map(toFix);
-  activeTripStore.update((trip) => applyFixes(trip, fixes));
+  activeTripStore.update((trip) => withFixes(trip, fixes));
   movedNow();
 });
+
+/**
+ * Nuove posizioni. Un viaggio in metro fatto con il tratto ancora "A piedi"
+ * (posizioni sparite a una stazione e ricomparse a un'altra) diventa subito
+ * un tratto con i mezzi pubblici.
+ */
+function withFixes(trip: ActiveTrip, fixes: Fix[]): ActiveTrip {
+  return splitTransit(applyFixes(trip, fixes), Date.now(), 'metro');
+}
+
+/** L'utente conferma che il pezzo troppo veloce era su un mezzo pubblico. */
+export function confirmTransit(): void {
+  activeTripStore.update((trip) => splitTransit(trip, Date.now(), 'tutti'), true);
+}
+
+/** L'utente dice che il pezzo troppo veloce non era un mezzo pubblico. */
+export function rejectTransit(): void {
+  activeTripStore.update(dismissTransit, true);
+}
 
 /** Una posizione nuova arriva solo muovendosi di qualche metro: sposta in avanti il promemoria "hai dimenticato Termina?". */
 function movedNow(): void {
@@ -153,7 +176,7 @@ async function startLocation(): Promise<boolean> {
     }
   }
   watcher = await Location.watchPositionAsync(LOCATION_OPTIONS, (location) => {
-    activeTripStore.update((trip) => applyFixes(trip, [toFix(location)]));
+    activeTripStore.update((trip) => withFixes(trip, [toFix(location)]));
     movedNow();
   });
   await activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
@@ -261,16 +284,18 @@ export function resumeTracking(): void {
 }
 
 /** Chiude il tragitto, calcola i punti e lo salva nello storico. */
-export async function finishTracking(): Promise<Trip | null> {
+export async function finishTracking(opts: { transit?: boolean } = {}): Promise<Trip | null> {
   if (!activeTripStore.get()) return null;
 
   // Chi tira fuori il telefono dalla tasca e preme subito Termina ha diritto
   // al conteggio dei passi aggiornato: lo si aspetta un attimo.
   await freshSteps();
-  const active = activeTripStore.get();
-  if (!active) return null;
+  const current = activeTripStore.get();
+  if (!current) return null;
 
   const now = Date.now();
+  // Viaggi in metro riconosciuti, e gli altri pezzi veloci se l'utente ha detto che era su un mezzo.
+  const active = settleTransit(current, now, opts.transit ? 'tutti' : 'metro');
   const trips = await loadTrips();
   const day = dayKey(now);
   // Se Connessione Salute è collegata, i suoi passi possono confermare i

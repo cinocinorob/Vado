@@ -9,12 +9,11 @@ export function Bats({ width = 150, height = 90, color = C.ink }: { width?: numb
   const bat = 'M0 0c3-3 6-3 8 0c1-2 3-3 5-2c-1 1-1 2 0 3c2-2 5-2 7 0c-3 0-5 2-6 4c-2-2-5-2-7 0c-2-2-5-2-7 0c-1-2-3-4-6-4c2-2 5-2 7 0c1-1 1-2 0-3c2-1 4 0 5 2z';
   return (
     <Svg width={width} height={height} viewBox="0 0 150 90" pointerEvents="none">
-      <Circle cx={118} cy={30} r={20} fill="#FFF3C4" opacity={0.85} />
-      <Circle cx={128} cy={24} r={18} fill={C.hero} />
-      <G fill={color} opacity={0.8}>
-        <Path d={bat} transform="translate(40 28) scale(1.1)" />
-        <Path d={bat} transform="translate(78 52) scale(0.8)" />
-        <Path d={bat} transform="translate(18 62) scale(0.6)" />
+      <Circle cx={22} cy={22} r={15} fill="#FFF3C4" opacity={0.9} />
+      <Circle cx={30} cy={17} r={13.5} fill={C.hero} />
+      <G fill={color} opacity={0.75}>
+        <Path d={bat} transform="translate(52 14) scale(0.9)" />
+        <Path d={bat} transform="translate(84 34) scale(0.6)" />
       </G>
     </Svg>
   );

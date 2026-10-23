@@ -305,6 +305,19 @@ Dalla schermata Oggi, "Backup e cambio telefono":
 Il backup automatico di Android (dati delle app su Google Drive) non è disattivato, ma per Vado non è stato
 verificato: il file e il codice sono la strada provata. Regole in `src/core/backup.ts` e `src/core/recovery.ts`.
 
+## Mezzo pubblico dimenticato
+
+Se un tragitto resta su "A piedi" (o in bici) mentre si è in metro o in bus, il pezzo troppo veloce non va perso:
+
+- **Metro:** se le posizioni spariscono vicino a una stazione e ricompaiono vicino a un'altra, in un tempo da treno, quel
+  pezzo diventa da solo un tratto "Metro, bus, tram" con i metri lungo la rete. Vale anche se la velocità media resta sotto
+  il limite della camminata (una tratta lunga può dare 5 m/s di media).
+- **Bus, tram, altro:** sopra i 300 metri troppo veloci l'app chiede, durante il tragitto e quando si preme Termina, se si
+  era su un mezzo pubblico. Con "Sì" il pezzo passa ai mezzi pubblici (metri e tempo), i passi restano ai tratti a piedi;
+  con "No" resta com'è e non vale punti.
+
+Regole in `src/tracking/tripState.ts` (`splitTransit`) e `src/core/geo.ts` (`fast`), con le prove in `tripState.test.ts`.
+
 ## Bus e tram
 
 - **Riconoscimento in tempo reale.** In un tragitto avviato con "Metro, bus, tram", mentre ci si muove a velocità da mezzo, l'app
@@ -351,7 +364,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (210 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (215 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

@@ -13,6 +13,7 @@ import {
   closeTrack,
   withoutCoordinates,
   type Bridge,
+  type FastSpan,
   type Fix,
   haversineM,
   type TrackState,
@@ -58,6 +59,8 @@ export type ActiveLeg = {
    * (in memoria, mai su disco) e i mezzi in tempo reale trovati accanto.
    */
   bus?: { samples: Sample[]; sightings: Sighting[] };
+  /** L'utente ha detto che il pezzo troppo veloce non era un mezzo pubblico: non si chiede più. */
+  transitDismissed?: boolean;
 };
 
 /** Ogni quanto si tiene una posizione per il confronto con i bus. */
@@ -170,6 +173,22 @@ export function legSpans(leg: ActiveLeg, now: number): [number, number][] {
 const metroBridge: Bridge = (from, to, straightM) => metroHop(ROMA, from, to, straightM);
 const bridgeFor = (mode: ModeId): Bridge | undefined => (mode === 'tpl' ? metroBridge : undefined);
 
+/** Mezzi a forza di gambe: un pezzo troppo veloce per loro può essere un mezzo pubblico dimenticato. */
+export const HUMAN_MODES: readonly ModeId[] = ['piedi', 'bici', 'ebike'];
+/**
+ * Sopra questa velocità media, un pezzo senza posizioni tra due stazioni non
+ * è stato fatto con le proprie gambe (9 km/h a piedi, 29 km/h in bici).
+ */
+const TRANSIT_ABOVE_MS: Partial<Record<ModeId, number>> = { piedi: 2.5, bici: 8, ebike: 8 };
+function fastBridgeFor(mode: ModeId): Bridge | undefined {
+  const above = TRANSIT_ABOVE_MS[mode];
+  if (above == null) return undefined;
+  return (from, to, straightM) => {
+    const seconds = (to.t - from.t) / 1000;
+    return seconds > 0 && straightM / seconds > above ? metroHop(ROMA, from, to, straightM) : null;
+  };
+}
+
 /** Il tratto corrente riparte da dove è arrivato un altro tracciato, senza ereditarne i metri. */
 function continueFrom(track: TrackState): TrackState {
   return { ...EMPTY_TRACK, last: track.last, estimate: track.estimate, lastRaw: track.lastRaw, pending: track.pending };
@@ -232,7 +251,7 @@ function applyOne(trip: ActiveTrip, fix: Fix): { trip: ActiveTrip; credited: Fix
     const handed = handOver(trip, fix);
     if (handed) return handed;
   }
-  const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode));
+  const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode));
   const bus = leg.mode === 'tpl' ? withSample(leg.bus, fix) : leg.bus;
   if (result.state === leg.track && bus === leg.bus) return { trip, credited: result.credited };
   return { trip: replaceCurrent(trip, { ...leg, track: result.state, ...(bus ? { bus } : {}) }), credited: result.credited };
@@ -293,7 +312,7 @@ export function enterBackground(trip: ActiveTrip): ActiveTrip {
 function closeLeg(trip: ActiveTrip, leg: ActiveLeg, now: number): ActiveLeg {
   return {
     ...leg,
-    track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode)),
+    track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode)),
     accumMs: legElapsedMs(leg, now),
     spans: legSpans(leg, now),
     runningSince: null,
@@ -326,7 +345,7 @@ export function pauseTrip(trip: ActiveTrip, now: number): ActiveTrip {
     ...replaceCurrent(trip, {
       ...leg,
       // L'ultimo pezzo fatto prima della pausa viene accreditato adesso.
-      track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode)),
+      track: closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode)),
       accumMs: legElapsedMs(leg, now),
       spans: legSpans(leg, now),
       runningSince: null,
@@ -368,7 +387,7 @@ function busOf(leg: ActiveLeg): Pick<LegInput, 'bus'> {
 export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegInput[] {
   return trip.legs.map((leg) => {
     const track =
-      final && !leg.closed && !trip.paused ? closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode)) : leg.track;
+      final && !leg.closed && !trip.paused ? closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode)) : leg.track;
     return {
       mode: leg.mode,
       gpsM: track.distanceM,
@@ -425,4 +444,161 @@ export function forDraft(trip: ActiveTrip, savedAt: number): ActiveTrip {
     })),
     savedAt,
   };
+}
+
+// ---------- mezzo pubblico dimenticato ----------
+
+/** Sotto questi metri troppo veloci è rumore del GPS, non un viaggio su un mezzo. */
+export const TRANSIT_MIN_M = 300;
+/** Se l'ultimo pezzo veloce è più recente di così, si è ancora sul mezzo. */
+export const STILL_ON_BOARD_MS = 2 * 60 * 1000;
+
+/** Il pezzo troppo veloce di un tratto a piedi o in bici, se è abbastanza lungo da essere un viaggio. */
+export function transitSpan(leg: ActiveLeg): FastSpan | null {
+  const fast = leg.track.fast;
+  if (!HUMAN_MODES.includes(leg.mode) || !fast || fast.rejectedM < TRANSIT_MIN_M) return null;
+  return fast;
+}
+
+/** Il pezzo veloce è un viaggio in metro riconosciuto dalle stazioni: si può riattribuire senza chiedere. */
+export function isMetroSpan(fast: FastSpan): boolean {
+  const onNetwork = fast.hops.reduce((sum, h) => sum + h.meters, 0);
+  return fast.hops.length > 0 && onNetwork >= (fast.rejectedM + fast.extraM) * 0.5;
+}
+
+/** Tratti con un pezzo veloce ancora da decidere (non metro, non già rifiutato). */
+export function pendingTransit(trip: ActiveTrip): { leg: ActiveLeg; fast: FastSpan } | null {
+  for (const leg of trip.legs) {
+    const fast = transitSpan(leg);
+    if (fast && !isMetroSpan(fast) && !leg.transitDismissed) return { leg, fast };
+  }
+  return null;
+}
+
+/** L'utente dice che il pezzo veloce non era un mezzo pubblico. */
+export function dismissTransit(trip: ActiveTrip): ActiveTrip {
+  return { ...trip, legs: trip.legs.map((leg) => (transitSpan(leg) ? { ...leg, transitDismissed: true } : leg)) };
+}
+
+const spanMs = (spans: [number, number][]) => spans.reduce((sum, [a, b]) => sum + Math.max(0, b - a), 0);
+
+/** Gli intervalli ritagliati tra `from` e `to`. */
+function clip(spans: [number, number][], from: number, to: number): [number, number][] {
+  const out: [number, number][] = [];
+  for (const [a, b] of spans) {
+    const x = Math.max(a, from);
+    const y = Math.min(b, to);
+    if (y > x) out.push([x, y]);
+  }
+  return out;
+}
+
+/**
+ * Divide un tratto a piedi o in bici con un pezzo troppo veloce in: il tratto
+ * prima, il viaggio con i mezzi pubblici e il tratto dopo. I metri scartati
+ * per la velocità passano ai mezzi pubblici (con i metri della rete, se è un
+ * viaggio in metro), insieme al tempo e ai metri fatti in mezzo.
+ * I passi si dividono tra i due pezzi a piedi in proporzione alla distanza.
+ */
+function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number, stillOnBoard: boolean): ActiveLeg[] {
+  const open = !leg.closed;
+  const allSpans = legSpans(leg, now);
+  const steps = legSteps(trip, leg);
+  const before = fast.startM;
+  const after = Math.max(0, leg.track.distanceM - fast.endM);
+  const walkSteps = (meters: number) => (steps == null ? null : before + after > 0 ? Math.round((steps * meters) / (before + after)) : 0);
+  const mocked = leg.track.mocked;
+  const transitM = Math.max(0, fast.endM - fast.startM) + fast.rejectedM + fast.extraM;
+
+  const first: ActiveLeg = {
+    ...leg,
+    track: { ...EMPTY_TRACK, distanceM: before, mocked, ...(leg.track.hops ? { hops: leg.track.hops } : {}) },
+    spans: clip(allSpans, -Infinity, fast.t),
+    accumMs: spanMs(clip(allSpans, -Infinity, fast.t)),
+    runningSince: null,
+    finalSteps: walkSteps(before),
+    closed: true,
+    handover: false,
+    transitDismissed: false,
+  };
+  const rest = leg.track.rejectedM - fast.rejectedM;
+
+  if (open && stillOnBoard) {
+    // Ancora sul mezzo: il tratto dei mezzi pubblici diventa quello corrente e continua.
+    const runningSpans = (leg.spans ?? []).filter(([, b]) => b > fast.t);
+    const ride: ActiveLeg = {
+      ...newLeg('tpl', now, leg.stepBase != null && steps != null ? leg.stepBase + (first.finalSteps ?? 0) : null),
+      track: { ...leg.track, distanceM: leg.track.distanceM - before + fast.rejectedM + fast.extraM, rejectedM: Math.max(0, rest), hops: fast.hops, fast: undefined },
+      spans: clip(runningSpans, fast.t, Infinity),
+      accumMs: spanMs(clip(runningSpans, fast.t, Infinity)),
+      runningSince: leg.runningSince != null ? Math.max(leg.runningSince, fast.t) : null,
+      backgrounded: leg.backgrounded,
+    };
+    return [first, ride];
+  }
+
+  const rideSpans = clip(allSpans, fast.t, fast.endT);
+  const ride: ActiveLeg = {
+    ...newLeg('tpl', now, null),
+    track: { ...EMPTY_TRACK, distanceM: transitM, mocked, hops: fast.hops },
+    spans: rideSpans,
+    accumMs: spanMs(rideSpans),
+    runningSince: null,
+    finalSteps: null,
+    closed: true,
+    backgrounded: leg.backgrounded,
+  };
+  const afterTrack: TrackState = { ...leg.track, distanceM: after, rejectedM: Math.max(0, rest), hops: undefined, fast: undefined };
+  if (open) {
+    const done = clip(leg.spans ?? [], fast.endT, Infinity);
+    const second: ActiveLeg = {
+      ...leg,
+      track: afterTrack,
+      spans: done,
+      accumMs: spanMs(done),
+      runningSince: leg.runningSince != null ? Math.max(leg.runningSince, fast.endT) : null,
+      stepBase: leg.stepBase != null && first.finalSteps != null ? leg.stepBase + first.finalSteps : leg.stepBase,
+      handover: false,
+      transitDismissed: false,
+    };
+    return [first, ride, second];
+  }
+  const tail = clip(allSpans, fast.endT, Infinity);
+  const second: ActiveLeg = { ...leg, track: afterTrack, spans: tail, accumMs: spanMs(tail), finalSteps: walkSteps(after), transitDismissed: false };
+  return [first, ride, second];
+}
+
+/**
+ * Riattribuisce ai mezzi pubblici i pezzi troppo veloci dei tratti a piedi o
+ * in bici. `which`: 'metro' solo quelli riconosciuti dalle stazioni (sicuri),
+ * 'tutti' anche gli altri (quando l'utente conferma di essere stato su un mezzo).
+ */
+export function splitTransit(trip: ActiveTrip, now: number, which: 'metro' | 'tutti'): ActiveTrip {
+  let changed = false;
+  const legs: ActiveLeg[] = [];
+  trip.legs.forEach((leg, i) => {
+    const fast = transitSpan(leg);
+    const wanted = fast && (isMetroSpan(fast) || (which === 'tutti' && !leg.transitDismissed));
+    if (!fast || !wanted) {
+      legs.push(leg);
+      return;
+    }
+    changed = true;
+    const last = i === trip.legs.length - 1;
+    const onBoard = last && !leg.closed && !isMetroSpan(fast) && now - fast.endT < STILL_ON_BOARD_MS;
+    legs.push(...splitLeg(trip, leg, fast, now, onBoard));
+  });
+  return changed ? { ...trip, legs } : trip;
+}
+
+/**
+ * Alla chiusura del tragitto: accredita l'ultimo pezzo del tratto aperto (chi
+ * esce dalla metro e chiude subito ha proprio lì il viaggio) e riattribuisce
+ * i pezzi veloci ai mezzi pubblici.
+ */
+export function settleTransit(trip: ActiveTrip, now: number, which: 'metro' | 'tutti'): ActiveTrip {
+  const leg = currentLeg(trip);
+  const closedTrack = trip.paused || leg.closed ? leg.track : closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode));
+  const ready = closedTrack === leg.track ? trip : replaceCurrent(trip, { ...leg, track: closedTrack });
+  return splitTransit(ready, now, which);
 }

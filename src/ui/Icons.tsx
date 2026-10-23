@@ -161,7 +161,8 @@ export function StarIcon({ size = 20, color = '#C8F560', filled = false }: IconP
 export function FlameIcon({ size = 18, color = '#FF8A65' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-      <Path d="M12 3c1 3 4 4.5 4 8.5a4 4 0 0 1-8 0c0-1.5.5-2.5 1.5-3.5.3 1.2 1 1.8 1.5 2 0-2.5.3-5 1-7z" />
+      <Path d="M12 2.5c1.2 3.2 5.5 5.4 5.5 10.4a5.5 5.5 0 0 1-11 0c0-2.1.8-3.6 2.2-5 .3 1.6 1.2 2.5 2 2.8 0-3.2.4-5.8 1.3-8.2z" />
+      <Path d="M12 11.5c.6 1.6 2.6 2.7 2.6 5.1a2.6 2.6 0 0 1-5.2 0c0-1.3.6-2.2 1.4-2.9.2.7.6 1.1 1 1.3 0-1.4 0-2.4.2-3.5z" fill="#FFD23F" />
     </Svg>
   );
 }

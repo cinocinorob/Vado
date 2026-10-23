@@ -17,7 +17,7 @@ export function TreeAvatar({ badge, me = false, size = 40 }: { badge?: TreeBadge
   return (
     <View style={{ width: size, height: size }}>
       <ShapeBadge shape="cookie12" color={me ? C.lime : C.mint} size={size}>
-        <Sprout size={size * 0.9} stage={badge?.stage ?? 'seme'} species={badge?.species} grown={grown} />
+        <Sprout size={size * 0.92} stage={badge?.stage ?? 'seme'} species={badge?.species} grown={grown} ground={false} crop />
       </ShapeBadge>
       {grown ? (
         <View style={[styles.count, { minWidth: size * 0.42, height: size * 0.42, borderRadius: size * 0.21 }]}>

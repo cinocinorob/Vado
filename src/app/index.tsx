@@ -157,7 +157,7 @@ export default function Oggi() {
             </Pressable>
             <Pressable onPress={() => router.push('/bosco')} accessibilityRole="button" accessibilityLabel="Il tuo germoglio e il bosco" hitSlop={6}>
               <ShapeBadge shape="cookie12" color={C.mint} size={60}>
-                <Sprout size={52} stage={plant.stage} health={plant.health} species={plant.species} />
+                <Sprout size={54} stage={plant.stage} health={plant.health} species={plant.species} ground={false} crop />
               </ShapeBadge>
             </Pressable>
             </View>
@@ -166,6 +166,7 @@ export default function Oggi() {
 
         <View style={styles.body}>
           <View style={styles.hero}>
+            <View style={styles.glow} pointerEvents="none" />
             {HALLOWEEN_ON ? (
               <View style={styles.bats} pointerEvents="none">
                 <Bats />
@@ -179,7 +180,7 @@ export default function Oggi() {
                 extra > 0 ? `Obiettivo di oggi superato: ${today.points} punti, ${extra} oltre gli ${DAILY_GOAL}` : `Obiettivo di oggi: ${today.points} di ${DAILY_GOAL} punti`
               }
             >
-              <WavyRing size={196} ratio={today.points / DAILY_GOAL} color={C.ink} track="rgba(26, 29, 20, 0.14)" />
+              <WavyRing size={196} ratio={today.points / DAILY_GOAL} color={C.ink} track="rgba(26, 29, 20, 0.14)" stroke={11} />
               <View style={styles.ringText}>
                 <Text style={styles.heroPoints} adjustsFontSizeToFit numberOfLines={1}>
                   {today.points}
@@ -195,7 +196,7 @@ export default function Oggi() {
             </View>
             <View style={styles.heroSide}>
               <View style={styles.streak} accessible accessibilityLabel={days > 0 ? `Serie di ${days} giorni` : 'Nessuna serie in corso'}>
-                <FlameIcon size={20} />
+                <FlameIcon size={30} />
                 <View>
                   <Text style={styles.streakValue}>{days}</Text>
                   <Text style={styles.streakLabel}>{days === 1 ? 'giorno di fila' : 'giorni di fila'}</Text>
@@ -335,7 +336,8 @@ export default function Oggi() {
 const styles = StyleSheet.create({
   scroll: { paddingBottom: NAV_SPACE },
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
-  bats: { position: 'absolute', left: 4, bottom: -4, opacity: 0.8 },
+  bats: { position: 'absolute', left: 6, top: 4, opacity: 0.85 },
+  glow: { position: 'absolute', width: 280, height: 280, borderRadius: 140, left: -80, top: -110, backgroundColor: 'rgba(255, 255, 255, 0.12)' },
   hero: { overflow: 'hidden', backgroundColor: C.hero, borderRadius: R.hero, padding: 12, paddingRight: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
   ring: { width: 196, height: 196, alignItems: 'center', justifyContent: 'center' },
   ringText: { position: 'absolute', left: 30, right: 30, alignItems: 'center' },

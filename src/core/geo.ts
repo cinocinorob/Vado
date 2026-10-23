@@ -66,6 +66,33 @@ export type TrackState = {
    * metri, nessuna coordinata. I metri sono già compresi in distanceM.
    */
   hops?: TrackHop[];
+  /**
+   * Il pezzo troppo veloce per il mezzo dichiarato (per esempio un viaggio in
+   * bus o in metro con il tratto ancora su "A piedi"). Serve a riattribuirlo
+   * ai mezzi pubblici: vedi `splitTransit` in tracking/tripState.ts.
+   */
+  fast?: FastSpan;
+};
+
+/**
+ * Dal primo all'ultimo spostamento scartato per la velocità. Solo istanti e
+ * metri, nessuna coordinata.
+ */
+export type FastSpan = {
+  /** Istante della posizione da cui è partito il primo spostamento troppo veloce. */
+  t: number;
+  /** Metri accreditati fino a quel momento. */
+  startM: number;
+  /** Istante dell'arrivo dell'ultimo spostamento troppo veloce. */
+  endT: number;
+  /** Metri accreditati fino a quel momento. */
+  endM: number;
+  /** Metri scartati in questo pezzo. */
+  rejectedM: number;
+  /** Metri in più rispetto alla linea d'aria, dove il pezzo è un viaggio in metro. */
+  extraM: number;
+  /** Viaggi in metro riconosciuti nel pezzo. */
+  hops: TrackHop[];
 };
 
 export type TrackHop = { label: string; lines: string; meters: number };
@@ -176,6 +203,7 @@ function smooth(previous: Estimate | null, fix: Fix, accuracy: number, maxSegmen
  * Aggiunge una posizione al tracciato.
  * @param maxSegmentMs velocità massima credibile per il mezzo, in m/s
  * @param bridge se presente, decide quanto vale un tratto senza posizioni in mezzo
+ * @param fastBridge se presente, riconosce un tratto fatto su un mezzo diverso da quello dichiarato
  * @returns il nuovo stato e il punto appena accreditato, se c'è (per il disegno)
  */
 export function addFix(
@@ -183,6 +211,7 @@ export function addFix(
   raw: Fix,
   maxSegmentMs: number,
   bridge?: Bridge,
+  fastBridge?: Bridge,
 ): { state: TrackState; credited: Fix | null } {
   if (raw.mocked) {
     return { state: { ...state, mocked: state.mocked + 1 }, credited: null };
@@ -252,8 +281,23 @@ export function addFix(
     // Salto: si riparte dal nuovo punto senza contare nulla.
     return { state: next, credited: null };
   }
-  if (speed > maxSegmentMs) {
-    return { state: { ...next, rejectedM: state.rejectedM + d }, credited: null };
+  // Un viaggio in metro con il tratto ancora "A piedi" può restare sotto la
+  // velocità massima del mezzo (5 m/s di media su una tratta lunga): se le
+  // due posizioni sono a due stazioni lo si riconosce comunque.
+  const fastHop = fastBridge ? fastBridge(base.last, confirmed, d) : null;
+  if (speed > maxSegmentMs || fastHop) {
+    // Si annota il pezzo veloce: se era un mezzo pubblico, lo si potrà riattribuire.
+    const prev = state.fast;
+    const fast: FastSpan = {
+      t: prev ? prev.t : base.last.t,
+      startM: prev ? prev.startM : state.distanceM,
+      endT: confirmed.t,
+      endM: state.distanceM,
+      rejectedM: (prev?.rejectedM ?? 0) + d,
+      extraM: (prev?.extraM ?? 0) + (fastHop ? Math.max(0, fastHop.meters - d) : 0),
+      hops: fastHop ? [...(prev?.hops ?? []), fastHop] : (prev?.hops ?? []),
+    };
+    return { state: { ...next, rejectedM: state.rejectedM + d, fast }, credited: null };
   }
   const hop = bridge ? bridge(base.last, confirmed, d) : null;
   if (hop && dt > 0 && hop.meters / dt <= maxSegmentMs) {
@@ -272,14 +316,30 @@ export function addFix(
  * all'ultima lettura, oppure lo spostamento è netto.
  * @param bridge come in addFix: decide quanto vale un pezzo senza posizioni in mezzo
  */
-export function closeTrack(state: TrackState, maxSegmentMs: number, bridge?: Bridge): TrackState {
+export function closeTrack(state: TrackState, maxSegmentMs: number, bridge?: Bridge, fastBridge?: Bridge): TrackState {
   const { last, estimate, lastRaw } = state;
   if (!last || !estimate || !lastRaw) return state;
   const d = haversineM(last, estimate);
   const dt = (estimate.t - last.t) / 1000;
   const corroborated = isMoving(lastRaw) || d >= BIG_MOVE_FACTOR * Math.max(MIN_STEP_M, lastRaw.accuracy ?? 0);
-  if (d < CLOSE_MIN_M || dt <= 0 || d / dt > maxSegmentMs || !corroborated) return state;
+  if (d < CLOSE_MIN_M || dt <= 0 || !corroborated) return state;
   const end: Fix = { lat: estimate.lat, lon: estimate.lon, t: estimate.t, accuracy: Math.sqrt(estimate.variance) };
+  // Uscito dalla metro con il tratto ancora "A piedi" e chiuso subito: il pezzo va riattribuito.
+  const fastHop = fastBridge && d / dt <= GLITCH_MS ? fastBridge(last, end, d) : null;
+  if (fastHop) {
+    const prev = state.fast;
+    const fast: FastSpan = {
+      t: prev ? prev.t : last.t,
+      startM: prev ? prev.startM : state.distanceM,
+      endT: end.t,
+      endM: state.distanceM,
+      rejectedM: (prev?.rejectedM ?? 0) + d,
+      extraM: (prev?.extraM ?? 0) + Math.max(0, fastHop.meters - d),
+      hops: [...(prev?.hops ?? []), fastHop],
+    };
+    return { ...state, rejectedM: state.rejectedM + d, fast, last: end, pending: null };
+  }
+  if (d / dt > maxSegmentMs) return state;
   // Chi esce dalla metro e chiude subito: l'ultimo pezzo è proprio il viaggio sottoterra.
   const hop = bridge ? bridge(last, end, d) : null;
   if (hop && hop.meters / dt <= maxSegmentMs) {
