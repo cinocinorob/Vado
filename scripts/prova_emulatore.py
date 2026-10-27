@@ -648,7 +648,7 @@ def connect_health() -> str:
     if not connected:
         return "permessi concessi ma il riquadro non dice Collegata"
     # Il conteggio dei passi sta in alto: si torna su prima di cercarlo.
-    for _ in range(4):
+    for _ in range(8):
         if find("passi oggi"):
             return "collegata"
         adb("shell", "input", "swipe", "540", "900", "540", "1500", "400")
@@ -792,9 +792,10 @@ def check_metro_a_piedi() -> str:
         time.sleep(1)
     time.sleep(100)
     check_alive("sottoterra, a piedi")
-    for i in range(12):
-        station_fix("colosseo", -40 - i * 4)
-        time.sleep(1)
+    # Fuori si cammina a passo d'uomo (1,5 m/s): più veloce sarebbe una corsa, e il tratto a piedi non varrebbe.
+    for i in range(16):
+        station_fix("colosseo", -40 - i * 3)
+        time.sleep(2)
     finish = wait_for_trip_screen(30, "all'uscita dalla metro, a piedi")
     screenshot("metro-a-piedi-in-corso")
     tap(finish)

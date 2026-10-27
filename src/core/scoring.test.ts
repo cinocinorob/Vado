@@ -253,3 +253,11 @@ test('bus riconosciuto in tempo reale: tratto verificato con la linea', () => {
   assert.equal(leg.route, 'Bus 64');
   assert.match(leg.note, /tempo reale/);
 });
+
+test('tratto brevissimo un po\' troppo veloce: non diventa "non valido", vale la distanza credibile', () => {
+  const r = evaluateLeg({ mode: 'piedi', gpsM: 44, rejectedM: 0, seconds: 11, steps: null });
+  assert.notEqual(r.status, 'anomalo');
+  assert.ok(r.meters <= Math.floor((11 * 12) / 3.6));
+  const long = evaluateLeg({ mode: 'piedi', gpsM: 900, rejectedM: 0, seconds: 120, steps: null });
+  assert.equal(long.status, 'anomalo');
+});

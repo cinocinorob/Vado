@@ -138,7 +138,14 @@ export function evaluateLeg(input: LegInput): Evaluated {
     const kmh = (meters / input.seconds) * 3.6;
     const limit = input.mode === 'piedi' && status === 'verificato' ? VERIFIED_WALK_MAX_KMH : mode.maxAvgKmh;
     if (kmh > limit) {
-      return invalid(`Velocità media troppo alta per "${mode.label}"`);
+      // Pochi metri (per esempio gli ultimi passi dopo l'uscita dalla metro):
+      // troppo pochi per un giudizio, si accredita solo quanto è credibile.
+      if (meters < ANOMALY_MIN_M) {
+        meters = Math.floor((input.seconds * limit) / 3.6);
+        note = note || 'Tratto breve: distanza limitata alla velocità credibile';
+      } else {
+        return invalid(`Velocità media troppo alta per "${mode.label}"`);
+      }
     }
   }
 
