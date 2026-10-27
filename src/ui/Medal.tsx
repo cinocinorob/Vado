@@ -200,6 +200,17 @@ const LOOKS: Record<BadgeId, Look> = {
       </Picto>
     ),
   },
+  'natale-senza-auto': {
+    shape: 'cookie12',
+    color: '#FF8C82',
+    art: (
+      <Picto>
+        <Path d="M12 2l1.2 2.6L16 5l-2 2 .5 2.8L12 8.5 9.5 9.8 10 7 8 5l2.8-.4z" />
+        <Path d="M12 11l-6 9h12z" />
+        <Path d="M12 20v2" />
+      </Picto>
+    ),
+  },
 };
 
 export type MedalLook = 'sbloccata' | 'in-corso' | 'bloccata';

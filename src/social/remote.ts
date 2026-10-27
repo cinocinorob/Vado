@@ -452,6 +452,12 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       for (const key of [...cache.keys()]) if (key.startsWith(`lega:${leagueId}:`)) cache.delete(key);
     },
 
+    async report(userId: string): Promise<Result<{ hidden: boolean }>> {
+      const result = await write(async () => await mine<{ hidden: boolean }>('vado_report', { p_target: userId }));
+      if (result.ok) for (const key of [...cache.keys()]) if (key.startsWith('lega:')) cache.delete(key);
+      return result.ok ? { ok: true, value: { hidden: !!result.value?.hidden } } : result;
+    },
+
     async rivals(): Promise<Person[]> {
       return read('avversari', [], async () =>
         (await mine<{ id: string; name: string; tree?: TreeRow }[]>('vado_rivals')).map((p) => ({ id: p.id, name: p.name, tree: toTree(p.tree) })),

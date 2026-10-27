@@ -1,7 +1,8 @@
 /** Quando mandare i promemoria. Funzioni pure. */
-import { legCo2 } from './co2';
+import { formatCo2, legCo2, totalCo2 } from './co2';
 import { activePause, type Pause } from './plant';
 import type { Trip } from './scoring';
+import { weekEnd, weekStart } from './social';
 
 /** Dopo quanti giorni senza tragitti senza auto si avvisa che la pianta ha sete. */
 export const THIRSTY_REMINDER_DAYS = 2;
@@ -34,4 +35,37 @@ export function overtakers(before: readonly Standing[], after: readonly Standing
   if (!meBefore || !meAfter) return [];
   const wasBehind = new Set(before.filter((e) => !e.me && e.points <= meBefore.points).map((e) => e.id));
   return after.filter((e) => !e.me && wasBehind.has(e.id) && e.points > meAfter.points).map((e) => e.name);
+}
+
+/** Ora del riepilogo settimanale, il lunedì. */
+export const WEEKLY_HOUR = 9;
+
+const kmText = (m: number) => `${String(Math.round(m / 100) / 10).replace('.', ',')} km`;
+
+/**
+ * Il riepilogo della settimana in corso, da mandare il lunedì successivo
+ * alle 9. null se in settimana non c'è nessun tragitto.
+ */
+export function weeklyRecap(trips: readonly Trip[], now: number): { when: number; title: string; body: string } | null {
+  const from = weekStart(now);
+  const to = weekEnd(now);
+  const week = trips.filter((t) => t.endedAt >= from && t.endedAt < to);
+  if (week.length === 0) return null;
+  const meters = week.reduce((sum, t) => sum + t.carFreeMeters, 0);
+  const points = week.reduce((sum, t) => sum + t.total, 0);
+  const days = new Set(week.filter((t) => t.carFreeMeters > 0).map((t) => t.day)).size;
+  const previous = trips.filter((t) => t.endedAt >= from - 7 * 86_400_000 && t.endedAt < from).reduce((sum, t) => sum + t.carFreeMeters, 0);
+  const when = new Date(to);
+  when.setHours(WEEKLY_HOUR, 0, 0, 0);
+  const trend =
+    previous > 0 && meters > 0
+      ? meters >= previous
+        ? ` ${Math.round(((meters - previous) / previous) * 100)}% in più della settimana prima.`
+        : ` La settimana prima ne avevi fatti ${kmText(previous)}.`
+      : '';
+  return {
+    when: when.getTime(),
+    title: `La tua settimana: ${kmText(meters)} senza auto`,
+    body: `${points} punti in ${days} ${days === 1 ? 'giorno' : 'giorni'}, ${formatCo2(totalCo2(week))} di CO₂ evitata.${trend}`,
+  };
 }

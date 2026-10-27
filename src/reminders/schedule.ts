@@ -8,7 +8,7 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
-import { FORGOT_AFTER_MS, overtakers, thirstyAt } from '../core/reminders';
+import { FORGOT_AFTER_MS, overtakers, thirstyAt, weeklyRecap } from '../core/reminders';
 import { dayKey } from '../core/scoring';
 import { social } from '../social';
 import { loadPauses } from '../storage/pause';
@@ -18,6 +18,7 @@ import { loadTrips } from '../storage/trips';
 const CHANNEL = 'promemoria';
 const THIRSTY_ID = 'vado-sete';
 const FORGOT_ID = 'vado-termina';
+const WEEKLY_ID = 'vado-settimana';
 const BOARD_TASK = 'vado-classifica';
 
 let ready: Promise<void> | null = null;
@@ -75,6 +76,13 @@ export async function applyReminders(now: number): Promise<void> {
     const [trips, pauses] = await Promise.all([loadTrips(), loadPauses()]);
     const when = thirstyAt(trips, now, pauses, dayKey(now));
     if (when) await schedule(THIRSTY_ID, 'La tua pianta ha sete', 'Due giorni senza tragitti senza auto: basta una camminata e si riprende.', when, '/bosco');
+  }
+
+  // Il riepilogo del lunedì si riscrive a ogni tragitto, così contiene sempre la settimana intera.
+  await Notifications.cancelScheduledNotificationAsync(WEEKLY_ID).catch(() => undefined);
+  if (prefs.weekly && (await allowed())) {
+    const recap = weeklyRecap(await loadTrips(), now);
+    if (recap && recap.when > now) await schedule(WEEKLY_ID, recap.title, recap.body, recap.when, '/storico');
   }
 
   try {

@@ -1,0 +1,34 @@
+# Tiene sveglio il server di Vado.
+#
+# Sul piano gratuito Supabase mette in pausa un progetto dopo 7 giorni con
+# poca attività sul database. Una volta al giorno questa azione fa una
+# richiesta vera (che legge la tabella dei profili e non trova nessuno),
+# così con pochi utenti la classifica non si spegne.
+name: Server sveglio
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sveglia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Una richiesta al database
+        env:
+          REST: https://fqynpsucjgffjmwcclmw.supabase.co/rest/v1
+          # Chiave pubblica: è la stessa che sta dentro l'app.
+          KEY: sb_publishable_veqzw4lUYrx-mZix7kQ3hw_ZUnlcP_y
+        run: |
+          secret=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
+          code=$(curl -s -o risposta.txt -w '%{http_code}' -X POST "$REST/rpc/vado_me" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d "{\"p_secret\":\"$secret\"}")
+          echo "risposta $code: $(head -c 300 risposta.txt)"
+          # 200 o 400 ("non-registrato") vogliono dire che il database ha risposto.
+          case "$code" in
+            200|400) echo "Server sveglio." ;;
+            *) echo "::error::Il server non risponde come previsto ($code). Forse è in pausa: riattivalo dal pannello di Supabase."; exit 1 ;;
+          esac

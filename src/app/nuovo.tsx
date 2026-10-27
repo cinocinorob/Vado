@@ -1,10 +1,11 @@
 /** Schermata "Nuovo tragitto": scelta del mezzo e avvio. */
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getMode, type ModeId } from '../core/modes';
+import { MODES, getMode, type ModeId } from '../core/modes';
+import { diag } from '../diagnostics/log';
 import { COMMUTE_BONUS, TRIP_CAP } from '../core/scoring';
 import { startTracking } from '../tracking/tracker';
 import { CloseIcon, PlayIcon, ShieldIcon } from '../ui/Icons';
@@ -13,7 +14,11 @@ import { C, F } from '../ui/theme';
 
 export default function NuovoTragitto() {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<ModeId>('piedi');
+  // Dalla notifica "Stai camminando?" arrivano il mezzo e la richiesta di partire subito.
+  const params = useLocalSearchParams<{ modo?: string; avvia?: string }>();
+  const fromLink = MODES.some((m) => m.id === params.modo) ? (params.modo as ModeId) : null;
+  const [mode, setMode] = useState<ModeId>(fromLink ?? 'piedi');
+  const autoStarted = useRef(false);
   const [commute, setCommute] = useState(true);
   const [starting, setStarting] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -28,6 +33,15 @@ export default function NuovoTragitto() {
     if (result.ok) router.replace('/in-corso');
     else setProblem(result.message);
   }
+
+  useEffect(() => {
+    if (params.avvia !== '1' || !fromLink || autoStarted.current) return;
+    autoStarted.current = true;
+    diag(`Tragitto avviato dalla notifica di movimento: ${getMode(fromLink).short}`);
+    start();
+    // Una sola volta, all'apertura dalla notifica.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Screen>

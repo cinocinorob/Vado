@@ -12,6 +12,7 @@ import { loadReminders, saveReminders, type Reminders } from '../storage/reminde
 import { loadTree, saveTree } from '../storage/tree';
 import { clearTrips } from '../storage/trips';
 import { disableHomeReminder, enableHomeReminder, homeReminderOn } from '../reminders/home';
+import { AUTO_SUPPORTED, autoStatus, disableAuto, enableAuto } from '../auto/movimento';
 import { applyReminders } from '../reminders/schedule';
 import { Group, SectionTitle } from '../ui/expressive';
 import { ChevronIcon, CloseIcon } from '../ui/Icons';
@@ -22,16 +23,18 @@ import { C, F, LOOK } from '../ui/theme';
 const clock = () => Date.now();
 
 const LOOK_TEXT: Record<LookChoice, { title: string; detail: string }> = {
-  auto: { title: 'Automatico', detail: 'Halloween dal 15 ottobre al 2 novembre, poi come il telefono (chiaro o scuro)' },
+  auto: { title: 'Automatico', detail: 'Halloween dal 15 ottobre al 2 novembre, Natale dal 1° dicembre al 6 gennaio, il resto dell’anno come il telefono' },
   chiaro: { title: 'Chiaro', detail: 'Sempre chiaro' },
   scuro: { title: 'Scuro', detail: 'Sempre scuro' },
   halloween: { title: 'Halloween', detail: 'Notte, zucche e pipistrelli tutto l’anno' },
+  natale: { title: 'Natale', detail: 'Abeti, neve e cappelli rossi tutto l’anno' },
 };
 
 const REMINDER_TEXT: Record<keyof Reminders, { title: string; detail: string }> = {
   forgot: { title: 'Hai dimenticato Termina?', detail: 'Se un tragitto resta aperto ma sei fermo da 15 minuti' },
   thirsty: { title: 'La tua pianta ha sete', detail: 'Dopo due giorni senza tragitti senza auto, alle 18' },
   overtaken: { title: 'Qualcuno ti ha superato', detail: 'Nella classifica della tua lega; controllato ogni qualche ora' },
+  weekly: { title: 'La tua settimana', detail: 'Il lunedì alle 9: km, CO₂ e punti della settimana appena finita' },
 };
 
 export default function Impostazioni() {
@@ -41,6 +44,8 @@ export default function Impostazioni() {
   const [cleared, setCleared] = useState(false);
   const [home, setHome] = useState(false);
   const [homeNote, setHomeNote] = useState<string | null>(null);
+  const [auto, setAuto] = useState(() => !!autoStatus()?.enabled);
+  const [autoNote, setAutoNote] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -60,6 +65,18 @@ export default function Impostazioni() {
     setReminders(next);
     await saveReminders(next);
     await applyReminders(clock()).catch(() => undefined);
+  }
+
+  async function toggleAuto(on: boolean) {
+    setAutoNote(null);
+    if (!on) {
+      await disableAuto();
+      setAuto(false);
+      return;
+    }
+    const result = await enableAuto();
+    setAuto(result.ok);
+    if (!result.ok) setAutoNote(result.problem);
   }
 
   async function toggleHome(on: boolean) {
@@ -147,6 +164,24 @@ export default function Impostazioni() {
           ))}
         </Group>
 
+        {AUTO_SUPPORTED ? (
+          <>
+            <Group>
+              <View style={styles.row}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle}>Avvio automatico</Text>
+                  <Text style={text.small}>
+                    Quando cominci a camminare, pedalare o sali su un mezzo arriva un avviso: un tocco e il tragitto parte. Usa il permesso &quot;Attività
+                    fisica&quot;, non la posizione. Al massimo un avviso ogni 45 minuti, mai di notte.
+                  </Text>
+                </View>
+                <Toggle value={auto} onChange={toggleAuto} label="Avvio automatico" />
+              </View>
+            </Group>
+            {autoNote ? <Text style={[text.small, styles.homeNote]}>{autoNote}</Text> : null}
+          </>
+        ) : null}
+
         <Group>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
@@ -163,6 +198,7 @@ export default function Impostazioni() {
           <Link label="Backup e cambio telefono" onPress={() => router.push('/backup')} />
           <Link label="Riservatezza: come usiamo i dati" onPress={() => router.push('/riservatezza')} />
           <Link label="Il tuo germoglio e il bosco" onPress={() => router.push('/bosco')} />
+          <Link label="Diagnostica dei tragitti" onPress={() => router.push('/diagnostica')} />
         </Group>
 
         <SectionTitle title="Ricominciare da zero" />

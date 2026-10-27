@@ -122,12 +122,45 @@ const HALLOWEEN: Palette = {
   alert: '#FF9C85',
 };
 
+/** Natale: verde abete, rosso, oro e neve. */
+const NATALE: Palette = {
+  ...DARK,
+  bg: '#0E1814',
+  card: '#182620',
+  tonal: '#26382F',
+  navBg: '#121F1A',
+  ink: '#1C0E0C',
+  deep: '#07100C',
+  strong: '#F5D36E',
+  onStrong: '#1C0E0C',
+  hero: '#FF7468',
+  over: '#F5D36E',
+  lime: '#A8E68E',
+  limeSoft: '#CDF2BE',
+  onLime: '#163112',
+  coral: '#FF7468',
+  coralSoft: '#FFB8AF',
+  onCoral: '#2A0B07',
+  onCoralDim: '#5E1C14',
+  mint: '#BFE6D6',
+  onMint: '#0D2A20',
+  onMintDim: '#2C5545',
+  teal: '#9FE3C9',
+  text: '#F1F6F2',
+  dim: '#AFC4B9',
+  outline: '#86A094',
+  faint: 'rgba(241, 246, 242, 0.16)',
+  line: 'rgba(241, 246, 242, 0.12)',
+  alert: '#FF9C85',
+};
+
 /** L'aspetto scelto all'avvio. Cambiarlo richiede di riaprire l'app. */
 export const LOOK: Look = resolveLook(readLookChoice(), Date.now(), Appearance.getColorScheme() === 'dark');
 export const HALLOWEEN_ON = LOOK === 'halloween';
+export const NATALE_ON = LOOK === 'natale';
 export const DARK_UI = LOOK !== 'chiaro';
 
-export const C: Palette = LOOK === 'halloween' ? HALLOWEEN : LOOK === 'scuro' ? DARK : LIGHT;
+export const C: Palette = LOOK === 'halloween' ? HALLOWEEN : LOOK === 'natale' ? NATALE : LOOK === 'scuro' ? DARK : LIGHT;
 
 /** Roboto, il carattere di Android, nei pesi pieni che usa Material 3 Expressive. */
 export const F = {

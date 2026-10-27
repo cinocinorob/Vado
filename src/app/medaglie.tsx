@@ -6,9 +6,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { TIER_NAMES, badgeStates, nextBadge, progressLabel, type BadgeContext, type BadgeState } from '../core/badges';
+import { TIER_NAMES, badgeStates, seasonOpen, nextBadge, progressLabel, type BadgeContext, type BadgeState } from '../core/badges';
 import { challengeProgress, completedChallenges, monthlyAt, weeklyAt } from '../core/challenges';
-import { isHalloweenSeason } from '../core/look';
 import type { Trip } from '../core/scoring';
 import { journeyById } from '../core/journeys';
 import { social } from '../social';
@@ -75,7 +74,7 @@ export default function Medaglie() {
   const all = badgeStates(trips, now, ctx);
   // Le medaglie a tempo non contano nel totale: compaiono quando si possono prendere o quando le hai.
   const badges = all.filter((b) => !b.seasonal);
-  const seasonal = all.filter((b) => b.seasonal && (b.unlocked || isHalloweenSeason(now)));
+  const seasonal = all.filter((b) => b.seasonal && (b.unlocked || seasonOpen(b.id, now)));
   const unlocked = badges.filter((b) => b.unlocked).length;
   const next = nextBadge(badges);
   const earned = [...badges.filter((b) => b.unlocked), ...seasonal.filter((b) => b.unlocked)];
@@ -212,7 +211,7 @@ export default function Medaglie() {
                     <Medal id={badge.id} look="in-corso" size={54} label={medalLabel(badge)} />
                     <View style={styles.rowText}>
                       <Text style={styles.rowName}>{badge.name}</Text>
-                      <Text style={text.small}>{badge.goalText}. Si prende solo quella sera.</Text>
+                      <Text style={text.small}>{badge.goalText}. Si prende solo in quei giorni.</Text>
                     </View>
                   </View>
                 ))}

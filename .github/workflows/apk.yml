@@ -39,8 +39,10 @@ jobs:
         id: pronto
         uses: actions/cache@v5
         with:
-          path: vado.apk
-          key: apk-v1-${{ hashFiles('src/**', 'assets/**', 'plugins/**', 'app.json', 'package.json', 'package-lock.json', 'tsconfig.json', 'eslint.config.js') }}
+          path: |
+            vado.apk
+            vado-x86.apk
+          key: apk-v2-${{ hashFiles('src/**', 'assets/**', 'plugins/**', 'modules/**', 'app.json', 'package.json', 'package-lock.json', 'tsconfig.json', 'eslint.config.js') }}
 
       - uses: actions/setup-node@v7
         if: steps.pronto.outputs.cache-hit != 'true'
@@ -78,7 +80,8 @@ jobs:
           grep -n "versionCode" android/app/build.gradle
 
       # arm64 è l'architettura dei telefoni; x86_64 serve al telefono simulato
-      # della prova. Un solo file per entrambi: quello provato è quello pubblicato.
+      # della prova. Un file per ciascuna (plugins/abi-split.js), dalla stessa
+      # compilazione: stesso codice, ma quello per il telefono pesa molto meno.
       - name: Compila
         if: steps.pronto.outputs.cache-hit != 'true'
         working-directory: android
@@ -86,12 +89,18 @@ jobs:
 
       - name: Prepara il file
         if: steps.pronto.outputs.cache-hit != 'true'
-        run: cp android/app/build/outputs/apk/release/app-release.apk vado.apk
+        run: |
+          ls -la android/app/build/outputs/apk/release/
+          cp android/app/build/outputs/apk/release/app-arm64-v8a-release.apk vado.apk
+          cp android/app/build/outputs/apk/release/app-x86_64-release.apk vado-x86.apk
+          ls -la vado.apk vado-x86.apk
 
       - uses: actions/upload-artifact@v7
         with:
           name: vado-apk
-          path: vado.apk
+          path: |
+            vado.apk
+            vado-x86.apk
 
   prova:
     name: Prova su telefono simulato
@@ -123,7 +132,7 @@ jobs:
           profile: pixel_7
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: python3 scripts/prova_emulatore.py vado.apk prova-risultati salute
+          script: python3 scripts/prova_emulatore.py vado-x86.apk prova-risultati salute
 
       - uses: actions/upload-artifact@v7
         if: always()

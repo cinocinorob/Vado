@@ -245,6 +245,19 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   assert.ok(month.people >= 2);
   assert.equal(month.target, 600);
 
+  // --- segnalare un soprannome: due persone diverse lo nascondono, cambiarlo lo riporta ---
+  assert.equal(value(await c.source.report(flavia.id)).hidden, false);
+  assert.equal(value(await c.source.report(flavia.id)).hidden, false);
+  assert.equal((await a.source.board(league.id, later))?.entries.find((e) => e.id === flavia.id)?.name, flavia.nickname);
+  assert.equal((await a.source.report(robbie.id)).ok, false);
+  const outsider = phone();
+  value(await outsider.source.setNickname(`Fuori ${tag}`));
+  assert.equal((await outsider.source.report(flavia.id)).ok, false);
+  assert.equal(value(await a.source.report(flavia.id)).hidden, true);
+  assert.equal((await a.source.board(league.id, later))?.entries.find((e) => e.id === flavia.id)?.name, 'Soprannome nascosto');
+  value(await b.source.setNickname(`Flavia2 ${tag}`));
+  assert.equal((await a.source.board(league.id, later))?.entries.find((e) => e.id === flavia.id)?.name, `Flavia2 ${tag}`);
+
   // --- uscire dalla lega ---
   await b.source.leaveLeague(league.id);
   assert.deepEqual(await b.source.leagues(later), []);
@@ -254,7 +267,7 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
 
   // --- le tabelle non si leggono da fuori, e senza chiave segreta giusta non si entra ---
   const headers: Record<string, string> = KEY ? { apikey: KEY } : {};
-  for (const table of ['users', 'leagues', 'scores', 'members']) {
+  for (const table of ['users', 'leagues', 'scores', 'members', 'reports']) {
     const direct = await fetch(`${SERVER}/${table}?select=*`, { headers });
     assert.notEqual(direct.status, 200, `la tabella ${table} risponde a una lettura diretta`);
   }

@@ -252,7 +252,7 @@ function applyOne(trip: ActiveTrip, fix: Fix): { trip: ActiveTrip; credited: Fix
     if (handed) return handed;
   }
   const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode));
-  const bus = leg.mode === 'tpl' ? withSample(leg.bus, fix) : leg.bus;
+  const bus = BUS_MODES.includes(leg.mode) ? withSample(leg.bus, fix) : leg.bus;
   if (result.state === leg.track && bus === leg.bus) return { trip, credited: result.credited };
   return { trip: replaceCurrent(trip, { ...leg, track: result.state, ...(bus ? { bus } : {}) }), credited: result.credited };
 }
@@ -265,10 +265,17 @@ function withSample(bus: ActiveLeg['bus'], fix: Fix): ActiveLeg['bus'] {
   return { ...current, samples: [...current.samples, { t: fix.t, lat: fix.lat, lon: fix.lon }].slice(-BUS_MAX_SAMPLES) };
 }
 
+/**
+ * Tratti in cui si confronta la traccia con i bus in tempo reale: i mezzi
+ * pubblici, e "A piedi" quando si va troppo veloci (bus preso senza cambiare
+ * mezzo: se il bus viene trovato, il pezzo riattribuito risulta verificato).
+ */
+export const BUS_MODES: readonly ModeId[] = ['tpl', 'piedi'];
+
 /** Mezzi in tempo reale trovati accanto al telefono nel tratto corrente. */
 export function addSightings(trip: ActiveTrip, found: Sighting[]): ActiveTrip {
   const leg = currentLeg(trip);
-  if (leg.mode !== 'tpl' || found.length === 0) return trip;
+  if (!BUS_MODES.includes(leg.mode) || found.length === 0) return trip;
   const bus = leg.bus ?? { samples: [], sightings: [] };
   return replaceCurrent(trip, { ...leg, bus: { ...bus, sightings: [...bus.sightings, ...found].slice(-300) } });
 }
@@ -510,8 +517,10 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
   const mocked = leg.track.mocked;
   const transitM = Math.max(0, fast.endM - fast.startM) + fast.rejectedM + fast.extraM;
 
+  const seen = (leg.bus?.sightings ?? []).filter((x) => x.t >= fast.t - 60_000 && x.t <= fast.endT + 60_000);
   const first: ActiveLeg = {
     ...leg,
+    bus: undefined,
     track: { ...EMPTY_TRACK, distanceM: before, mocked, ...(leg.track.hops ? { hops: leg.track.hops } : {}) },
     spans: clip(allSpans, -Infinity, fast.t),
     accumMs: spanMs(clip(allSpans, -Infinity, fast.t)),
@@ -533,6 +542,7 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
       accumMs: spanMs(clip(runningSpans, fast.t, Infinity)),
       runningSince: leg.runningSince != null ? Math.max(leg.runningSince, fast.t) : null,
       backgrounded: leg.backgrounded,
+      ...(leg.bus ? { bus: leg.bus } : {}),
     };
     return [first, ride];
   }
@@ -547,12 +557,14 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
     finalSteps: null,
     closed: true,
     backgrounded: leg.backgrounded,
+    ...(seen.length > 0 ? { bus: { samples: [], sightings: seen } } : {}),
   };
   const afterTrack: TrackState = { ...leg.track, distanceM: after, rejectedM: Math.max(0, rest), hops: undefined, fast: undefined };
   if (open) {
     const done = clip(leg.spans ?? [], fast.endT, Infinity);
     const second: ActiveLeg = {
       ...leg,
+      bus: leg.bus ? { samples: leg.bus.samples.filter((x) => x.t >= fast.endT), sightings: [] } : undefined,
       track: afterTrack,
       spans: done,
       accumMs: spanMs(done),
@@ -564,7 +576,7 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
     return [first, ride, second];
   }
   const tail = clip(allSpans, fast.endT, Infinity);
-  const second: ActiveLeg = { ...leg, track: afterTrack, spans: tail, accumMs: spanMs(tail), finalSteps: walkSteps(after), transitDismissed: false };
+  const second: ActiveLeg = { ...leg, bus: undefined, track: afterTrack, spans: tail, accumMs: spanMs(tail), finalSteps: walkSteps(after), transitDismissed: false };
   return [first, ride, second];
 }
 

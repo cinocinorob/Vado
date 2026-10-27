@@ -42,12 +42,18 @@ import {
   switchMode,
   toLegInputs,
   type ActiveTrip,
+  currentLeg,
+  pendingTransit,
 } from './tripState';
 import { applyReminders, cancelForgotReminder, nudgeForgotReminder } from '../reminders/schedule';
 import { updateWidget } from '../widget/update';
 import { lineName } from '../core/bus';
 import { BUS_ROMA } from '../data/bus';
 import { pollBuses } from './busFeed';
+import { diag } from '../diagnostics/log';
+import { setTripActive } from '../auto/movimento';
+import { getMode } from '../core/modes';
+import { MAX_ACCURACY_M } from '../core/geo';
 
 const LOCATION_TASK = 'vado-tragitto';
 const KEEP_AWAKE_TAG = 'vado-tragitto';
@@ -73,6 +79,7 @@ function toFix(location: Location.LocationObject): Fix {
 // Va definito all'avvio del programma, non dentro un componente: è il punto
 // in cui Android consegna le posizioni raccolte dal servizio in primo piano.
 TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(LOCATION_TASK, async ({ data, error }) => {
+  if (error) diag(`Errore del servizio di posizione: ${error.message}`);
   if (error || !data?.locations?.length) return;
   const fixes = data.locations.map(toFix);
   activeTripStore.update((trip) => withFixes(trip, fixes));
@@ -85,16 +92,50 @@ TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(LOCATION_TASK,
  * un tratto con i mezzi pubblici.
  */
 function withFixes(trip: ActiveTrip, fixes: Fix[]): ActiveTrip {
-  return splitTransit(applyFixes(trip, fixes), Date.now(), 'metro');
+  noteFixes(trip, fixes);
+  const moved = applyFixes(trip, fixes);
+  const split = splitTransit(moved, Date.now(), 'metro');
+  if (split !== moved) {
+    const hops = split.legs.flatMap((l) => (l.mode === 'tpl' ? (l.track.hops ?? []) : [])).map((h) => h.label);
+    diag(`Metro riconosciuta con il tratto a piedi: ${hops.join(', ') || 'senza nome'}`);
+  }
+  if (!pendingTransit(trip) && pendingTransit(split)) {
+    const span = pendingTransit(split);
+    diag(`Troppo veloce per "${getMode(span?.leg.mode ?? 'piedi').short}": ${Math.round(span?.fast.rejectedM ?? 0)} m, chiedo se è un mezzo pubblico`);
+  }
+  return split;
+}
+
+/** Numeri sulle posizioni ricevute, per la diagnostica: solo conteggi e tempi. */
+const fixStats = { total: 0, inaccurate: 0, mocked: 0, lastT: 0, maxGapS: 0 };
+
+function noteFixes(trip: ActiveTrip, fixes: Fix[]): void {
+  for (const fix of fixes) {
+    fixStats.total++;
+    if (fix.mocked) fixStats.mocked++;
+    if (fix.accuracy == null || fix.accuracy > MAX_ACCURACY_M) fixStats.inaccurate++;
+    if (fixStats.lastT > 0 && fix.t - fixStats.lastT > 45_000) {
+      const gap = Math.round((fix.t - fixStats.lastT) / 1000);
+      fixStats.maxGapS = Math.max(fixStats.maxGapS, gap);
+      diag(`Nessuna posizione per ${gap} s (tratto ${getMode(currentLeg(trip).mode).short}), poi ripresa con precisione ${Math.round(fix.accuracy ?? -1)} m`);
+    }
+    if (fix.t > fixStats.lastT) fixStats.lastT = fix.t;
+  }
+}
+
+function resetFixStats(): void {
+  Object.assign(fixStats, { total: 0, inaccurate: 0, mocked: 0, lastT: 0, maxGapS: 0 });
 }
 
 /** L'utente conferma che il pezzo troppo veloce era su un mezzo pubblico. */
 export function confirmTransit(): void {
+  diag('Confermato: il pezzo veloce era su un mezzo pubblico');
   activeTripStore.update((trip) => splitTransit(trip, Date.now(), 'tutti'), true);
 }
 
 /** L'utente dice che il pezzo troppo veloce non era un mezzo pubblico. */
 export function rejectTransit(): void {
+  diag('Risposto no: il pezzo veloce non era un mezzo pubblico');
   activeTripStore.update(dismissTransit, true);
 }
 
@@ -138,6 +179,7 @@ export async function askNotifications(): Promise<void> {
 function watchAppState(): void {
   appStateWatcher?.remove();
   appStateWatcher = AppState.addEventListener('change', (state) => {
+    if (state === 'background' || state === 'active') diag(state === 'background' ? 'App in secondo piano' : 'App di nuovo aperta');
     if (state === 'background') activeTripStore.update(enterBackground, true);
   });
 }
@@ -256,7 +298,10 @@ export async function startTracking(mode: ModeId, commute: boolean): Promise<Sta
     return { ok: false, message: 'Non riesco ad accedere alla posizione. Controlla che il GPS sia acceso.' };
   }
 
+  resetFixStats();
+  diag(`Tragitto avviato: ${getMode(mode).short}; servizio a schermo spento ${background ? 'sì' : 'no'}; contapassi ${stepsUsable ? 'sì' : 'no'}${commute ? '; casa-lavoro' : ''}`);
   activeTripStore.set(startTrip({ mode, commute, now: Date.now(), stepsUsable, gpsUsable, background }), true);
+  setTripActive(true);
   if (stepsUsable) startSteps();
   watchAppState();
   return { ok: true };
@@ -271,6 +316,8 @@ export async function changeMode(mode: ModeId): Promise<void> {
   }
   // I passi del tratto che si chiude vanno letti aggiornati.
   await freshSteps();
+  const before = activeTripStore.get();
+  if (before) diag(`Cambio mezzo: ${getMode(currentLeg(before).mode).short} → ${getMode(mode).short}`);
   activeTripStore.update((t) => switchMode(t, mode, Date.now()), true);
 }
 
@@ -319,8 +366,16 @@ export async function finishTracking(opts: { transit?: boolean } = {}): Promise<
   };
 
   await saveTrip(trip);
+  diag(
+    `Tragitto concluso: ${trip.total} punti. Posizioni ${fixStats.total} (imprecise ${fixStats.inaccurate}, simulate ${fixStats.mocked}), buco più lungo ${fixStats.maxGapS} s. ` +
+      trip.legs
+        .map((l, i) => `[${i + 1}] ${getMode(l.mode).short} ${Math.round(l.meters)} m in ${Math.round(l.seconds / 60)} min, ${l.status}${l.route ? `, ${l.route}` : ''}${l.note ? ` (${l.note})` : ''}`)
+        .join('; '),
+    now,
+  );
   await stopSensors();
   activeTripStore.set(null);
+  setTripActive(false);
   cancelForgotReminder();
   applyReminders(Date.now()).catch(() => undefined);
   updateWidget(Date.now()).catch(() => undefined);
@@ -329,6 +384,7 @@ export async function finishTracking(opts: { transit?: boolean } = {}): Promise<
 
 /** Annulla il tragitto senza salvarlo. */
 export async function discardTracking(): Promise<void> {
+  setTripActive(false);
   cancelForgotReminder();
   await stopSensors();
   activeTripStore.set(null);
@@ -357,7 +413,9 @@ export async function restoreTracking(): Promise<boolean> {
   } catch {
     // Senza posizione il tragitto resta recuperato e si può terminare.
   }
+  diag('App riaperta con un tragitto in corso: il tempo ad app chiusa non conta, i passi non si usano più');
   activeTripStore.set({ ...afterRestart(draft, Date.now()), gpsUsable, background }, true);
+  setTripActive(true);
   watchAppState();
   return true;
 }

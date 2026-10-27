@@ -776,6 +776,71 @@ def check_metro() -> str:
     return "ok"
 
 
+def check_metro_a_piedi() -> str:
+    """Il caso segnalato: tragitto avviato "A piedi" e metro presa senza cambiare mezzo."""
+    log("metro con il tratto ancora a piedi: entro a Termini, esco a Colosseo")
+    for _ in range(3):
+        station_fix("termini", 40)
+        time.sleep(1)
+    tap_label("Inizia un tragitto")
+    wait_for("Avvia", 30)
+    tap_label("Avvia")
+    answer_permission_dialogs(5)
+    wait_for_trip_screen(60, "avviando il tragitto a piedi")
+    for i in range(8):
+        station_fix("termini", 40 + i * 4)
+        time.sleep(1)
+    time.sleep(100)
+    check_alive("sottoterra, a piedi")
+    for i in range(12):
+        station_fix("colosseo", -40 - i * 4)
+        time.sleep(1)
+    finish = wait_for_trip_screen(30, "all'uscita dalla metro, a piedi")
+    screenshot("metro-a-piedi-in-corso")
+    tap(finish)
+    time.sleep(2)
+    # Se l'app chiede del mezzo pubblico (non dovrebbe: la metro si riconosce da sola) si risponde sì.
+    ask = find("Sì, mezzi pubblici")
+    if ask:
+        tap(ask)
+    wait_for("Riepilogo", 60, "chiudendo il tragitto a piedi con la metro")
+    time.sleep(1)
+    shown = visible_text()
+    screenshot("metro-a-piedi")
+    log(f"metro a piedi: {shown[:600]}")
+    tap_label("Fine")
+    wait_for("Inizia un tragitto", 30, "tornando a Oggi dopo la metro a piedi")
+    if "Termini → Colosseo" not in shown:
+        return "la metro non è stata riconosciuta: " + shown[:300]
+    if "Velocità" in shown:
+        return "un tratto risulta ancora troppo veloce: " + shown[:300]
+    return "ok"
+
+
+def check_avvio_rapido() -> str:
+    """Il collegamento della notifica di movimento apre l'app e avvia subito il tragitto; il modulo nativo è presente."""
+    notes = []
+    if open_settings():
+        if not scroll_to("Avvio automatico", exact=True, swipes=8):
+            notes.append("interruttore Avvio automatico assente (modulo nativo non collegato?)")
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for("Inizia un tragitto", 30, "tornando a Oggi dalle impostazioni")
+    adb("shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-d", "vado://nuovo?modo=piedi\\&avvia=1", PACKAGE, check=False)
+    finish = wait_for_trip_screen(40, "aprendo il collegamento della notifica")
+    screenshot("avvio-rapido")
+    station_fix("colosseo", 0)
+    time.sleep(2)
+    tap(finish)
+    time.sleep(2)
+    ask = find("No", exact=True)
+    if ask and find("Eri su un mezzo pubblico?"):
+        tap(ask)
+    if wait_for("Riepilogo", 30, "chiudendo il tragitto avviato dal collegamento", required=False):
+        tap_label("Fine")
+    wait_for("Inizia un tragitto", 30, "tornando a Oggi dopo l'avvio rapido")
+    return "; ".join(notes) or "ok"
+
+
 def main() -> None:
     log("installo l'app")
     adb("install", "-r", apk, timeout=300)
@@ -867,6 +932,8 @@ def main() -> None:
     backup = check_backup() if board == "ok" else "non provato: manca il profilo"
     bus = check_bus()
     metro = check_metro()
+    metro_walk = check_metro_a_piedi() if metro == "ok" else "non provata"
+    quick = check_avvio_rapido()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
     cleaned = clean_server()
@@ -892,7 +959,7 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; percorsi: {journeys}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; Connessione Salute: {health}"
+        f"permessi: {answered}; percorsi: {journeys}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; metro a piedi: {metro_walk}; avvio rapido: {quick}; Connessione Salute: {health}"
     )
     if backup != "ok":
         problems.append(f"backup: {backup}")
@@ -908,6 +975,10 @@ def main() -> None:
         problems.append(f"classifica: {board}")
     if metro != "ok":
         problems.append(f"metro: {metro}")
+    if metro_walk != "ok":
+        problems.append(f"metro a piedi: {metro_walk}")
+    if quick != "ok":
+        problems.append(f"avvio rapido: {quick}")
     if WITH_HEALTH and health != "collegata":
         problems.append(f"Connessione Salute non collegata: {health}")
     if problems:

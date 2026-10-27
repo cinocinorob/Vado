@@ -42,6 +42,17 @@ alter table vado.users add column if not exists trees integer not null default 0
 alter table vado.users add column if not exists showcase text not null default ''
   check (showcase ~ '^([a-z-]{2,24}:[1-3](,[a-z-]{2,24}:[1-3]){0,2})?$');
 
+-- Soprannome nascosto dopo le segnalazioni di due compagni di lega.
+alter table vado.users add column if not exists name_hidden boolean not null default false;
+
+create table if not exists vado.reports (
+  reporter uuid not null references vado.users (id) on delete cascade,
+  target uuid not null references vado.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (reporter, target)
+);
+create index if not exists reports_target on vado.reports (target);
+
 create table if not exists vado.leagues (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 2 and 24),
@@ -105,6 +116,12 @@ alter table vado.challengers enable row level security;
 -- ---------------------------------------------------------- funzioni interne
 
 -- Riconosce chi chiama dalla chiave segreta del telefono.
+-- Il nome da mostrare agli altri: il soprannome, o un segnaposto se è stato nascosto.
+create or replace function vado.shown(p_name text, p_hidden boolean) returns text
+language sql immutable set search_path = '' as $$
+  select case when p_hidden then 'Soprannome nascosto' else p_name end
+$$;
+
 create or replace function vado.who(p_secret text) returns uuid
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -169,7 +186,7 @@ language sql stable security definer set search_path = '' as $$
     'people', (
       select coalesce(json_agg(json_build_object(
         'id', u.id,
-        'name', u.nickname,
+        'name', vado.shown(u.nickname, u.name_hidden),
         'me', u.id = p_user,
         'tree', vado.tree_json(u.tree, u.stage, u.trees),
         'showcase', u.showcase,
@@ -224,8 +241,11 @@ begin
   end if;
   insert into vado.users (secret_hash, nickname)
     values (sha256(convert_to(p_secret, 'UTF8')), v_name)
-    on conflict (secret_hash) do update set nickname = excluded.nickname, seen_at = now()
+    on conflict (secret_hash) do update set nickname = excluded.nickname, seen_at = now(),
+      -- Un soprannome nuovo riparte pulito: tolte le segnalazioni di quello vecchio.
+      name_hidden = vado.users.name_hidden and vado.users.nickname = excluded.nickname
     returning id into v_id;
+  delete from vado.reports r where r.target = v_id and not (select u.name_hidden from vado.users u where u.id = v_id);
   return json_build_object('id', v_id, 'nickname', v_name);
 end $$;
 
@@ -234,7 +254,32 @@ language plpgsql security definer set search_path = '' as $$
 declare
   v_user uuid := vado.who(p_secret);
 begin
-  return (select json_build_object('id', u.id, 'nickname', u.nickname) from vado.users u where u.id = v_user);
+  return (select json_build_object('id', u.id, 'nickname', u.nickname, 'hidden', u.name_hidden) from vado.users u where u.id = v_user);
+end $$;
+
+-- Segnala il soprannome di un compagno di lega. Con due segnalazioni di
+-- persone diverse il soprannome viene nascosto a tutti finché non lo cambia.
+create or replace function public.vado_report(p_secret text, p_target uuid) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+  v_count integer;
+begin
+  if p_target is null or p_target = v_user then
+    raise exception 'dati-non-validi';
+  end if;
+  if not exists (
+    select 1 from vado.members a join vado.members b on b.league_id = a.league_id
+    where a.user_id = v_user and b.user_id = p_target
+  ) then
+    raise exception 'avversari-non-validi';
+  end if;
+  insert into vado.reports (reporter, target) values (v_user, p_target) on conflict do nothing;
+  select count(*) into v_count from vado.reports where target = p_target;
+  if v_count >= 2 then
+    update vado.users set name_hidden = true where id = p_target;
+  end if;
+  return json_build_object('ok', true, 'hidden', v_count >= 2);
 end $$;
 
 -- La vetrina delle medaglie, per la classifica.
@@ -262,7 +307,7 @@ begin
   return (
     select coalesce(json_agg(json_build_object(
       'id', u.id,
-      'name', u.nickname,
+      'name', vado.shown(u.nickname, u.name_hidden),
       'me', u.id = v_user,
       'tree', vado.tree_json(u.tree, u.stage, u.trees),
       'showcase', u.showcase,
@@ -344,7 +389,7 @@ begin
   return (
     select coalesce(json_agg(json_build_object(
       'id', u.id,
-      'name', u.nickname,
+      'name', vado.shown(u.nickname, u.name_hidden),
       'me', u.id = v_user,
       'tree', vado.tree_json(u.tree, u.stage, u.trees),
       'candies', coalesce((select sum(s.meters) from vado.scores s
@@ -388,7 +433,7 @@ begin
     'entries', (
       select coalesce(json_agg(json_build_object(
         'id', u.id,
-        'name', u.nickname,
+        'name', vado.shown(u.nickname, u.name_hidden),
         'me', u.id = v_user,
         'tree', vado.tree_json(u.tree, u.stage, u.trees),
         'showcase', u.showcase,
@@ -479,9 +524,9 @@ declare
   v_user uuid := vado.who(p_secret);
 begin
   return (
-    select coalesce(json_agg(json_build_object('id', x.id, 'name', x.nickname, 'tree', vado.tree_json(x.tree, x.stage, x.trees)) order by x.nickname, x.id), '[]'::json)
+    select coalesce(json_agg(json_build_object('id', x.id, 'name', vado.shown(x.nickname, x.name_hidden), 'tree', vado.tree_json(x.tree, x.stage, x.trees)) order by x.nickname, x.id), '[]'::json)
     from (
-      select distinct u.id, u.nickname, u.tree, u.stage, u.trees
+      select distinct u.id, u.nickname, u.name_hidden, u.tree, u.stage, u.trees
       from vado.members mine
       join vado.members other on other.league_id = mine.league_id and other.user_id <> mine.user_id
       join vado.users u on u.id = other.user_id

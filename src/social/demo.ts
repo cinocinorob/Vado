@@ -303,6 +303,10 @@ export const demoSource: SocialSource = {
     return { ok: true, value: toChallenge(stored, state, trips, now) };
   },
 
+  async report(): Promise<Result<{ hidden: boolean }>> {
+    return { ok: true, value: { hidden: false } };
+  },
+
   async removeChallenge(id: string): Promise<void> {
     const state = await load();
     await save({ ...state, challenges: state.challenges.filter((c) => c.id !== id) });

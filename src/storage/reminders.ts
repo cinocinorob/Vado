@@ -3,9 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY = 'vado.promemoria.v1';
 
-export type Reminders = { forgot: boolean; thirsty: boolean; overtaken: boolean };
+export type Reminders = { forgot: boolean; thirsty: boolean; overtaken: boolean; weekly: boolean };
 
-const DEFAULTS: Reminders = { forgot: true, thirsty: true, overtaken: true };
+const DEFAULTS: Reminders = { forgot: true, thirsty: true, overtaken: true, weekly: true };
 
 export async function loadReminders(): Promise<Reminders> {
   try {
@@ -15,6 +15,7 @@ export async function loadReminders(): Promise<Reminders> {
       forgot: parsed.forgot !== false,
       thirsty: parsed.thirsty !== false,
       overtaken: parsed.overtaken !== false,
+      weekly: parsed.weekly !== false,
     };
   } catch {
     return DEFAULTS;

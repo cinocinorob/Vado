@@ -10,6 +10,7 @@ import { ROMA } from '../data/metro';
 import {
   afterRestart,
   applyFixes,
+  addSightings,
   applySteps,
   currentLeg,
   dismissTransit,
@@ -518,4 +519,24 @@ test('un salto isolato del GPS a piedi non viene scambiato per un mezzo pubblico
   trip = sim.move(trip, 1500, 1.4);
   assert.equal(pendingTransit(trip), null);
   assert.equal(splitTransit(trip, sim.t, 'tutti').legs.length, 1);
+});
+
+test('bus preso con il tratto "A piedi": il bus trovato in tempo reale rende verificato il pezzo riattribuito', () => {
+  const sim = new Sim();
+  let trip = begin(sim);
+  trip = sim.move(trip, 400, 1.4);
+  trip = applySteps(trip, 560);
+  const t0 = sim.t;
+  trip = sim.move(trip, 3000, 8);
+  // Lo stesso bus della linea 64 visto tre volte accanto al telefono durante il pezzo veloce.
+  const seen = [60, 180, 330].map((s, i) => ({ id: 'v1', routeId: '64', t: t0 + s * 1000, gapM: 20, lat: 41.901 + (i * 1200) / 111_195, lon: LON }));
+  trip = addSightings(trip, seen);
+  trip = sim.move(trip, 200, 1.4);
+  trip = applySteps(trip, 850);
+  const end = sim.t + 1000;
+  const inputs = toLegInputs(settleTransit(trip, end, 'tutti'), end, true);
+  assert.deepEqual(inputs.map((l) => l.mode), ['piedi', 'tpl', 'piedi']);
+  assert.equal(inputs[1].bus?.line, '64');
+  const score = scoreTrip(inputs, FIRST);
+  assert.equal(score.legs[1].status, 'verificato');
 });

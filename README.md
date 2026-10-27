@@ -318,6 +318,34 @@ Se un tragitto resta su "A piedi" (o in bici) mentre si è in metro o in bus, il
 
 Regole in `src/tracking/tripState.ts` (`splitTransit`) e `src/core/geo.ts` (`fast`), con le prove in `tripState.test.ts`.
 
+## Avvio automatico
+
+Impostazioni, "Avvio automatico". Il riconoscimento delle attività di Google Play services (permesso "Attività fisica",
+non la posizione) avvisa quando si comincia a camminare, a pedalare o si sale su un veicolo. Arriva una notifica
+"Stai camminando?": toccandola si apre Nuovo tragitto e la misura parte subito. Al massimo un avviso ogni 45 minuti,
+mai tra le 23 e le 6, mai durante un tragitto. Il codice nativo è in `modules/vado-movimento` (Kotlin): funziona
+anche ad app chiusa e si riattiva dopo un riavvio del telefono o un aggiornamento dell'app. Non è verificabile sul
+telefono simulato della prova (lì si prova solo il collegamento della notifica).
+
+## Diagnostica
+
+Impostazioni, "Diagnostica dei tragitti": registro degli ultimi eventi (avvio, cambi di mezzo, buchi di segnale,
+metro e bus riconosciuti, valutazione di ogni tratto), solo numeri e nomi di stazioni, nessuna posizione. Si condivide
+come testo.
+
+## Stagioni, riepilogo e condivisione
+
+- **Natale** dal 1° dicembre al 6 gennaio (aspetto "Automatico"): verde abete, rosso e oro, cappelli rossi, neve,
+  medaglia "Natale senza auto" (un tragitto senza auto tra la Vigilia e Santo Stefano).
+- **Riepilogo della settimana**: notifica il lunedì alle 9 con km, punti, CO₂ e confronto con la settimana prima.
+- **Cartoncino da condividere** dal riepilogo di un tragitto e dallo storico: immagine con germoglio, km, CO₂ e,
+  se c'è, il codice della propria lega.
+- **Soprannomi**: tenendo premuto un nome in classifica lo si segnala; con due segnalazioni di persone diverse viene
+  nascosto finché non lo cambia.
+- **Server sveglio**: `.github/workflows/veglia.yml` fa una richiesta al giorno, perché sul piano gratuito Supabase mette
+  in pausa i progetti dopo 7 giorni di poca attività.
+- **APK leggera**: un file per processore (`plugins/abi-split.js`); quello pubblicato è per arm64, cioè i telefoni.
+
 ## Bus e tram
 
 - **Riconoscimento in tempo reale.** In un tragitto avviato con "Metro, bus, tram", mentre ci si muove a velocità da mezzo, l'app
@@ -364,7 +392,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (215 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (218 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
 import type { Health, SpeciesId, Stage } from '../core/plant';
-import { HALLOWEEN_ON } from './theme';
+import { HALLOWEEN_ON, NATALE_ON } from './theme';
 
 const INK = '#1F2A22';
 const WHITE = '#FFFFFF';
@@ -21,6 +21,18 @@ function WitchHat({ x, y, scale }: { x: number; y: number; scale: number }) {
       <Path d="M-8 -1L-2.5 -21Q0 -27 4.5 -23.5L10 -18.5L5.5 -16.5L7.5 -1Z" fill="#2A1838" />
       <Path d="M-7.6 -4.2h15.2" stroke="#FF8A2A" strokeWidth={2.8} />
       <Circle cx={10} cy={-18.5} r={1.8} fill="#FFD23F" />
+    </G>
+  );
+}
+
+/** Cappello di Babbo Natale, morbido e piegato di lato. */
+function SantaHat({ x, y, scale }: { x: number; y: number; scale: number }) {
+  return (
+    <G transform={`translate(${x} ${y}) rotate(14) scale(${scale})`}>
+      <Path d="M-11 -1C-10 -14 -2 -22 8 -20C12 -19 14 -15 15 -10L11 -11C10 -14 8 -15 6 -14C2 -12 1 -6 1 -1Z" fill="#E5363A" />
+      <Path d="M-11 -1C-10 -14 -2 -22 8 -20C9 -19 10 -18 10 -17C2 -18 -6 -10 -7 -1Z" fill="#FF5A55" />
+      <Path d="M-13 0h16" stroke="#FFFFFF" strokeWidth={5.5} strokeLinecap="round" />
+      <Circle cx={15.5} cy={-9.5} r={3.4} fill="#FFFFFF" />
     </G>
   );
 }
@@ -151,6 +163,7 @@ function Face({ cx, cy, health, scale = 1, hat = true }: { cx: number; cy: numbe
       {eyes}
       {mouthPath}
       {HALLOWEEN_ON && hat ? <WitchHat x={cx + 11 * scale} y={cy - 15 * scale} scale={0.6 * scale} /> : null}
+      {NATALE_ON && hat ? <SantaHat x={cx + 8 * scale} y={cy - 13 * scale} scale={0.62 * scale} /> : null}
     </G>
   );
 }
@@ -326,7 +339,7 @@ function cropBox(stage: Stage, species?: SpeciesId, grown?: boolean): string {
     const faceY = grown ? CANOPY[species].y : 86 - (86 - CANOPY[species].y) * 0.8;
     return grown ? box(faceY + 6, 36) : box(faceY + 4, 32);
   }
-  if (stage === 'seme') return box(60, 30);
+  if (stage === 'seme') return box(57, 32);
   if (stage === 'germoglio') return box(56, 33);
   return box(46, 43);
 }

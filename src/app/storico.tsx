@@ -3,15 +3,17 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { formatCo2 } from '../core/co2';
+import { formatCo2, treeTime } from '../core/co2';
 import { bestDay, months, weeks } from '../core/history';
 import { monthName } from '../core/social';
 import type { Trip } from '../core/scoring';
 import { loadTrips } from '../storage/trips';
 import { Group, SectionTitle } from '../ui/expressive';
 import { dateLabel, km } from '../ui/format';
-import { CloseIcon } from '../ui/Icons';
-import { Header, RoundButton, Screen, text } from '../ui/parts';
+import { CloseIcon, ShareIcon } from '../ui/Icons';
+import { ShareSheet, type ShareData } from '../ui/ShareCard';
+import { usePlant } from '../ui/usePlant';
+import { GhostButton, Header, RoundButton, Screen, text } from '../ui/parts';
 import { C, F, R } from '../ui/theme';
 
 const BAR_H = 150;
@@ -24,6 +26,7 @@ function weekLabel(start: number): string {
 export default function Storico() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [now, setNow] = useState(() => Date.now());
+  const [sharing, setSharing] = useState<ShareData | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,6 +46,21 @@ export default function Storico() {
   const top = Math.max(1, ...w.map((p) => p.points));
   const best = bestDay(trips);
   const thisWeek = w[w.length - 1];
+  const plant = usePlant(trips, now);
+
+  function shareWeek() {
+    setSharing({
+      caption: 'La mia settimana',
+      big: km(thisWeek.carFreeMeters),
+      bigLabel: 'senza auto',
+      stats: [
+        { label: 'CO₂ evitata', value: formatCo2(thisWeek.co2) },
+        { label: 'punti', value: String(thisWeek.points) },
+      ],
+      note: thisWeek.co2 > 0 ? `Un albero adulto ci mette ${treeTime(thisWeek.co2)} ad assorbirla.` : undefined,
+      plant: { stage: plant.stage, health: plant.health, species: plant.species },
+    });
+  }
 
   return (
     <Screen>
@@ -75,6 +93,8 @@ export default function Storico() {
           </View>
         </View>
 
+        {thisWeek.carFreeMeters > 0 ? <GhostButton label="Condividi la settimana" icon={<ShareIcon size={18} />} onPress={shareWeek} /> : null}
+
         <SectionTitle title="Mesi" />
         <Group>
           {m.map((p) => (
@@ -100,6 +120,7 @@ export default function Storico() {
           </View>
         ) : null}
       </ScrollView>
+      <ShareSheet data={sharing} onClose={() => setSharing(null)} />
     </Screen>
   );
 }

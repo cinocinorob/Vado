@@ -12,6 +12,7 @@ import { Platform, View } from 'react-native';
 import '../tracking/tracker';
 import '../reminders/schedule';
 import '../reminders/home';
+import { refreshAuto } from '../auto/movimento';
 import { C, DARK_UI } from '../ui/theme';
 
 export default function RootLayout() {
@@ -23,6 +24,11 @@ export default function RootLayout() {
     Roboto_800ExtraBold,
     Roboto_900Black,
   });
+
+  // L'avvio automatico, se acceso, si registra di nuovo a ogni apertura.
+  useEffect(() => {
+    refreshAuto();
+  }, []);
 
   // Toccando un promemoria si apre la schermata giusta.
   useEffect(() => {
@@ -58,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="storico" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="benvenuto" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="bus" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="diagnostica" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

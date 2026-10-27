@@ -95,7 +95,7 @@ const PODIUM = [
 ] as const;
 
 /** I primi tre, con il primo al centro. Con meno di tre partecipanti i gradini restano vuoti. */
-export function Podium({ ranked }: { ranked: Ranked[] }) {
+export function Podium({ ranked, onReport }: { ranked: Ranked[]; onReport?: (entry: Ranked) => void }) {
   return (
     <View style={styles.podium}>
       {PODIUM.map((step) => {
@@ -104,10 +104,14 @@ export function Podium({ ranked }: { ranked: Ranked[] }) {
         return (
           <View key={step.place} style={styles.podiumColumn}>
             {entry ? (
-              <View
+              <Pressable
                 style={styles.podiumPerson}
                 accessible
                 accessibilityLabel={`${entry.rank}º posto: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti`}
+                onLongPress={!entry.me && onReport ? () => onReport(entry) : undefined}
+                delayLongPress={500}
+                accessibilityActions={!entry.me && onReport ? [{ name: 'longpress', label: 'Segnala il soprannome' }] : undefined}
+                onAccessibilityAction={() => (!entry.me && onReport ? onReport(entry) : undefined)}
               >
                 {first ? <CrownIcon /> : null}
                 <Avatar id={entry.id} name={entry.name} me={entry.me} size={step.avatar} tree={entry.tree} />
@@ -115,7 +119,7 @@ export function Podium({ ranked }: { ranked: Ranked[] }) {
                   {entry.me ? 'Tu' : entry.name}
                 </Text>
                 <Text style={styles.podiumPoints}>{entry.points}</Text>
-              </View>
+              </Pressable>
             ) : null}
             <View style={[styles.podiumStep, { height: step.height }, first && { backgroundColor: C.lime }, step.place === 3 && { backgroundColor: C.coralSoft }]}>
               <Text style={[styles.podiumNumber, { fontSize: step.number }]}>{step.place}</Text>
@@ -133,12 +137,16 @@ export const ZONE_UP = '#1E7A41';
 export const ZONE_DOWN = C.alert;
 
 /** Una riga della classifica. */
-export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked[]; zone?: Zone }) {
+export function RankRow({ entry, ranked, zone, onReport }: { entry: Ranked; ranked: Ranked[]; zone?: Zone; onReport?: (entry: Ranked) => void }) {
   const detail = entry.me ? gapPhrase(ranked, entry.id) : modePhrase(entry.mainMode);
   const zoneText = zone && zone !== 'resta' ? ZONE_TEXT[zone] : null;
   return (
-    <View
+    <Pressable
       style={[styles.row, entry.me && styles.rowMe]}
+      onLongPress={!entry.me && onReport ? () => onReport(entry) : undefined}
+      delayLongPress={500}
+      accessibilityActions={!entry.me && onReport ? [{ name: 'longpress', label: 'Segnala il soprannome' }] : undefined}
+      onAccessibilityAction={() => (!entry.me && onReport ? onReport(entry) : undefined)}
       accessible
       accessibilityLabel={`${entry.rank}º: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti${zoneText ? `, ${zoneText.toLowerCase()}` : ''}`}
     >
@@ -157,7 +165,7 @@ export function RankRow({ entry, ranked, zone }: { entry: Ranked; ranked: Ranked
       {zone === 'scende' ? <View style={[styles.zoneDot, { backgroundColor: ZONE_DOWN }]} /> : null}
       <Text style={[styles.rowPoints, entry.me && { color: C.ink }]}>{entry.points}</Text>
       <View style={styles.rowTrend}>{entry.trend ? <TrendIcon trend={entry.trend} /> : null}</View>
-    </View>
+    </Pressable>
   );
 }
 

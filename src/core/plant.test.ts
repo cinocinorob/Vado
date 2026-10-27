@@ -133,8 +133,43 @@ test('Halloween: caramelle dal 15 al 31 ottobre, un km senza auto ciascuna', asy
   assert.equal(isHalloweenSeason(at(10, 2)), true);
   assert.equal(isHalloweenSeason(at(10, 3)), false);
   assert.equal(resolveLook('auto', at(9, 17), false), 'halloween');
-  assert.equal(resolveLook('auto', at(11, 1), true), 'scuro');
+  assert.equal(resolveLook('auto', at(10, 20), true), 'scuro');
   assert.equal(resolveLook('chiaro', at(9, 17), true), 'chiaro');
   assert.equal(isWitchingHour(at(9, 31, 18)), true);
   assert.equal(isWitchingHour(at(9, 31, 12)), false);
+});
+
+test('Natale: stagione dal 1° dicembre al 6 gennaio, medaglia tra la Vigilia e Santo Stefano', async () => {
+  const { isChristmasSeason, resolveLook } = await import('./look');
+  const { badgeStates, seasonOpen } = await import('./badges');
+  const at = (y: number, m: number, d: number, h = 12) => new Date(y, m, d, h).getTime();
+  assert.equal(isChristmasSeason(at(2026, 11, 1)), true);
+  assert.equal(isChristmasSeason(at(2027, 0, 6)), true);
+  assert.equal(isChristmasSeason(at(2027, 0, 7)), false);
+  assert.equal(isChristmasSeason(at(2026, 10, 30)), false);
+  assert.equal(resolveLook('auto', at(2026, 11, 10), false), 'natale');
+  assert.equal(resolveLook('auto', at(2026, 10, 10), true), 'scuro');
+  assert.equal(seasonOpen('natale-senza-auto', at(2026, 11, 10)), true);
+  assert.equal(seasonOpen('natale-senza-auto', at(2026, 6, 10)), false);
+  const t = (end: number, legs: LegResult[]): Trip => ({ ...trip(dayKey(end), legs), startedAt: end - 600000, endedAt: end, carFreeMeters: 1500 });
+  const get = (list: Trip[]) => badgeStates(list, at(2026, 11, 27)).find((b) => b.id === 'natale-senza-auto');
+  assert.equal(get([t(at(2026, 11, 23), [leg('piedi', 1500)])])?.unlocked, false);
+  assert.equal(get([t(at(2026, 11, 25), [leg('piedi', 1500)])])?.unlocked, true);
+  assert.equal(get([t(at(2026, 11, 25), [leg('auto', 9000)])])?.unlocked, false);
+});
+
+test('riepilogo settimanale: lunedì alle 9, km, punti e confronto con la settimana prima', async () => {
+  const { weeklyRecap } = await import('./reminders');
+  const at = (d: number, h = 12) => new Date(2026, 9, d, h).getTime();
+  const mk = (end: number, meters: number, total: number): Trip => ({ ...trip(dayKey(end), [leg('piedi', meters)]), startedAt: end - 600000, endedAt: end, carFreeMeters: meters, total });
+  const list = [mk(at(20), 4000, 40), mk(at(22), 2500, 25), mk(at(14), 5000, 50)];
+  const r = weeklyRecap(list, at(23));
+  assert.ok(r);
+  assert.equal(new Date(r.when).getDay(), 1);
+  assert.equal(new Date(r.when).getDate(), 26);
+  assert.equal(new Date(r.when).getHours(), 9);
+  assert.equal(r.title, 'La tua settimana: 6,5 km senza auto');
+  assert.match(r.body, /^65 punti in 2 giorni/);
+  assert.match(r.body, /30% in più/);
+  assert.equal(weeklyRecap(list, at(29)), null);
 });

@@ -1,0 +1,7 @@
+{
+  "name": "vado-movimento",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Riconoscimento del movimento (Activity Recognition) per proporre l'avvio di un tragitto.",
+  "main": "index.ts"
+}

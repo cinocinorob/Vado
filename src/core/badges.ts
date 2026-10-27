@@ -11,7 +11,7 @@ import type { ModeId } from './modes';
 import { completedChallenges } from './challenges';
 import { totalCo2 } from './co2';
 import { candyMeters } from './halloween';
-import { isWitchingHour } from './look';
+import { isChristmasDays, isChristmasSeason, isHalloweenSeason, isWitchingHour } from './look';
 import { plantState } from './plant';
 import { getMode } from './modes';
 import { dayKey, type LegResult, type Trip } from './scoring';
@@ -43,7 +43,8 @@ export type BadgeId =
   | 'diecimila'
   | 'centurione'
   | 'viaggiatore'
-  | 'notte-streghe';
+  | 'notte-streghe'
+  | 'natale-senza-auto';
 
 export type BadgeUnit = 'tragitti' | 'km' | 'giorni' | 'kg' | 'alberi' | 'sfide' | 'volte' | 'percorsi' | 'viaggi';
 
@@ -110,7 +111,22 @@ export const BADGES: readonly Badge[] = [
     unit: 'tragitti',
     seasonal: true,
   },
+  {
+    id: 'natale-senza-auto',
+    name: 'Natale senza auto',
+    goal: 'Un tragitto senza auto tra la Vigilia e Santo Stefano',
+    tiers: [1],
+    unit: 'tragitti',
+    seasonal: true,
+  },
 ];
+
+/** Una medaglia a tempo si mostra quando si può prendere (o quando ce l'hai già). */
+export function seasonOpen(id: BadgeId, now: number): boolean {
+  if (id === 'notte-streghe') return isHalloweenSeason(now);
+  if (id === 'natale-senza-auto') return isChristmasSeason(now);
+  return true;
+}
 
 /** Dati che non vengono dai tragitti: vittorie in lega e percorsi virtuali completati. */
 export type BadgeContext = { podiums: number; journeys: number };
@@ -247,6 +263,10 @@ function progress(id: BadgeId, trips: Trip[], now: number, ctx: BadgeContext): n
     case 'notte-streghe':
       return trips.filter(
         (t) => (isWitchingHour(t.startedAt) || isWitchingHour(t.endedAt)) && !usesPrivateCar(t) && !hasAnomaly(t) && t.carFreeMeters >= MIN_LEG_M,
+      ).length;
+    case 'natale-senza-auto':
+      return trips.filter(
+        (t) => (isChristmasDays(t.startedAt) || isChristmasDays(t.endedAt)) && !usesPrivateCar(t) && !hasAnomaly(t) && t.carFreeMeters >= MIN_LEG_M,
       ).length;
   }
 }

@@ -23,13 +23,14 @@ import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer } from '../ui/format';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PersonalChallenges } from '../ui/ChallengeCard';
-import { Co2Card, Group, SectionTitle, ShapeBadge, TonalButton, WeekStrip } from '../ui/expressive';
+import { Group, SectionTitle, ShapeBadge, TonalButton, WeekStrip } from '../ui/expressive';
 import { PageTitle } from '../ui/Hero';
 import { ChartIcon, ChevronIcon, FlameIcon, GearIcon, HeartIcon, PlusIcon } from '../ui/Icons';
 import { BonusRow, GhostButton, LegRow, ModeBadge, Panel, Screen, text } from '../ui/parts';
 import { Sprout } from '../ui/Sprout';
 import { Bats, CandyCard } from '../ui/Halloween';
-import { C, F, HALLOWEEN_ON, R } from '../ui/theme';
+import { Snow } from '../ui/Natale';
+import { C, F, HALLOWEEN_ON, NATALE_ON, R } from '../ui/theme';
 import { usePlant } from '../ui/usePlant';
 import { WavyRing } from '../ui/Wavy';
 
@@ -172,6 +173,11 @@ export default function Oggi() {
                 <Bats />
               </View>
             ) : null}
+            {NATALE_ON ? (
+              <View style={styles.bats} pointerEvents="none">
+                <Snow />
+              </View>
+            ) : null}
             <View
               style={styles.ring}
               accessible
@@ -196,18 +202,28 @@ export default function Oggi() {
             </View>
             <View style={styles.heroSide}>
               <View style={styles.streak} accessible accessibilityLabel={days > 0 ? `Serie di ${days} giorni` : 'Nessuna serie in corso'}>
-                <FlameIcon size={30} />
-                <View>
+                <FlameIcon size={34} />
+                <View style={{ flex: 1 }}>
                   <Text style={styles.streakValue}>{days}</Text>
                   <Text style={styles.streakLabel}>{days === 1 ? 'giorno di fila' : 'giorni di fila'}</Text>
                 </View>
               </View>
-              <View style={styles.steps}>
-                <Text style={styles.stepsLabel}>{healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}</Text>
+              <Pressable
+                onPress={() => router.push('/bosco')}
+                accessibilityRole="button"
+                accessibilityLabel={`CO₂ evitata oggi ${formatCo2(todayCo2)}, ${integer(healthSteps ?? today.steps)} ${healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}`}
+                style={({ pressed }) => [styles.steps, pressed && { opacity: 0.85 }]}
+              >
+                <Text style={styles.stepsLabel}>CO₂ evitata oggi</Text>
                 <Text style={styles.stepsValue} adjustsFontSizeToFit numberOfLines={1}>
+                  {formatCo2(todayCo2)}
+                </Text>
+                <View style={styles.stepsLine} />
+                <Text style={styles.stepsLabel}>{healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}</Text>
+                <Text style={styles.stepsValueSmall} adjustsFontSizeToFit numberOfLines={1}>
                   {integer(healthSteps ?? today.steps)}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           </View>
 
@@ -220,12 +236,6 @@ export default function Oggi() {
               </View>
             </Pressable>
           ) : null}
-
-          <Co2Card grams={todayCo2} meters={today.carFreeMeters} title="CO₂ evitata oggi" plant={plant} onPress={() => router.push('/bosco')} />
-
-          {isHalloweenSeason(now) ? <CandyCard count={candies(trips, now)} open={candyOpen(now)} onPress={() => router.push('/classifica')} /> : null}
-
-          <WeekStrip activeDays={activeDays} now={now} />
 
           <SectionTitle
             title="Tragitti di oggi"
@@ -258,6 +268,14 @@ export default function Oggi() {
               ))}
             </Group>
           )}
+
+          {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
+
+          <SectionTitle title="La tua settimana" />
+          <WeekStrip activeDays={activeDays} now={now} />
+          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} onPress={() => router.push('/medaglie')} />
+
+          {isHalloweenSeason(now) ? <CandyCard count={candies(trips, now)} open={candyOpen(now)} onPress={() => router.push('/classifica')} /> : null}
 
           {health && health.status !== 'non-disponibile' ? (
             <Panel style={styles.health}>
@@ -315,10 +333,6 @@ export default function Oggi() {
             </Panel>
           ) : null}
 
-          {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
-
-          <SectionTitle title="Le tue sfide" />
-          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} onPress={() => router.push('/medaglie')} />
 
           <Pressable onPress={() => router.push('/storico')} accessibilityRole="button" style={styles.history}>
             <ChartIcon size={20} />
@@ -347,6 +361,8 @@ const styles = StyleSheet.create({
   extra: { marginTop: 2, height: 24, paddingHorizontal: 9, borderRadius: 12, backgroundColor: C.strong, justifyContent: 'center' },
   extraText: { fontFamily: F.bold, fontSize: 12, color: C.onStrong },
   streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: C.deep,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
@@ -369,6 +385,8 @@ const styles = StyleSheet.create({
   },
   stepsLabel: { fontFamily: F.semi, fontSize: 12, color: C.onLime },
   stepsValue: { fontFamily: F.displayBold, fontSize: 24, lineHeight: 28, color: C.ink },
+  stepsValueSmall: { fontFamily: F.displayBold, fontSize: 18, lineHeight: 22, color: C.ink },
+  stepsLine: { height: 1, backgroundColor: 'rgba(26, 29, 20, 0.14)', marginVertical: 4 },
   activeBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: R.card, backgroundColor: C.coral },
   activeTitle: { fontFamily: F.bold, fontSize: 17, color: C.onCoral },
   activeDetail: { fontFamily: F.medium, fontSize: 13, color: C.onCoral },

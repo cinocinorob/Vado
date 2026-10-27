@@ -21,7 +21,9 @@ import { Group, SectionTitle } from '../ui/expressive';
 import { HeroBlock } from '../ui/Hero';
 import { Medal } from '../ui/Medal';
 import { buzz } from '../ui/motion';
-import { BonusRow, Header, LegRow, PrimaryButton, Screen, text } from '../ui/parts';
+import { BonusRow, GhostButton, Header, LegRow, PrimaryButton, Screen, text } from '../ui/parts';
+import { ShareSheet, type ShareData } from '../ui/ShareCard';
+import { ShareIcon } from '../ui/Icons';
 import { SHAPES } from '../ui/shapes';
 import { Sprout, Tree } from '../ui/Sprout';
 import { C, F, R } from '../ui/theme';
@@ -61,6 +63,8 @@ export default function Riepilogo() {
   const [totalG, setTotalG] = useState(0);
   const [stages, setStages] = useState<{ journey: string; stages: JourneyStage[]; finished: boolean } | null>(null);
   const [won, setWon] = useState<ChallengeRun[]>([]);
+  const [plantNow, setPlantNow] = useState<ShareData['plant'] | null>(null);
+  const [sharing, setSharing] = useState<ShareData | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -92,6 +96,8 @@ export default function Riepilogo() {
         buzz(unlocked.length > 0 ? 'premio' : 'fatto');
         setGrowth(growthBetween(before, all, found.endedAt, tree.species ?? DEFAULT_SPECIES));
         setTotalG(totalCo2(all));
+        const ps = plantState(all, found.endedAt);
+        setPlantNow({ stage: ps.stage, health: ps.health, species: tree.species ?? undefined });
         setStages(journeyNews);
         const at = found.endedAt;
         setWon([weeklyAt, monthlyAt].map((f) => [f(before, at), f(all, at)] as const).filter(([a, b]) => b.done && !a.done).map(([, b]) => b));
@@ -198,6 +204,26 @@ export default function Riepilogo() {
             </View>
           ) : null}
 
+          {plantNow && trip.carFreeMeters > 0 ? (
+            <GhostButton
+              label="Condividi il tragitto"
+              icon={<ShareIcon size={18} />}
+              onPress={() =>
+                setSharing({
+                  caption: 'Il mio tragitto',
+                  big: km(trip.carFreeMeters),
+                  bigLabel: 'senza auto',
+                  stats: [
+                    { label: 'CO₂ evitata', value: formatCo2(co2) },
+                    { label: 'punti', value: `+${trip.total}` },
+                  ],
+                  note: co2 > 0 ? `Un albero adulto ci mette ${treeTime(co2)} ad assorbirla.` : undefined,
+                  plant: plantNow,
+                })
+              }
+            />
+          ) : null}
+
           {capped ? (
             <Text style={text.body}>
               Hai raggiunto il tetto di {TRIP_CAP} punti per tragitto
@@ -216,6 +242,8 @@ export default function Riepilogo() {
           ) : null}
         </View>
       </ScrollView>
+
+      <ShareSheet data={sharing} onClose={() => setSharing(null)} />
 
       <View style={[styles.cta, { bottom: insets.bottom + 16 }]}>
         <PrimaryButton label="Fine" onPress={() => router.dismissTo('/')} />

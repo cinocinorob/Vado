@@ -95,6 +95,8 @@ export interface SocialSource {
   createLeague(name: string): Promise<Result<LeagueSummary>>;
   joinLeague(code: string): Promise<Result<LeagueSummary>>;
   leaveLeague(leagueId: string): Promise<void>;
+  /** Segnala il soprannome di un compagno di lega (offensivo, inappropriato). */
+  report(userId: string): Promise<Result<{ hidden: boolean }>>;
   /** Persone che si possono sfidare: i compagni delle proprie leghe. */
   rivals(now: number): Promise<Person[]>;
   challenges(now: number): Promise<Challenge[]>;

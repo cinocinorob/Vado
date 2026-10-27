@@ -1,7 +1,7 @@
 /** Schermata "Classifica": leghe (a livelli e con invito) e sfide. */
 import { router, useFocusEffect } from 'expo-router';
 import { Fragment, useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   PROMOTED,
@@ -130,6 +130,27 @@ export default function Classifica() {
     setBoard(await social.board(id, clock()));
     setSweets(candyOpen(clock()) ? await social.candies(id, clock()) : null);
     setProblem(social.problem());
+  }
+
+  /** Pressione lunga su un altro partecipante: segnala il soprannome. */
+  function report(entry: Ranked) {
+    if (entry.name === 'Soprannome nascosto') return;
+    Alert.alert(
+      `Segnalare "${entry.name}"?`,
+      'Se il soprannome è offensivo o inappropriato. Con due segnalazioni di persone diverse viene nascosto a tutti finché non lo cambia.',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Segnala',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await social.report(entry.id);
+            Alert.alert(result.ok ? 'Segnalazione inviata' : 'Non inviata', result.ok ? (result.value.hidden ? 'Il soprannome ora è nascosto.' : 'Grazie: se lo segnala anche qualcun altro, viene nascosto.') : result.problem);
+            if (result.ok) refresh(leagueId).catch(() => undefined);
+          },
+        },
+      ],
+    );
   }
 
   async function invite() {
@@ -298,13 +319,13 @@ export default function Classifica() {
 
             {board ? (
               <>
-                <Podium ranked={ranked} />
+                <Podium ranked={ranked} onReport={report} />
                 {rest.length > 0 ? (
                   <Panel style={styles.list}>
                     {rest.map((entry, i) => (
                       <Fragment key={entry.id}>
                         {i > 0 && !entry.me && !rest[i - 1].me ? <Divider /> : null}
-                        <RankRow entry={entry} ranked={ranked} zone={zones.get(entry.id)} />
+                        <RankRow entry={entry} ranked={ranked} zone={zones.get(entry.id)} onReport={report} />
                       </Fragment>
                     ))}
                   </Panel>
@@ -312,6 +333,7 @@ export default function Classifica() {
                 {ranked.length <= 3 ? <MeOnPodium ranked={ranked} /> : null}
                 {sweets && sweets.length > 0 ? <Sweets entries={sweets} mine={mine} /> : null}
                 {board.kind === 'livelli' ? <ZoneLegend /> : null}
+                {ranked.length > 1 ? <Text style={[text.small, { textAlign: 'center' }]}>Tieni premuto un nome per segnalare un soprannome offensivo.</Text> : null}
               </>
             ) : null}
 
