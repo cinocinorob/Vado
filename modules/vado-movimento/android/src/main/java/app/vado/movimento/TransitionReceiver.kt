@@ -12,7 +12,9 @@ class TransitionReceiver : BroadcastReceiver() {
     if (!ActivityTransitionResult.hasResult(intent)) return
     val result = ActivityTransitionResult.extractResult(intent) ?: return
     val event = result.transitionEvents.lastOrNull { it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER } ?: return
-    Prefs.setLastEvent(context, Transitions.name(event.activityType), System.currentTimeMillis())
-    Nudge.maybeNotify(context, event.activityType)
+    val now = System.currentTimeMillis()
+    Prefs.setLastEvent(context, Transitions.name(event.activityType), now)
+    val outcome = Nudge.maybeNotify(context, event.activityType)
+    Prefs.addHistory(context, "$now ${Transitions.name(event.activityType)} $outcome")
   }
 }

@@ -22,15 +22,16 @@ internal object Nudge {
   private const val TRIP_STALE_MS = 4 * 60 * 60 * 1000L
 
   @Suppress("MissingPermission")
-  fun maybeNotify(context: Context, type: Int) {
+  /** Manda l'avviso se è il momento. Restituisce l'esito, per la diagnostica. */
+  fun maybeNotify(context: Context, type: Int): String {
     val now = System.currentTimeMillis()
-    if (!Prefs.enabled(context)) return
+    if (!Prefs.enabled(context)) return "spento"
     val trip = Prefs.tripSince(context)
-    if (trip > 0 && now - trip < TRIP_STALE_MS) return
-    if (now - Prefs.lastNotified(context) < EVERY_MS) return
+    if (trip > 0 && now - trip < TRIP_STALE_MS) return "tragitto già in corso"
+    if (now - Prefs.lastNotified(context) < EVERY_MS) return "avviso recente"
     val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    if (hour < 6 || hour >= 23) return
-    if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
+    if (hour < 6 || hour >= 23) return "di notte"
+    if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return "notifiche disattivate"
 
     val (title, body, mode) = when (type) {
       DetectedActivity.ON_BICYCLE -> Triple("Stai pedalando?", "Tocca per avviare il tragitto in bici: Vado misura e ti dà i punti.", "bici")
@@ -52,11 +53,12 @@ internal object Nudge {
       .setTimeoutAfter(20 * 60 * 1000L)
       .setPriority(NotificationCompat.PRIORITY_DEFAULT)
       .build()
-    try {
+    return try {
       NotificationManagerCompat.from(context).notify(ID, notification)
       Prefs.setLastNotified(context, now)
+      "avviso mandato"
     } catch (e: SecurityException) {
-      // Permesso delle notifiche revocato: niente avviso.
+      "notifiche non permesse"
     }
   }
 

@@ -30,8 +30,8 @@ import { PlusIcon, ShareIcon } from '../ui/Icons';
 import { Mascot } from '../ui/Mascot';
 import { HeroBlock } from '../ui/Hero';
 import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, Screen, input, text } from '../ui/parts';
-import { WavyBar } from '../ui/Wavy';
-import { Avatar, ChallengeCard, ShowcaseMini, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
+import { GooseBoard, type BoardPlayer } from '../ui/GooseBoard';
+import { Avatar, ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
 import { C, F } from '../ui/theme';
 import { TreePicker } from '../ui/TreeAvatar';
 import { Candy } from '../ui/Halloween';
@@ -357,7 +357,7 @@ export default function Classifica() {
           </>
         ) : (
           <>
-            {monthly ? <MonthPanel run={monthly} entries={monthBoard} league={board?.name ?? null} now={now} /> : null}
+            {monthly ? <MonthPanel run={monthly} entries={monthBoard} league={board?.name ?? null} now={now} mine={mine} /> : null}
 
             {challenges.length === 0 ? (
               <Panel>
@@ -381,10 +381,18 @@ export default function Classifica() {
 }
 
 /** La sfida del mese: il proprio avanzamento e, se c'è una lega, la classifica del mese. */
-function MonthPanel({ run, entries, league, now }: { run: ChallengeRun; entries: PeriodEntry[] | null; league: string | null; now: number }) {
+function MonthPanel({ run, entries, league, now, mine }: { run: ChallengeRun; entries: PeriodEntry[] | null; league: string | null; now: number; mine: TreeBadge | null }) {
   const byKm = run.metric.startsWith('km') || run.metric === 'co2';
-  const list = (entries ?? []).filter((e) => e.points > 0 || e.km > 0 || e.me).sort((a, b) => (byKm ? b.km - a.km : b.points - a.points)).slice(0, 10);
-  const value = (e: PeriodEntry) => (byKm ? `${String(Math.floor(e.km * 10) / 10).replace('.', ',')} km` : `${e.points} punti`);
+  const list = (entries ?? []).filter((e) => e.points > 0 || e.km > 0 || e.me).sort((a, b) => (byKm ? b.km - a.km : b.points - a.points)).slice(0, 8);
+  const value = (e: PeriodEntry) => (byKm ? e.km : e.points);
+  const label = (e: PeriodEntry) => (byKm ? `${String(Math.floor(e.km * 10) / 10).replace('.', ',')} km` : `${e.points} punti`);
+  // Il traguardo del tabellone: quello della sfida quando la misura coincide, altrimenti poco oltre il primo.
+  const top = Math.max(1, ...list.map(value));
+  const goal = run.metric === 'km' || run.metric === 'punti' ? run.target : top * 1.15;
+  const together = !!league && list.length > 1;
+  const players: BoardPlayer[] = together
+    ? list.map((e) => ({ id: e.id, name: e.me ? 'Tu' : e.name, me: e.me, tree: e.me ? (mine ?? e.tree) : e.tree, ratio: value(e) / goal, detail: label(e) }))
+    : [{ id: 'me', name: 'Tu', me: true, tree: mine, ratio: run.ratio, detail: challengeProgress(run) }];
   return (
     <Panel style={styles.monthly}>
       <View style={styles.monthlyHead}>
@@ -399,27 +407,16 @@ function MonthPanel({ run, entries, league, now }: { run: ChallengeRun; entries:
           </Text>
         </View>
       </View>
-      <WavyBar ratio={run.ratio} color={run.done ? C.teal : C.text} height={18} stroke={6} />
-      <Text style={text.small}>{challengeProgress(run)}</Text>
-      {league && list.length > 1 ? (
-        <View style={{ gap: 2 }}>
-          <Divider />
-          <Text style={[text.small, { fontFamily: F.bold, marginTop: 6 }]}>
-            Questo mese in {league}, per {byKm ? 'km senza auto' : 'punti'}
-          </Text>
-          {list.map((e, i) => (
-            <View key={e.id} style={styles.monthRow} accessible accessibilityLabel={`${i + 1}º: ${e.me ? 'tu' : e.name}, ${value(e)}`}>
-              <Text style={[styles.monthRank, e.me && { color: C.text }]}>{i + 1}</Text>
-              <Avatar id={e.id} name={e.name} me={e.me} tree={e.tree} />
-              <Text style={[styles.monthName, e.me && { fontFamily: F.bold }]} numberOfLines={1}>
-                {e.me ? 'Tu' : e.name}
-              </Text>
-              <ShowcaseMini items={e.showcase} size={18} />
-              <Text style={styles.monthValue}>{value(e)}</Text>
-            </View>
-          ))}
-        </View>
+      {together ? (
+        <Text style={[text.small, { fontFamily: F.bold }]}>
+          La corsa del mese in {league}, per {byKm ? 'km senza auto' : 'punti'}
+        </Text>
       ) : null}
+      <GooseBoard
+        players={players}
+        finishLabel={run.metric === 'km' || run.metric === 'punti' ? run.goal : together ? 'chi fa di più entro fine mese' : run.goal}
+      />
+      {!together ? <Text style={[text.small, { textAlign: 'center' }]}>Con una lega vedi qui anche le pedine degli altri.</Text> : null}
     </Panel>
   );
 }

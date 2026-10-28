@@ -60,6 +60,8 @@ export type LegInput = {
   declared?: boolean;
   /** Bus o tram riconosciuto con la posizione del mezzo in tempo reale. */
   bus?: { line: string };
+  /** Bus o tram riconosciuto dal percorso: fermate della linea passate in ordine. */
+  busShape?: { line: string; tram: boolean; from: string; to: string; meters: number };
   /** Viaggio in bus dichiarato a posteriori: linea e fermate (es. "Bus 64, Termini → San Pietro"). */
   busRoute?: string;
 };
@@ -109,7 +111,8 @@ export function evaluateLeg(input: LegInput): Evaluated {
     return invalid(`Velocità troppo alta per "${mode.label}"`);
   }
 
-  let meters = input.gpsM;
+  // Bus riconosciuto dal percorso: dentro il mezzo il GPS perde pezzi, vale la strada lungo la linea.
+  let meters = input.busShape ? Math.max(input.gpsM, input.busShape.meters) : input.gpsM;
   let status: LegStatus = 'dichiarato';
   let note = '';
 
@@ -151,13 +154,24 @@ export function evaluateLeg(input: LegInput): Evaluated {
 
   // Metro: i nomi delle stazioni spiegano da dove viene la distanza.
   const hops = input.hops ?? [];
+  const shape = input.busShape;
   const route =
-    input.busRoute ?? (hops.length > 0 ? hops.map((hop) => hop.label).join(', ') : input.bus ? `Bus ${input.bus.line}` : undefined);
+    input.busRoute ??
+    (hops.length > 0
+      ? hops.map((hop) => hop.label).join(', ')
+      : input.bus
+        ? `Bus ${input.bus.line}`
+        : shape
+          ? `${shape.tram ? 'Tram' : 'Bus'} ${shape.line}, ${shape.from} → ${shape.to}`
+          : undefined);
   if (input.declared) {
     note = 'Arrivo verificato dalla posizione, partenza dichiarata';
   } else if (input.bus && meters > 0) {
     status = 'verificato';
     note = 'Bus riconosciuto con la sua posizione in tempo reale';
+  } else if (shape && meters > 0) {
+    status = 'verificato';
+    note = `Percorso della linea ${shape.line} riconosciuto dalle fermate`;
   } else if (hops.length > 0 && meters > 0) {
     const onNetwork = hops.reduce((sum, hop) => sum + hop.meters, 0);
     // Posizioni sparite a una stazione e ricomparse a un'altra, in un tempo da

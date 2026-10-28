@@ -17,10 +17,10 @@ import { BUS_MODES, addSightings, currentLeg } from './tripState';
 export const FEED_URL = 'https://romamobilita.it/sites/default/files/rome_rtgtfs_vehicle_positions_feed.pb';
 const EVERY_MS = 55_000;
 const TIMEOUT_MS = 15_000;
-/** Almeno 7 km/h negli ultimi 30 secondi. */
-const MOVING_MS = 2;
-/** Con il tratto "A piedi" si cerca il bus solo sopra i 13 km/h: più veloce di una corsa. */
-const ON_FOOT_FAST_MS = 3.6;
+/** Con i mezzi: almeno 3,6 km/h di media negli ultimi 3 minuti. */
+const MOVING_MS = 1;
+/** Con il tratto "A piedi" si cerca il bus sopra i 9,5 km/h di media: più di una camminata. */
+const ON_FOOT_FAST_MS = 2.6;
 
 let lastPoll = 0;
 let busy = false;
@@ -33,10 +33,14 @@ export function pollBuses(now: number): void {
   const samples = leg.bus?.samples ?? [];
   if (!BUS_MODES.includes(leg.mode) || samples.length < 2) return;
   const last = samples[samples.length - 1];
-  if (now - last.t > 30_000) return;
-  const earlier = [...samples].reverse().find((s) => last.t - s.t >= 25_000);
-  const speed = earlier ? haversineM(earlier, last) / ((last.t - earlier.t) / 1000) : 0;
-  if (!earlier || speed < (leg.mode === 'tpl' ? MOVING_MS : ON_FOOT_FAST_MS)) return;
+  // Le posizioni a schermo spento possono arrivare a gruppi: si accetta un ultimo campione fino a 90 secondi fa.
+  if (now - last.t > 90_000) return;
+  // Strada fatta negli ultimi 3 minuti: con i mezzi basta poco (chi aspetta alla fermata non scarica nulla),
+  // a piedi serve un passo da mezzo, più di una corsa.
+  const earlier = samples.find((s) => last.t - s.t <= 180_000) ?? samples[0];
+  const seconds = Math.max(1, (last.t - earlier.t) / 1000);
+  const speed = haversineM(earlier, last) / seconds;
+  if (seconds < 20 || speed < (leg.mode === 'tpl' ? MOVING_MS : ON_FOOT_FAST_MS)) return;
 
   lastPoll = now;
   busy = true;

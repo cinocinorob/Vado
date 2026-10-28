@@ -20,6 +20,7 @@ class MovimentoModule : Module() {
         "lastEvent" to Prefs.lastEvent(context),
         "lastEventAt" to Prefs.lastEventAt(context).toDouble(),
         "lastNotified" to Prefs.lastNotified(context).toDouble(),
+        "history" to Prefs.history(context),
       )
     }
 
@@ -27,8 +28,10 @@ class MovimentoModule : Module() {
       val ctx = context.applicationContext
       Transitions.register(ctx, {
         Prefs.setEnabled(ctx, true)
+        Prefs.addHistory(ctx, "${System.currentTimeMillis()} registrazione riuscita")
         promise.resolve(true)
       }, { error ->
+        Prefs.addHistory(ctx, "${System.currentTimeMillis()} registrazione fallita: ${error.message}")
         promise.reject("ERR_MOVIMENTO", error.message ?: "Registrazione non riuscita", error)
       })
     }

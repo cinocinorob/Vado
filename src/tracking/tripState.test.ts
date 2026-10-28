@@ -30,12 +30,13 @@ import {
 } from './tripState';
 
 const M_PER_DEG_LAT = 111_195;
-const LON = 12.501;
+// In mare davanti a Ostia: nessuna fermata di bus vicina, così le prove generiche non incontrano linee vere.
+const LON = 12.2;
 const FIRST = { commute: true, bonusAlreadyToday: false };
 
 /** Simula il movimento verso nord e tiene il conto di posizione e orologio. */
 class Sim {
-  lat = 41.901;
+  lat = 41.62;
   t = 1_000_000;
   move(trip: ActiveTrip, meters: number, speed: number, mocked = false): ActiveTrip {
     const fixes: Fix[] = [];
@@ -539,4 +540,38 @@ test('bus preso con il tratto "A piedi": il bus trovato in tempo reale rende ver
   assert.equal(inputs[1].bus?.line, '64');
   const score = scoreTrip(inputs, FIRST);
   assert.equal(score.legs[1].status, 'verificato');
+});
+
+test('bus con il tratto "A piedi" che segue le fermate di una linea: riattribuito senza chiedere', async () => {
+  const { BUS_ROMA } = await import('../data/bus');
+  const p = BUS_ROMA.patterns.find((x) => x.line === '64');
+  assert.ok(p);
+  let trip = startTrip({ ...START, mode: 'piedi', now: T0 });
+  // Cammino 150 m verso la terza fermata, poi il bus fino alla nona a 5 m/s.
+  const s0 = BUS_ROMA.stops[p.stops[2]];
+  const fixes: Fix[] = [];
+  let t = T0;
+  for (let i = 0; i < 36; i++) {
+    fixes.push({ lat: s0.lat - (150 - i * 4.2) / 111_195, lon: s0.lon, t, accuracy: 8, speed: 1.4 });
+    t += 3000;
+  }
+  for (let k = 2; k < 8; k++) {
+    const a = BUS_ROMA.stops[p.stops[k]];
+    const b = BUS_ROMA.stops[p.stops[k + 1]];
+    const n = Math.max(1, Math.round((p.meters[k + 1] - p.meters[k]) / 15));
+    for (let i = 0; i < n; i++) {
+      fixes.push({ lat: a.lat + ((b.lat - a.lat) * i) / n, lon: a.lon + ((b.lon - a.lon) * i) / n, t, accuracy: 15, speed: 5 });
+      t += 3000;
+    }
+  }
+  trip = applyFixes(trip, fixes);
+  const end = t + 1000;
+  // Niente domanda: la linea è riconosciuta.
+  assert.equal(pendingTransit(trip), null);
+  const inputs = toLegInputs(settleTransit(trip, end, 'bus'), end, true);
+  assert.equal(inputs[1]?.mode, 'tpl', JSON.stringify(inputs.map((l) => l.mode)));
+  assert.ok(inputs[1].busShape, 'linea non riconosciuta');
+  const score = scoreTrip(inputs, { commute: false, bonusAlreadyToday: false });
+  assert.equal(score.legs[1].status, 'verificato');
+  assert.match(score.legs[1].route ?? '', /^(Bus|Tram) /);
 });

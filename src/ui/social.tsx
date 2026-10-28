@@ -17,6 +17,7 @@ import {
 import type { TreeBadge } from '../core/plant';
 import { CrownIcon, TrashIcon, TrendIcon } from './Icons';
 import { hasMedal, Medal } from './Medal';
+import { GooseBoard } from './GooseBoard';
 import { TreeAvatar } from './TreeAvatar';
 import { C, F, card } from './theme';
 
@@ -188,31 +189,6 @@ export function zonesFor(ranked: Ranked[], tier: Tier | undefined): Map<string, 
   return zones;
 }
 
-/** Barra di avanzamento con il cerchio del partecipante in punta, come una gara su un rettilineo. */
-function Track({ ratio, id, name, me, label, points, tree }: { ratio: number; id: string; name: string; me: boolean; label: string; points: number; tree?: TreeBadge | null }) {
-  const percent = Math.max(0, Math.min(1, ratio)) * 100;
-  return (
-    <View style={styles.track} accessible accessibilityLabel={`${label}: ${points} punti`}>
-      <View style={styles.trackHead}>
-        <Text style={styles.trackName} numberOfLines={1}>
-          {label}
-        </Text>
-        <Text style={styles.trackPoints}>{points}</Text>
-      </View>
-      <View style={styles.trackLine}>
-        <View style={styles.trackRail} />
-        <View style={[styles.trackFill, { right: `${100 - percent}%`, backgroundColor: me ? C.coral : '#B9DDF7' }]} />
-        {/* Il cerchio resta dentro la corsia anche a 0% e a 100%. */}
-        <View style={[styles.trackRunner, { left: `${percent}%` }]}>
-          <View style={styles.trackRunnerInner}>
-            <Avatar id={id} name={name} me={me} size={30} tree={tree} />
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challenge; now: number; onRemove?: () => void }) {
   const state = challengeState(challenge, now);
   const over = state.status === 'conclusa';
@@ -243,23 +219,24 @@ export function ChallengeCard({ challenge, now, onRemove }: { challenge: Challen
         ) : null}
       </View>
 
-      <View style={styles.tracks}>
-        {state.sides.map((side) => {
+      <GooseBoard
+        players={state.sides.map((side) => {
           const person = challenge.people.find((p) => p.id === side.ids[0]);
-          return (
-            <Track
-              key={side.ids.join('+') || side.name}
-              ratio={side.ratio}
-              id={challenge.teams ? side.name : (person?.id ?? side.name)}
-              name={side.name}
-              me={side.me && !challenge.teams}
-              label={challenge.teams ? `${side.name}${side.me ? ' (la tua)' : ''}` : side.me ? 'Tu' : side.name}
-              points={side.points}
-              tree={challenge.teams ? null : person?.tree}
-            />
-          );
+          // A tempo, finché la sfida è aperta, nessuno è già "arrivato": il primo sta poco prima del traguardo.
+          const top = Math.max(1, ...state.sides.map((x) => x.points));
+          const ratio = challenge.kind === 'tempo' && !over ? side.points / (top * 1.15) : side.ratio;
+          return {
+            id: challenge.teams ? side.name : (person?.id ?? side.name),
+            name: challenge.teams ? `${side.name}${side.me ? ' (la tua)' : ''}` : side.me ? 'Tu' : side.name,
+            me: side.me,
+            tree: challenge.teams ? null : person?.tree,
+            ratio,
+            detail: `${side.points} punti`,
+            badge: challenge.teams ? side.name.slice(-1).toUpperCase() : undefined,
+          };
         })}
-      </View>
+        finishLabel={challenge.kind === 'traguardo' ? `${challenge.target} punti` : over ? undefined : 'chi ha più punti alla fine'}
+      />
 
       <Text style={styles.cardVerdict}>{verdict}</Text>
     </View>

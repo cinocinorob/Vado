@@ -3,10 +3,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { challengeProgress, type ChallengeRun } from '../core/challenges';
 import { timeLeft } from '../core/social';
-import { WavyBar } from './Wavy';
+import type { TreeBadge } from '../core/plant';
+import { MiniTrack } from './GooseBoard';
 import { C, F, R } from './theme';
 
-function Row({ label, run, now, last }: { label: string; run: ChallengeRun; now: number; last?: boolean }) {
+function Row({ label, run, now, last, tree }: { label: string; run: ChallengeRun; now: number; last?: boolean; tree?: TreeBadge | null }) {
+  const pace = (now - run.from) / Math.max(1, run.to - run.from);
+  const ahead = run.ratio >= pace;
   return (
     <View style={[styles.row, last && { borderBottomWidth: 0 }]} accessible accessibilityLabel={`${label}: ${run.title}, ${run.goal}. ${challengeProgress(run)}${run.done ? ', completata' : ''}`}>
       <View style={styles.head}>
@@ -15,17 +18,22 @@ function Row({ label, run, now, last }: { label: string; run: ChallengeRun; now:
       </View>
       <Text style={styles.title}>{run.title}</Text>
       <Text style={styles.goal}>{run.goal}</Text>
-      <WavyBar ratio={run.ratio} color={run.done ? C.teal : C.text} height={16} stroke={5} style={{ marginTop: 6 }} />
-      <Text style={styles.progress}>{challengeProgress(run)}</Text>
+      <View style={{ marginTop: 8 }}>
+        <MiniTrack ratio={run.ratio} pace={pace} tree={tree} done={run.done} />
+      </View>
+      <Text style={styles.progress}>
+        {challengeProgress(run)}
+        {run.done ? '' : ahead ? ' · sei in anticipo sul ritmo' : ' · sei indietro sul ritmo'}
+      </Text>
     </View>
   );
 }
 
-export function PersonalChallenges({ week, month, now, onPress }: { week: ChallengeRun; month: ChallengeRun; now: number; onPress?: () => void }) {
+export function PersonalChallenges({ week, month, now, onPress, tree }: { week: ChallengeRun; month: ChallengeRun; now: number; onPress?: () => void; tree?: TreeBadge | null }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined} style={styles.card}>
-      <Row label="Sfida della settimana" run={week} now={now} />
-      <Row label="Sfida del mese" run={month} now={now} last />
+      <Row label="Sfida della settimana" run={week} now={now} tree={tree} />
+      <Row label="Sfida del mese" run={month} now={now} tree={tree} last />
     </Pressable>
   );
 }

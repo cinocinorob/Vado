@@ -24,6 +24,7 @@ import { Medal, TIER_COLORS, type MedalLook } from '../ui/Medal';
 import { buzz } from '../ui/motion';
 import { ProgressBar, Screen, text } from '../ui/parts';
 import { C, F, R } from '../ui/theme';
+import { usePlant } from '../ui/usePlant';
 import { WavyBar } from '../ui/Wavy';
 
 const clock = () => Date.now();
@@ -52,6 +53,7 @@ export default function Medaglie() {
   const [journeys, setJourneys] = useState<JourneyState>(NO_JOURNEY);
   const [now, setNow] = useState(() => Date.now());
   const active = useActiveTrip();
+  const plant = usePlant(trips, now);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,7 +131,7 @@ export default function Medaglie() {
 
         <View style={styles.body}>
           <SectionTitle title="Sfide in corso" />
-          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} />
+          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} tree={{ species: plant.species, stage: plant.stage, trees: plant.trees }} />
 
           <SectionTitle title="La tua vetrina" />
           <View style={styles.showcase}>

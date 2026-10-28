@@ -168,6 +168,12 @@ export function routeLines(route: Route): string {
 
 /** Una posizione è "alla stazione" se dista meno di così dal suo centro. */
 export const STATION_RADIUS_M = 300;
+/**
+ * Raggio usato durante un tragitto: l'ultima posizione buona prima di
+ * scendere (e la prima dopo essere risaliti) può essere qualche centinaio di
+ * metri prima della stazione, perché vicino agli ingressi il GPS peggiora.
+ */
+export const TRIP_STATION_RADIUS_M = 450;
 /** Sotto questa distanza in linea d'aria non può essere un viaggio in metro. */
 export const HOP_MIN_M = 400;
 /** Tempo minimo senza posizioni valide perché si possa parlare di un tratto sottoterra. */
@@ -192,11 +198,11 @@ export type Hop = {
  *
  * Restituisce null in tutti gli altri casi, e allora resta la linea d'aria.
  */
-export function metroHop(network: Network, from: Fix, to: Fix, straightM: number): Hop | null {
+export function metroHop(network: Network, from: Fix, to: Fix, straightM: number, radius = STATION_RADIUS_M): Hop | null {
   const seconds = (to.t - from.t) / 1000;
   if (straightM < HOP_MIN_M || seconds < HOP_MIN_S) return null;
-  const a = nearestStation(network, from, STATION_RADIUS_M);
-  const b = nearestStation(network, to, STATION_RADIUS_M);
+  const a = nearestStation(network, from, radius);
+  const b = nearestStation(network, to, radius);
   if (!a || !b || a.station.id === b.station.id) return null;
   const route = routeBetween(network, a.station.id, b.station.id);
   if (!route) return null;

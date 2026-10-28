@@ -342,7 +342,8 @@ export async function finishTracking(opts: { transit?: boolean } = {}): Promise<
 
   const now = Date.now();
   // Viaggi in metro riconosciuti, e gli altri pezzi veloci se l'utente ha detto che era su un mezzo.
-  const active = settleTransit(current, now, opts.transit ? 'tutti' : 'metro');
+  const active = settleTransit(current, now, opts.transit ? 'tutti' : 'bus');
+  if (active.legs.length !== current.legs.length) diag(`A fine tragitto: ${active.legs.length - current.legs.length} tratti riattribuiti ai mezzi pubblici`);
   const trips = await loadTrips();
   const day = dayKey(now);
   // Se Connessione Salute è collegata, i suoi passi possono confermare i

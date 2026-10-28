@@ -273,7 +273,7 @@ export default function Oggi() {
 
           <SectionTitle title="La tua settimana" />
           <WeekStrip activeDays={activeDays} now={now} />
-          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} onPress={() => router.push('/medaglie')} />
+          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} onPress={() => router.push('/medaglie')} tree={{ species: plant.species, stage: plant.stage, trees: plant.trees }} />
 
           {isHalloweenSeason(now) ? <CandyCard count={candies(trips, now)} open={candyOpen(now)} onPress={() => router.push('/classifica')} /> : null}
 

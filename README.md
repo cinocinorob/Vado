@@ -305,6 +305,23 @@ Dalla schermata Oggi, "Backup e cambio telefono":
 Il backup automatico di Android (dati delle app su Google Drive) non è disattivato, ma per Vado non è stato
 verificato: il file e il codice sono la strada provata. Regole in `src/core/backup.ts` e `src/core/recovery.ts`.
 
+## Sfide come un tabellone
+
+Le sfide con gli amici e la sfida del mese della lega si vedono come il gioco dell'oca: 20 caselle a serpentina
+dalla partenza al traguardo, una pedina (l'albero di ciascuno) sulla casella del suo avanzamento, e sotto la
+classifica con la casella. Le sfide personali hanno una fila di 10 caselle con un segno dove si dovrebbe essere a
+quel punto della settimana o del mese ("in anticipo" o "indietro sul ritmo"). Componenti in `src/ui/GooseBoard.tsx`.
+
+## Bus riconosciuto dal percorso
+
+Oltre al tempo reale, un bus o un tram si riconosce dalla traccia: il telefono passa accanto ad almeno 3 fermate
+della stessa linea, nell'ordine giusto (al massimo 4 saltate tra una e l'altra), per almeno 500 m lungo la linea, a
+più di 7 km/h di media, e la strada fatta secondo le posizioni somiglia a quella della linea. Vale anche con il
+tratto rimasto "A piedi", anche quando il bus non supera mai la velocità di una corsa: a fine tragitto quel pezzo
+diventa un tratto con i mezzi pubblici, con i metri lungo la linea (`src/core/busShape.ts`). Il tempo reale ora
+basta che veda lo stesso bus 2 volte, a 90 secondi e 400 m di distanza, entro 120 m dal telefono; sui mezzi si
+usano posizioni fino a 75 m di incertezza; la metro si riconosce entro 450 m dalle stazioni.
+
 ## Mezzo pubblico dimenticato
 
 Se un tragitto resta su "A piedi" (o in bici) mentre si è in metro o in bus, il pezzo troppo veloce non va perso:
@@ -392,7 +409,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (218 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (222 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

@@ -15,11 +15,11 @@ export type Sighting = { id: string; routeId: string; t: number; gapM: number; l
 export type Sample = { t: number; lat: number; lon: number };
 
 /** Distanza massima tra telefono e mezzo (errori di entrambi i GPS compresi). */
-export const MATCH_M = 90;
+export const MATCH_M = 120;
 /** Quante volte, per quanto tempo e per quanta strada lo stesso mezzo deve stare accanto. */
-export const MATCH_MIN_TIMES = 3;
-export const MATCH_MIN_S = 150;
-export const MATCH_MIN_M = 600;
+export const MATCH_MIN_TIMES = 2;
+export const MATCH_MIN_S = 90;
+export const MATCH_MIN_M = 400;
 /** Le posizioni dei mezzi più vecchie di così non servono. */
 export const VEHICLE_MAX_AGE_MS = 120_000;
 

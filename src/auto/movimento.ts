@@ -10,7 +10,7 @@
 import { requireOptionalNativeModule } from 'expo';
 import { PermissionsAndroid, Platform } from 'react-native';
 
-type Status = { available: boolean; permission: boolean; enabled: boolean; lastEvent: string; lastEventAt: number; lastNotified: number };
+type Status = { available: boolean; permission: boolean; enabled: boolean; lastEvent: string; lastEventAt: number; lastNotified: number; history?: string };
 
 type Native = {
   status(): Status;
@@ -69,4 +69,17 @@ export function setTripActive(active: boolean): void {
   } catch {
     // Modulo assente: niente da fare.
   }
+}
+
+/** Gli ultimi eventi del riconoscimento, leggibili: "28/10 08:12  piedi: avviso mandato". */
+export function autoHistory(stamp: (t: number) => string): string[] {
+  const raw = autoStatus()?.history ?? '';
+  return raw
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      const [t, ...rest] = line.split(' ');
+      const at = Number(t);
+      return Number.isFinite(at) ? `${stamp(at)}  ${rest.join(' ')}` : line;
+    });
 }

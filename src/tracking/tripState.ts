@@ -8,6 +8,7 @@
 import {
   EMPTY_TRACK,
   MAX_ACCURACY_M,
+  VEHICLE_MAX_ACCURACY_M,
   addFix,
   breakTrack,
   closeTrack,
@@ -19,9 +20,11 @@ import {
   type TrackState,
 } from '../core/geo';
 import { boardedVehicle, type Sample, type Sighting } from '../core/busMatch';
-import { HOP_MIN_M, metroHop } from '../core/metro';
+import { HOP_MIN_M, TRIP_STATION_RADIUS_M, metroHop } from '../core/metro';
 import { getMode, type ModeId } from '../core/modes';
 import type { LegInput } from '../core/scoring';
+import { matchBusLine } from '../core/busShape';
+import { BUS_ROMA } from '../data/bus';
 import { ROMA } from '../data/metro';
 
 export type ActiveLeg = {
@@ -170,8 +173,11 @@ export function legSpans(leg: ActiveLeg, now: number): [number, number][] {
  * Con i mezzi pubblici, quando le posizioni spariscono tra due stazioni della
  * metro la distanza viene dalla rete invece che dalla linea d'aria.
  */
-const metroBridge: Bridge = (from, to, straightM) => metroHop(ROMA, from, to, straightM);
+const metroBridge: Bridge = (from, to, straightM) => metroHop(ROMA, from, to, straightM, TRIP_STATION_RADIUS_M);
 const bridgeFor = (mode: ModeId): Bridge | undefined => (mode === 'tpl' ? metroBridge : undefined);
+
+/** Precisione minima delle posizioni usate per la distanza: più larga sui mezzi. */
+const accuracyFor = (mode: ModeId): number => (getMode(mode).maxSegmentMs >= 30 ? VEHICLE_MAX_ACCURACY_M : MAX_ACCURACY_M);
 
 /** Mezzi a forza di gambe: un pezzo troppo veloce per loro può essere un mezzo pubblico dimenticato. */
 export const HUMAN_MODES: readonly ModeId[] = ['piedi', 'bici', 'ebike'];
@@ -185,7 +191,7 @@ function fastBridgeFor(mode: ModeId): Bridge | undefined {
   if (above == null) return undefined;
   return (from, to, straightM) => {
     const seconds = (to.t - from.t) / 1000;
-    return seconds > 0 && straightM / seconds > above ? metroHop(ROMA, from, to, straightM) : null;
+    return seconds > 0 && straightM / seconds > above ? metroHop(ROMA, from, to, straightM, TRIP_STATION_RADIUS_M) : null;
   };
 }
 
@@ -251,7 +257,7 @@ function applyOne(trip: ActiveTrip, fix: Fix): { trip: ActiveTrip; credited: Fix
     const handed = handOver(trip, fix);
     if (handed) return handed;
   }
-  const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode));
+  const result = addFix(leg.track, fix, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode), accuracyFor(leg.mode));
   const bus = BUS_MODES.includes(leg.mode) ? withSample(leg.bus, fix) : leg.bus;
   if (result.state === leg.track && bus === leg.bus) return { trip, credited: result.credited };
   return { trip: replaceCurrent(trip, { ...leg, track: result.state, ...(bus ? { bus } : {}) }), credited: result.credited };
@@ -261,7 +267,8 @@ function withSample(bus: ActiveLeg['bus'], fix: Fix): ActiveLeg['bus'] {
   const current = bus ?? { samples: [], sightings: [] };
   const last = current.samples[current.samples.length - 1];
   if (last && fix.t - last.t < BUS_SAMPLE_MS) return bus;
-  if ((fix.accuracy ?? 0) > 60) return bus;
+  // Per il confronto con le fermate basta una posizione approssimata: dentro un bus il GPS è spesso impreciso.
+  if ((fix.accuracy ?? 0) > 100) return bus;
   return { ...current, samples: [...current.samples, { t: fix.t, lat: fix.lat, lon: fix.lon }].slice(-BUS_MAX_SAMPLES) };
 }
 
@@ -385,10 +392,14 @@ export function resumeTrip(trip: ActiveTrip, now: number): ActiveTrip {
  * Dati dei tratti nella forma che serve al punteggio.
  * @param final a tragitto concluso: accredita anche l'ultimo pezzo del tratto aperto
  */
-function busOf(leg: ActiveLeg): Pick<LegInput, 'bus'> {
+function busOf(leg: ActiveLeg, final: boolean): Pick<LegInput, 'bus' | 'busShape'> {
   if (leg.mode !== 'tpl' || !leg.bus) return {};
   const found = boardedVehicle(leg.bus.sightings);
-  return found ? { bus: { line: found.routeId } } : {};
+  if (found) return { bus: { line: found.routeId } };
+  // Senza il tempo reale: la linea dal percorso, solo a fine tragitto (il calcolo non serve a ogni secondo).
+  if (!final || (leg.track.hops?.length ?? 0) > 0) return {};
+  const shape = matchBusLine(BUS_ROMA, leg.bus.samples);
+  return shape ? { busShape: { line: shape.line, tram: shape.tram, from: shape.from, to: shape.to, meters: shape.meters } } : {};
 }
 
 export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegInput[] {
@@ -404,7 +415,7 @@ export function toLegInputs(trip: ActiveTrip, now: number, final = false): LegIn
       stepsComplete: !leg.backgrounded,
       mocked: track.mocked,
       hops: track.hops,
-      ...busOf(leg),
+      ...busOf(leg, final),
     };
   });
 }
@@ -477,9 +488,77 @@ export function isMetroSpan(fast: FastSpan): boolean {
 export function pendingTransit(trip: ActiveTrip): { leg: ActiveLeg; fast: FastSpan } | null {
   for (const leg of trip.legs) {
     const fast = transitSpan(leg);
-    if (fast && !isMetroSpan(fast) && !leg.transitDismissed) return { leg, fast };
+    if (fast && !isMetroSpan(fast) && !leg.transitDismissed && !spanBus(leg, fast) && !legBusSpan(leg)) return { leg, fast };
   }
   return null;
+}
+
+const busMemo = new WeakMap<object, ReturnType<typeof matchBusLine>>();
+const legBusMemo = new WeakMap<object, FastSpan | null>();
+
+/** Lunghezza della spezzata delle posizioni tra due istanti. */
+function pathLength(samples: readonly { t: number; lat: number; lon: number }[], from: number, to: number): number {
+  let m = 0;
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1];
+    const b = samples[i];
+    if (a.t >= from && b.t <= to) m += haversineM(a, b);
+  }
+  return m;
+}
+
+/**
+ * Bus preso con il tratto "A piedi" senza mai superare la velocità massima
+ * della camminata (un bus nel traffico va spesso sotto i 20 km/h): se le
+ * posizioni seguono le fermate di una linea, il pezzo tra la prima e
+ * l'ultima fermata riconosciuta diventa un pezzo veloce da riattribuire.
+ * I metri accreditati prima e dopo si dividono in proporzione alla strada
+ * fatta secondo le posizioni.
+ */
+export function legBusSpan(leg: ActiveLeg): FastSpan | null {
+  if (leg.mode !== 'piedi') return null;
+  const samples = leg.bus?.samples;
+  if (!samples || samples.length < 3) return null;
+  const cached = legBusMemo.get(samples);
+  if (cached !== undefined) return cached;
+  const shape = matchBusLine(BUS_ROMA, samples);
+  let span: FastSpan | null = null;
+  if (shape) {
+    const total = pathLength(samples, -Infinity, Infinity);
+    const before = pathLength(samples, -Infinity, shape.fromT);
+    const during = pathLength(samples, shape.fromT, shape.toT);
+    const k = total > 0 ? leg.track.distanceM / total : 0;
+    const startM = before * k;
+    const endM = (before + during) * k;
+    const rejected = leg.track.rejectedM;
+    span = {
+      t: shape.fromT,
+      startM,
+      endT: shape.toT,
+      endM,
+      rejectedM: rejected,
+      extraM: Math.max(0, shape.meters - (endM - startM) - rejected),
+      hops: [],
+    };
+  }
+  legBusMemo.set(samples, span);
+  return span;
+}
+
+/**
+ * Il pezzo veloce segue le fermate di una linea di bus o tram: è un mezzo
+ * pubblico anche senza chiederlo. Il risultato si ricorda per la stessa
+ * serie di posizioni, perché la schermata lo chiede a ogni secondo.
+ */
+export function spanBus(leg: ActiveLeg, fast: FastSpan): ReturnType<typeof matchBusLine> {
+  const samples = leg.bus?.samples;
+  if (!samples || samples.length < 3) return null;
+  const cached = busMemo.get(samples);
+  if (cached !== undefined) return cached;
+  const window = samples.filter((x) => x.t >= fast.t - 30_000 && x.t <= fast.endT + 30_000);
+  const found = matchBusLine(BUS_ROMA, window);
+  busMemo.set(samples, found);
+  return found;
 }
 
 /** L'utente dice che il pezzo veloce non era un mezzo pubblico. */
@@ -518,6 +597,7 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
   const transitM = Math.max(0, fast.endM - fast.startM) + fast.rejectedM + fast.extraM;
 
   const seen = (leg.bus?.sightings ?? []).filter((x) => x.t >= fast.t - 60_000 && x.t <= fast.endT + 60_000);
+  const windowSamples = (leg.bus?.samples ?? []).filter((x) => x.t >= fast.t - 30_000 && x.t <= fast.endT + 30_000);
   const first: ActiveLeg = {
     ...leg,
     bus: undefined,
@@ -557,7 +637,7 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
     finalSteps: null,
     closed: true,
     backgrounded: leg.backgrounded,
-    ...(seen.length > 0 ? { bus: { samples: [], sightings: seen } } : {}),
+    ...((seen.length > 0 || windowSamples.length > 0) ? { bus: { samples: windowSamples, sightings: seen } } : {}),
   };
   const afterTrack: TrackState = { ...leg.track, distanceM: after, rejectedM: Math.max(0, rest), hops: undefined, fast: undefined };
   if (open) {
@@ -585,19 +665,27 @@ function splitLeg(trip: ActiveTrip, leg: ActiveLeg, fast: FastSpan, now: number,
  * in bici. `which`: 'metro' solo quelli riconosciuti dalle stazioni (sicuri),
  * 'tutti' anche gli altri (quando l'utente conferma di essere stato su un mezzo).
  */
-export function splitTransit(trip: ActiveTrip, now: number, which: 'metro' | 'tutti'): ActiveTrip {
+/**
+ * `which`: 'metro' solo i viaggi in metro riconosciuti dalle stazioni; 'bus'
+ * anche quelli che seguono le fermate di una linea; 'tutti' anche gli altri,
+ * quando l'utente conferma di essere stato su un mezzo.
+ */
+export function splitTransit(trip: ActiveTrip, now: number, which: 'metro' | 'bus' | 'tutti'): ActiveTrip {
   let changed = false;
   const legs: ActiveLeg[] = [];
   trip.legs.forEach((leg, i) => {
-    const fast = transitSpan(leg);
-    const wanted = fast && (isMetroSpan(fast) || (which === 'tutti' && !leg.transitDismissed));
+    const own = transitSpan(leg);
+    // Un bus lento non lascia pezzi "troppo veloci": lo si cerca dalle fermate.
+    const viaStops = which !== 'metro' && !leg.transitDismissed && (!own || !isMetroSpan(own)) && !(own && spanBus(leg, own)) ? legBusSpan(leg) : null;
+    const fast = viaStops ?? own;
+    const wanted = fast && (viaStops || isMetroSpan(fast) || (which === 'tutti' && !leg.transitDismissed) || (which === 'bus' && !!spanBus(leg, fast)));
     if (!fast || !wanted) {
       legs.push(leg);
       return;
     }
     changed = true;
     const last = i === trip.legs.length - 1;
-    const onBoard = last && !leg.closed && !isMetroSpan(fast) && now - fast.endT < STILL_ON_BOARD_MS;
+    const onBoard = last && !leg.closed && which === 'tutti' && !isMetroSpan(fast) && now - fast.endT < STILL_ON_BOARD_MS;
     legs.push(...splitLeg(trip, leg, fast, now, onBoard));
   });
   return changed ? { ...trip, legs } : trip;
@@ -608,7 +696,7 @@ export function splitTransit(trip: ActiveTrip, now: number, which: 'metro' | 'tu
  * esce dalla metro e chiude subito ha proprio lì il viaggio) e riattribuisce
  * i pezzi veloci ai mezzi pubblici.
  */
-export function settleTransit(trip: ActiveTrip, now: number, which: 'metro' | 'tutti'): ActiveTrip {
+export function settleTransit(trip: ActiveTrip, now: number, which: 'metro' | 'bus' | 'tutti'): ActiveTrip {
   const leg = currentLeg(trip);
   const closedTrack = trip.paused || leg.closed ? leg.track : closeTrack(leg.track, getMode(leg.mode).maxSegmentMs, bridgeFor(leg.mode), fastBridgeFor(leg.mode));
   const ready = closedTrack === leg.track ? trip : replaceCurrent(trip, { ...leg, track: closedTrack });

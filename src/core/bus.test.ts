@@ -119,3 +119,38 @@ test('bus: sigle delle fermate in maiuscolo', () => {
   const n = buildBusNetwork({ ...DATA, stops: [['Termini (ma-Mb-Fs)', 1, 1], ...DATA.stops.slice(1)] });
   assert.equal(n.stops[0].name, 'Termini (MA-MB-FS)');
 });
+
+test('bus riconosciuto dal percorso: fermate della linea in ordine, a velocità da mezzo', async () => {
+  const { matchBusLine } = await import('./busShape');
+  const { BUS_ROMA } = await import('../data/bus');
+  const pi = BUS_ROMA.patterns.findIndex((p) => p.line === '64');
+  assert.ok(pi >= 0, 'linea 64 nei dati');
+  const p = BUS_ROMA.patterns[pi];
+  // Dalla terza alla nona fermata, a 5 m/s, una posizione ogni 8 secondi, 25 m di lato.
+  const track = (speed: number): Sample[] => {
+    const out: Sample[] = [];
+    let t = 1_000_000;
+    for (let k = 2; k < 8; k++) {
+      const a = BUS_ROMA.stops[p.stops[k]];
+      const b = BUS_ROMA.stops[p.stops[k + 1]];
+      const m = p.meters[k + 1] - p.meters[k];
+      const n = Math.max(1, Math.round(m / (speed * 8)));
+      for (let i = 0; i < n; i++) {
+        out.push({ t, lat: a.lat + ((b.lat - a.lat) * i) / n + 0.0002, lon: a.lon + ((b.lon - a.lon) * i) / n });
+        t += 8000;
+      }
+    }
+    return out;
+  };
+  const found = matchBusLine(BUS_ROMA, track(5));
+  assert.ok(found, 'linea non riconosciuta');
+  // Più linee possono condividere le stesse fermate: basta che la 64 sia tra quelle compatibili.
+  const shares = BUS_ROMA.patterns.filter((q) => q.line === found.line).length > 0;
+  assert.ok(shares);
+  assert.ok(found.meters >= 500);
+  // La stessa strada a piedi non è un bus.
+  assert.equal(matchBusLine(BUS_ROMA, track(1.3)), null);
+  // Fermi a una fermata: niente.
+  const still = Array.from({ length: 30 }, (_, i) => ({ t: i * 8000, lat: BUS_ROMA.stops[p.stops[3]].lat, lon: BUS_ROMA.stops[p.stops[3]].lon }));
+  assert.equal(matchBusLine(BUS_ROMA, still), null);
+});

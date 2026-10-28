@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
-import { autoStatus } from '../auto/movimento';
+import { autoHistory, autoStatus } from '../auto/movimento';
 import { clearDiag, diagText, loadDiag, stamp, type DiagLine } from '../diagnostics/log';
 import { CloseIcon, ShareIcon } from '../ui/Icons';
 import { GhostButton, Header, Panel, PrimaryButton, RoundButton, Screen, text } from '../ui/parts';
@@ -19,7 +19,10 @@ function header(): string {
   const autoText = auto
     ? `avvio automatico ${auto.enabled ? 'acceso' : 'spento'}${auto.lastEvent ? `, ultimo movimento ${auto.lastEvent} ${stamp(auto.lastEventAt)}` : ''}${auto.lastNotified ? `, ultimo avviso ${stamp(auto.lastNotified)}` : ''}`
     : 'avvio automatico non disponibile';
-  return `Vado ${version} · ${Platform.OS} ${String(Platform.Version)} · ${new Date().toISOString()} · ${autoText}`;
+  const history = autoHistory(stamp);
+  return `Vado ${version} · ${Platform.OS} ${String(Platform.Version)} · ${new Date().toISOString()} · ${autoText}${
+    history.length ? `\nAvvio automatico, ultimi eventi:\n${history.join('\n')}` : ''
+  }`;
 }
 
 export default function Diagnostica() {

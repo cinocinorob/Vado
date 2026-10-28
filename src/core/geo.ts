@@ -119,6 +119,12 @@ export const EMPTY_TRACK: TrackState = {
 
 /** Oltre questa incertezza la posizione non viene usata. */
 export const MAX_ACCURACY_M = 40;
+/**
+ * Sui mezzi (bus, tram, treno) il GPS dentro la carrozza è spesso tra 40 e
+ * 75 m: a quelle velocità l'errore pesa poco, e scartare quelle posizioni
+ * lascerebbe buchi lunghi.
+ */
+export const VEHICLE_MAX_ACCURACY_M = 75;
 /** Spostamento minimo per contare un tratto. */
 export const MIN_STEP_M = 10;
 /** Oltre questa velocità è un salto del GPS, non un movimento. */
@@ -212,11 +218,12 @@ export function addFix(
   maxSegmentMs: number,
   bridge?: Bridge,
   fastBridge?: Bridge,
+  maxAccuracy: number = MAX_ACCURACY_M,
 ): { state: TrackState; credited: Fix | null } {
   if (raw.mocked) {
     return { state: { ...state, mocked: state.mocked + 1 }, credited: null };
   }
-  if (raw.accuracy == null || raw.accuracy > MAX_ACCURACY_M) {
+  if (raw.accuracy == null || raw.accuracy > maxAccuracy) {
     return { state, credited: null };
   }
   if (state.estimate && raw.t <= state.estimate.t) return { state, credited: null };
