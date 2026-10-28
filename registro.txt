@@ -1,0 +1,44 @@
+[prova 15:11:21] installo l'app
+[prova 15:11:37] apro l'app
+[prova 15:11:52] apro Nuovo tragitto
+[prova 15:12:01] premo Avvia e rispondo alle richieste di permesso
+[prova 15:12:09] finestra di permesso: 'Allow Vado to access this device’s location?'
+[prova 15:12:15] finestra di permesso: 'Allow Vado to send you notifications?'
+[prova 15:12:53] permessi concessi: 2
+[prova 15:12:54] cammino per 90 secondi con l'app aperta
+[prova 15:14:36] percorsi davvero 126 m, l'app ne mostra None
+[prova 15:14:36] mando l'app in secondo piano e cammino altri 60 secondi
+[prova 15:14:38] servizio in primo piano attivo: True
+[prova 15:15:39] riapro l'app
+[prova 15:15:56] percorsi davvero 210 m, l'app ne mostra None
+[prova 15:15:56] termino il tragitto
+[prova 15:16:06] riepilogo: distanza 204.0 m | Tragitto concluso | Riepilogo | +2 | punti | 0,2 km in 4 min | Nuova medaglia: Primo passo. Il primo tragitto a piedi | Medaglia Primo passo | Nuova medaglia | Primo passo | Il primo tragitto a piedi | Tratti | A piedi | 204 m · 4 min | Dichiarato | +2 | CO₂ evitata | 30 g | Fine | Fine
+[prova 15:16:12] apro le medaglie
+[prova 15:16:20] medaglie: 1 di 21 sbloccate | Medaglie | Medaglia Maratoneta | 42 | Prossima medaglia | Maratoneta | 42 km a piedi | 0,2 di 42 km | ne mancano 41,8 km | Sfide in corso | Sfida della settimana: Gambe in spalla, 15 km a piedi. 0,2 di 15 km | Sfida della settimana | ancora 5 giorni | Gambe in spalla | 15 km a piedi | 0,2 di 15 km · sei indietro sul ritmo | Sfida del mese: Ottobre da paura, 120 km senza auto. 0,2 di 120 km | Sfida del mese | ancora 4 giorni | Ottobre da paura | 120 km senza auto | 0,2 di 120 km · sei indietro sul ritmo | La tua vetrina | Medaglia Primo passo | Inizia un tragitto | Parti | Oggi | Oggi | Classifica | Classifica | Medaglie | Medaglie | Percorsi | Percorsi
+[prova 15:16:40] controllo la CO₂ e apro il germoglio
+[prova 15:17:36] apro la classifica
+[prova 15:17:52] creo una lega
+[prova 15:18:08] lega creata, codice ZYPEKE
+[prova 15:18:08] un'altra persona entra con il codice e fa 37 punti
+[prova 15:18:20] classifica: Settimana 44 · 26 ottobre–1 novembre | Classifica | Invita con il codice della lega | Invita | Leghe | Leghe | Sfide | Sfide | ProvaCI | ProvaCI | Nuova lega | Nuova lega | 2º posto: tu, 2 punti | Tu | 2 | 1º posto: AmicaCI, 37 punti | AmicaCI | 37 | 2 | 1 | 3 | 2º: tu, 2 punti | 2 | Tu | 35 punti da chi hai davanti | 2 | Dolcetto o scherzetto | Un km senza auto, una caramella. Vince chi ne ha di più il 31 ottobre. | 1 | AmicaCI | 0 | 2 | Tu | 0 | Tieni premuto un nome per segnalare un soprannome offensivo. | Inizia un tragitto | Parti | Oggi | Oggi | Classifica | Classifica | Medaglie | Medaglie | Percorsi | Percorsi
+[prova 15:18:28] sfide: Settimana 44 · 26 ottobre–1 novembre | Classifica | Leghe | Leghe | Sfide | Sfide | Il germoglio di Vado | Sfida del mese | Ottobre da paura | 120 km senza auto · mancano 4 giorni | La corsa del mese in ProvaCI, per km senza auto | Tabellone: 1º Tu, casella 1 di 20; 2º AmicaCI, casella 1 di 20 | 19 | 17 | 16 | 11 | 12 | 13 | 15 | 9 | 8 | 7 | 6 | Via | 2 | 3 | 4 | 1 | Tu | 0,2 km | casella 1 | 2 | AmicaCI | 0 km | casella 1 | Traguardo: 120 km senza auto | Nessuna sfida in corso. Lanciane una ai compagni di lega. | Nuova sfida | Nuova sfida | Inizia un tragitto | Parti | Oggi | Oggi | Classifica | Classifica | Medaglie | Medaglie | Percorsi | Percorsi
+[prova 15:18:30] apro Backup dalle impostazioni
+[prova 15:19:36] metro a posteriori: sono all'uscita di EUR Fermi
+[prova 15:20:21] metro a posteriori: Tragitto concluso | Riepilogo | +48 | punti | 12,2 km in 28 min | Nuova medaglia: bronzo: Lunga distanza. 1 tragitti di almeno 10 km senza auto | Medaglia Lunga distanza | Nuova medaglia: bronzo | Lunga distanza | 1 tragitti di almeno 10 km senza auto | Tratti | Metro | Flaminio → EUR Fermi | 12,2 km · 28 min | Dichiarato | +48 | Arrivo verificato dalla posizione, partenza dichiarata | Fine | Fine
+[prova 15:20:26] metro dentro un tragitto: entro a Termini, esco al Colosseo
+[prova 15:22:48] metro dentro un tragitto: Tragitto concluso | Riepilogo | +15 | punti | 1,4 km in 2 min | Tratti | Metro | Termini → Colosseo | 1,4 km · 2 min | +5 | Linea B: distanza lungo la rete della metro | Verificato | Bonus casa-lavoro | Tragitto abituale completato | +10 | CO₂ evitata | 230 g | Un albero adulto ci mette 4 giorni ad assorbirla | Da quando usi Vado: 2,3 kg, 38 giorni di lavoro di un albero | Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA). | Condividi il tragitto | Condividi il tr
+[prova 15:22:54] metro con il tratto ancora a piedi: entro a Termini, esco a Colosseo
+[prova 15:26:11] metro a piedi: Tragitto concluso | Riepilogo | +5 | punti | 1,4 km in 3 min | Tratti | A piedi | 0 m · 4 s | Dichiarato | +0 | Metro | Termini → Colosseo | 1,4 km · 2 min | +5 | Linea B: distanza lungo la rete della metro | Verificato | A piedi | 38 m · 31 s | Dichiarato | +0 | CO₂ evitata | 230 g | Un albero adulto ci mette 4 giorni ad assorbirla | Da quando usi Vado: 2,5 kg, 42 giorni di lavoro di un albero | Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA). | Fine | Fine
+[prova 15:26:49] collego Connessione Salute
+[prova 15:27:21] schermata dei permessi: Get started with Health Connect | Health Connect stores and syncs your health and fitness data from different apps.
+
+Fitness and wellness data, including exercise sessions, steps, nutrition, sleep and more
+
+Health records, including vaccines, lab results and more | With Health Connect you can | Share data with your apps
+Choose the data each app can read or write to Health Connect | Manage your settings and privacy
+Change app permissions and manage your data at any time | Go back | Get started
+[prova 15:27:29] dopo la presentazione: Allow Vado to access your fitness and wellness data? | Choose which fitness and wellness data this app can access. This includes data tracked and stored on this device, learn more | If you give read access, the app can read new data and data from the past 30 days | You can learn how Vado handles your data in their privacy policy | Allow all | Allow “Vado” to read | Distance | Exercise | Steps | Don't allow | Allow
+[prova 15:27:44] dopo il collegamento: Sfida della settimana: Gambe in spalla, 15 km a piedi. 0,2 di 15 km | Sfida della settimana | ancora 5 giorni | Gambe in spalla | 15 km a piedi | 0,2 di 15 km · sei indietro sul ritmo | Sfida del mese: Ottobre da paura, 120 km senza auto. 15,1 di 120 km | Sfida del mese | ancora 4 giorni | Ottobre da paura | 120 km senza auto | 15,1 di 120 km · sei indietro sul ritmo | Dolcetto o scherzetto, 15 caramelle, Ogni km senza auto fino al 31 ottobre vale una caramella. Chi ne raccoglie di più nella lega vince. | Dolcetto o scherzetto | 15 caramelle | Ogni km senza auto fino al 31 ottobre vale una caramella. Chi ne raccoglie di più nella lega vince. | Connessione Salute | Collegata: passi e attività vengono letti quando apri l'app. | Gestisci i permessi | Gestisci i permessi | Come usiamo questi dati | Come usiamo questi dati | Storico: settimane e mesi | Storico: settimane e mesi | Inizia un tr
+[prova 15:28:58] pulizia del server: ok
+[prova 15:28:58] RIUSCITA: percorsi 210 m, misurati 204.0 m (app aperta None, dopo il secondo piano None); permessi: ['Allow Vado to access this device’s location?', 'Allow Vado to send you notifications?']; percorsi: ok; germoglio: ok; storico: ok; bus: ok; classifica: ok; backup: ok; metro: ok; metro a piedi: ok; avvio rapido: ok; Connessione Salute: collegata
+::notice::Prova riuscita: percorsi 210 m, misurati 204.0 m (app aperta None, dopo il secondo piano None); permessi: ['Allow Vado to access this device’s location?', 'Allow Vado to send you notifications?']; percorsi: ok; germoglio: ok; storico: ok; bus: ok; classifica: ok; backup: ok; metro: ok; metro a piedi: ok; avvio rapido: ok; Connessione Salute: collegata
