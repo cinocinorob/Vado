@@ -269,6 +269,19 @@ export default function Oggi() {
             </Group>
           )}
 
+          {!active ? (
+            <Pressable onPress={() => router.push('/dimenticato')} accessibilityRole="button" style={({ pressed }) => [styles.forgot, pressed && { opacity: 0.85 }]}>
+              <View style={styles.forgotIcon}>
+                <PlusIcon size={20} color={C.ink} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.forgotTitle}>Hai dimenticato di avviare?</Text>
+                <Text style={text.small}>Aggiungi un viaggio in metro, bus o tram fatto oggi</Text>
+              </View>
+              <ChevronIcon size={16} />
+            </Pressable>
+          ) : null}
+
           {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
 
           <SectionTitle title="La tua settimana" />
@@ -348,6 +361,9 @@ export default function Oggi() {
 }
 
 const styles = StyleSheet.create({
+  forgot: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: R.card, backgroundColor: C.card, borderWidth: 2, borderColor: C.tonal, borderStyle: 'dashed' },
+  forgotIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.lime, alignItems: 'center', justifyContent: 'center' },
+  forgotTitle: { fontFamily: F.bold, fontSize: 15.5, color: C.text },
   scroll: { paddingBottom: NAV_SPACE },
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   bats: { position: 'absolute', left: 6, top: 4, opacity: 0.85 },

@@ -35,7 +35,7 @@ import {
 } from '../core/social';
 import { candyMeters, candySeason } from '../core/halloween';
 import { decodeRecovery, encodeRecovery } from '../core/recovery';
-import type { CandyEntry, PeriodEntry, LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
+import type { CandyEntry, PeriodEntry, LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource, Traveller } from './types';
 
 export type RemoteConfig = {
   /** Indirizzo delle funzioni, senza barra finale. */
@@ -52,6 +52,8 @@ export type RemoteConfig = {
   loadTree?(): Promise<TreeBadge | null>;
   /** La vetrina da mostrare agli altri, come "maratoneta:2,podio:1". */
   loadShowcase?(): Promise<string>;
+  /** Il percorso virtuale in corso: id, km fatti e partenza; null se nessuno. */
+  loadJourney?(): Promise<{ id: string; km: number; startedAt: number } | null>;
   /** Chiave segreta nuova: almeno 32 caratteri imprevedibili. */
   newSecret(): Promise<string>;
   fetch?: typeof fetch;
@@ -104,6 +106,8 @@ type State = {
   tree?: string;
   /** Ultima vetrina inviata. */
   showcase?: string;
+  /** Ultimo percorso virtuale mandato al server. */
+  journey?: string;
   /** I tragitti già inviati hanno anche i metri (per le caramelle). */
   metersSent?: boolean;
   /** Tragitti cancellati sul telefono da togliere anche dal server. */
@@ -199,7 +203,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     if (code === 'non-registrato' && !options.probe) {
       // Il profilo è stato cancellato dal server: qui si torna alla scelta del soprannome.
       const state = await load();
-      await save({ ...state, profile: null, pushed: [], tree: undefined, showcase: undefined });
+      await save({ ...state, profile: null, pushed: [], tree: undefined, showcase: undefined, journey: undefined });
     }
     throw new ServerError(code, code === 'non-pronto' ? NOT_READY : (PROBLEMS[code] ?? `Il server ha risposto con un errore (${code}).`));
   }
@@ -265,6 +269,27 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
     }
   }
 
+  /** Manda il percorso virtuale se è cambiato. Un server non aggiornato non è un problema. */
+  async function pushJourney(): Promise<void> {
+    if (!config.loadJourney) return;
+    try {
+      const state = await load();
+      if (!state.secret || !state.profile) return;
+      const j = await config.loadJourney();
+      const text = j ? `${j.id}:${Math.round(j.km * 10) / 10}:${j.startedAt}` : '';
+      if (text === state.journey) return;
+      await call('vado_set_journey', {
+        p_secret: state.secret,
+        p_journey: j?.id ?? '',
+        p_km: j ? Math.round(j.km * 100) / 100 : 0,
+        p_started: j ? new Date(j.startedAt).toISOString() : null,
+      });
+      await save({ ...(await load()), journey: text });
+    } catch {
+      // Riprova alla prossima sincronizzazione.
+    }
+  }
+
   /** Toglie dal server i punti dei tragitti cancellati. Se il server non è aggiornato, riprova la volta dopo. */
   async function pushRemovals(): Promise<void> {
     const state = await load();
@@ -305,6 +330,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       .then(() => pushTrips(now))
       .then(() => pushTree())
       .then(() => pushShowcase())
+      .then(() => pushJourney())
       .then(() => {
         lastSync = now;
       })
@@ -359,7 +385,7 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
         // prossimo tentativo si ritrova lo stesso profilo invece di crearne un altro.
         if (!state.secret) await save({ ...state, secret });
         const profile = await call<Profile>('vado_register', { p_secret: secret, p_nickname: nickname });
-        await save({ ...(await load()), secret, profile, tree: undefined, showcase: undefined });
+        await save({ ...(await load()), secret, profile, tree: undefined, showcase: undefined, journey: undefined });
         return profile;
       });
     },
@@ -456,6 +482,16 @@ export function remoteSource(config: RemoteConfig): RemoteSource {
       const result = await write(async () => await mine<{ hidden: boolean }>('vado_report', { p_target: userId }));
       if (result.ok) for (const key of [...cache.keys()]) if (key.startsWith('lega:')) cache.delete(key);
       return result.ok ? { ok: true, value: { hidden: !!result.value?.hidden } } : result;
+    },
+
+    async travellers(now: number): Promise<Traveller[] | null> {
+      await sync(now).catch(() => undefined);
+      try {
+        const rows = await mine<{ id: string; name: string; tree?: TreeRow; journey: string; km: number; startedAt: number | null }[]>('vado_journey_people');
+        return rows.map((r) => ({ id: r.id, name: r.name, tree: toTree(r.tree), journey: r.journey, km: Number(r.km) || 0, startedAt: r.startedAt ?? null }));
+      } catch {
+        return null;
+      }
     },
 
     async rivals(): Promise<Person[]> {

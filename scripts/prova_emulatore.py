@@ -517,7 +517,10 @@ def check_percorsi() -> str:
     if not start:
         return "pulsante per partire non trovato: " + visible_text()[:300]
     tap(start)
-    if not wait_for("Tappe:", 15, "partendo per un viaggio", required=False):
+    if not wait_for("Prossima tappa", 15, "partendo per un viaggio", required=False):
+        return "dopo la partenza non compare il viaggio: " + visible_text()[:300]
+    screenshot("percorsi-mappa")
+    if not scroll_to("Tappe:", swipes=8):
         return "dopo la partenza non compaiono le tappe: " + visible_text()[:300]
     if "Campidoglio" not in visible_text():
         return "la prima tappa non risulta raggiunta: " + visible_text()[:300]
@@ -818,6 +821,51 @@ def check_metro_a_piedi() -> str:
     return "ok"
 
 
+def check_dimenticato() -> str:
+    """Viaggio dimenticato aggiunto a mano da Oggi: Flaminio → Spagna sulla linea A."""
+    link = scroll_to("Hai dimenticato di avviare?", swipes=10)
+    if not link:
+        return "riquadro per i viaggi dimenticati assente: " + visible_text()[:300]
+    tap(link)
+    if not wait_for("Aggiungi un viaggio", 20, "aprendo i viaggi dimenticati", required=False):
+        return "la schermata non si apre: " + visible_text()[:300]
+    for label in ("4 ore fa", "2 ore fa", "1 ora fa"):
+        chip = find(label, exact=True)
+        if chip:
+            tap(chip)
+            break
+    time.sleep(1)
+    start = scroll_to("Flaminio", exact=True, swipes=10)
+    if not start:
+        return "stazione Flaminio non trovata: " + visible_text()[:300]
+    tap(start)
+    time.sleep(1)
+    end = scroll_to("Spagna", exact=True, swipes=2)
+    if not end:
+        return "stazione Spagna non trovata: " + visible_text()[:300]
+    tap(end)
+    time.sleep(2)
+    screenshot("dimenticato")
+    button = find("Aggiungi il viaggio", exact=True)
+    shown = visible_text()
+    if not button:
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        wait_for("Inizia un tragitto", 30, "tornando a Oggi dai viaggi dimenticati")
+        # Il limite di due al giorno o un orario occupato sono risposte corrette, non errori.
+        if "Per oggi hai già" in shown or "c'è già un tragitto" in shown or "solo i viaggi di oggi" in shown:
+            return "ok"
+        return "pulsante Aggiungi assente: " + shown[:300]
+    tap(button)
+    if not wait_for("Riepilogo", 30, "aggiungendo il viaggio dimenticato", required=False):
+        return "il viaggio non è stato salvato: " + visible_text()[:300]
+    summary = visible_text()
+    tap_label("Fine")
+    wait_for("Inizia un tragitto", 30, "tornando a Oggi dopo il viaggio dimenticato")
+    if "Flaminio → Spagna" not in summary:
+        return "il riepilogo non riporta Flaminio → Spagna: " + summary[:300]
+    return "ok"
+
+
 def check_avvio_rapido() -> str:
     """Il collegamento della notifica di movimento apre l'app e avvia subito il tragitto; il modulo nativo è presente."""
     notes = []
@@ -935,6 +983,7 @@ def main() -> None:
     metro = check_metro()
     metro_walk = check_metro_a_piedi() if metro == "ok" else "non provata"
     quick = check_avvio_rapido()
+    forgot = check_dimenticato()
     health = connect_health() if WITH_HEALTH else "non provata"
     check_alive("alla fine")
     cleaned = clean_server()
@@ -960,7 +1009,7 @@ def main() -> None:
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "
-        f"permessi: {answered}; percorsi: {journeys}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; metro a piedi: {metro_walk}; avvio rapido: {quick}; Connessione Salute: {health}"
+        f"permessi: {answered}; percorsi: {journeys}; germoglio: {plant}; storico: {history}; bus: {bus}; classifica: {board}; backup: {backup}; metro: {metro}; metro a piedi: {metro_walk}; avvio rapido: {quick}; viaggio dimenticato: {forgot}; Connessione Salute: {health}"
     )
     if backup != "ok":
         problems.append(f"backup: {backup}")
@@ -980,6 +1029,8 @@ def main() -> None:
         problems.append(f"metro a piedi: {metro_walk}")
     if quick != "ok":
         problems.append(f"avvio rapido: {quick}")
+    if forgot != "ok":
+        problems.append(f"viaggio dimenticato: {forgot}")
     if WITH_HEALTH and health != "collegata":
         problems.append(f"Connessione Salute non collegata: {health}")
     if problems:

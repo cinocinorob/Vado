@@ -39,6 +39,9 @@ export type LeagueBoard = LeagueSummary & {
 
 export type Person = { id: string; name: string; tree?: TreeBadge | null };
 
+/** Un compagno di lega con il percorso virtuale che sta facendo. */
+export type Traveller = Person & { journey: string; km: number; startedAt: number | null };
+
 export type NewChallenge = {
   title: string;
   kind: ChallengeKind;
@@ -99,6 +102,8 @@ export interface SocialSource {
   report(userId: string): Promise<Result<{ hidden: boolean }>>;
   /** Persone che si possono sfidare: i compagni delle proprie leghe. */
   rivals(now: number): Promise<Person[]>;
+  /** I compagni delle proprie leghe che stanno facendo un percorso virtuale; null se non disponibile. */
+  travellers(now: number): Promise<Traveller[] | null>;
   challenges(now: number): Promise<Challenge[]>;
   createChallenge(input: NewChallenge, now: number): Promise<Result<Challenge>>;
   removeChallenge(id: string): Promise<void>;

@@ -305,6 +305,17 @@ Dalla schermata Oggi, "Backup e cambio telefono":
 Il backup automatico di Android (dati delle app su Google Drive) non è disattivato, ma per Vado non è stato
 verificato: il file e il codice sono la strada provata. Regole in `src/core/backup.ts` e `src/core/recovery.ts`.
 
+## Percorsi insieme e viaggi dimenticati
+
+- **Percorsi insieme:** la scheda Percorsi mostra una mappa a strada serpeggiante con le tappe e le pedine dei compagni di
+  lega che fanno lo stesso percorso (come "Insieme" di Samsung Health), la classifica di chi è più avanti e i compagni su
+  altri percorsi, con "Unisciti". Ognuno avanza con i suoi km da quando è partito. Sul server: `vado_set_journey` e
+  `vado_journey_people` (colonne `journey`, `journey_km`, `journey_at`).
+- **Viaggio dimenticato:** da Oggi, "Hai dimenticato di avviare?", si aggiunge un viaggio in metro (stazioni di partenza
+  e arrivo, anche su linee diverse) o in bus e tram (numero, direzione, fermate) fatto oggi, scegliendo quando si è
+  arrivati. Non serve essere alla stazione; il viaggio risulta "dichiarato", conta nel limite di due al giorno per
+  tipo e non può sovrapporsi a un tragitto già salvato.
+
 ## Sfide come un tabellone
 
 Le sfide con gli amici e la sfida del mese della lega si vedono come il gioco dell'oca: 20 caselle a serpentina
@@ -409,7 +420,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (222 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (223 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

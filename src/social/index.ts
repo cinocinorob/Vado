@@ -9,6 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
 import { plantState, type TreeBadge } from '../core/plant';
+import { journeyById, journeyRun } from '../core/journeys';
+import { loadJourneys } from '../storage/journey';
 import { loadPauses } from '../storage/pause';
 import { showcaseFor } from '../storage/showcase';
 import { loadTree } from '../storage/tree';
@@ -42,6 +44,12 @@ export const social: SocialSource = remoteSource({
   loadTrips,
   loadTree: myTree,
   loadShowcase: async () => showcaseFor(await loadTrips(), Date.now()),
+  loadJourney: async () => {
+    const [state, trips] = await Promise.all([loadJourneys(), loadTrips()]);
+    const j = state.current ? journeyById(state.current.id) : null;
+    if (!state.current || !j) return null;
+    return { id: j.id, km: journeyRun(j, trips, state.current.startedAt).km, startedAt: state.current.startedAt };
+  },
   newSecret,
 });
 

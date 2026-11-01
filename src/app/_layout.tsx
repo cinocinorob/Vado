@@ -65,6 +65,7 @@ export default function RootLayout() {
         <Stack.Screen name="benvenuto" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="bus" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="diagnostica" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="dimenticato" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );

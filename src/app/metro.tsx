@@ -163,6 +163,7 @@ export default function HoPresoLaMetro() {
                     {PROBLEMS[arrival.kind]}
                   </Text>
                   <GhostButton label="Riprova" onPress={locate} />
+                  <GhostButton label="Non sono più lì: aggiungilo a mano" onPress={() => router.replace({ pathname: '/dimenticato', params: { tipo: 'metro' } })} />
                 </>
               )}
             </Panel>

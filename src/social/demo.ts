@@ -35,7 +35,7 @@ import {
 } from '../core/social';
 import { loadTrips } from '../storage/trips';
 import { BOTS, botPoints, botReachedAt, getBot, pickBots, tierScale, type Bot } from './bots';
-import type { LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource } from './types';
+import type { LeagueBoard, LeagueSummary, MonthlyChallenge, NewChallenge, Person, Profile, Result, SocialSource, Traveller } from './types';
 
 const KEY = 'vado.sociale.v1';
 const ME = 'io';
@@ -267,6 +267,10 @@ export const demoSource: SocialSource = {
   async leaveLeague(leagueId: string): Promise<void> {
     const state = await load();
     await save({ ...state, leagues: state.leagues.filter((l) => l.id !== leagueId) });
+  },
+
+  async travellers(): Promise<Traveller[] | null> {
+    return [];
   },
 
   async rivals(now: number): Promise<Person[]> {

@@ -86,3 +86,24 @@ test('bus dichiarato: metri lungo la linea, due al giorno, separati dalla metro'
   assert.equal(canDeclare(two, NOW + 3_600_000, 'bus').ok, false);
   assert.equal(canDeclare(two, NOW + 3_600_000, 'metro').ok, true);
 });
+
+test('viaggio dimenticato aggiunto a mano: oggi, senza sovrapposizioni, stesso limite al giorno', async () => {
+  const { canAddForgotten, declaredTrip } = await import('./declared');
+  const { routeBetween } = await import('./metro');
+  const { ROMA } = await import('../data/metro');
+  const now = new Date(2026, 10, 1, 18, 0).getTime();
+  const route = routeBetween(ROMA, 'termini', 'colosseo');
+  assert.ok(route);
+  const end = now - 2 * 3_600_000;
+  assert.equal(canAddForgotten([], end - 600_000, end, now, 'metro').ok, true);
+  assert.equal(canAddForgotten([], now - 30 * 3_600_000, now - 29 * 3_600_000, now, 'metro').ok, false);
+  const trip = declaredTrip(route, { now: end, commute: false, trips: [], manual: true });
+  assert.equal(trip.legs[0].note, 'Aggiunto a mano: partenza e arrivo dichiarati');
+  assert.equal(trip.legs[0].status, 'dichiarato');
+  assert.ok(trip.total > 0);
+  // Sovrapposto al viaggio appena salvato: no.
+  assert.equal(canAddForgotten([trip], end - 300_000, end + 300_000, now, 'metro').ok, false);
+  // Due al giorno.
+  const second = declaredTrip(route, { now: end - 3_600_000, commute: false, trips: [trip], manual: true });
+  assert.equal(canAddForgotten([trip, second], now - 600_000, now - 60_000, now, 'metro').ok, false);
+});

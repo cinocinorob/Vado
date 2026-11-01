@@ -42,7 +42,7 @@ function trip(points: number, endedAt: number, mode: ModeId = 'piedi'): Trip {
   };
 }
 
-type Phone = { source: RemoteSource; trips: Trip[]; tree: { current: TreeBadge | null }; showcase: { current: string } };
+type Phone = { source: RemoteSource; trips: Trip[]; tree: { current: TreeBadge | null }; showcase: { current: string }; journey: { current: { id: string; km: number; startedAt: number } | null } };
 
 const phones: Phone[] = [];
 
@@ -52,6 +52,7 @@ function phone(): Phone {
   const trips: Trip[] = [];
   const tree: { current: TreeBadge | null } = { current: null };
   const showcase = { current: '' };
+  const journey: Phone['journey'] = { current: null };
   const source = remoteSource({
     rest: SERVER ?? '',
     key: KEY,
@@ -63,9 +64,10 @@ function phone(): Phone {
     loadTrips: async () => trips,
     loadTree: async () => tree.current,
     loadShowcase: async () => showcase.current,
+    loadJourney: async () => journey.current,
     newSecret: async () => randomBytes(32).toString('hex'),
   });
-  const created = { source, trips, tree, showcase };
+  const created = { source, trips, tree, showcase, journey };
   phones.push(created);
   return created;
 }
@@ -244,6 +246,20 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   assert.ok(month.points >= 25, String(month.points));
   assert.ok(month.people >= 2);
   assert.equal(month.target, 600);
+
+  // --- percorsi virtuali: i compagni di lega vedono chi è su quale percorso ---
+  b.journey.current = { id: 'tevere', km: 12.5, startedAt: now - 86_400_000 };
+  await b.source.sync(now + 50_000);
+  const travellers = await a.source.travellers(now + 60_000);
+  assert.ok(travellers, 'vado_journey_people non risponde');
+  const fl = travellers.find((t) => t.id === flavia.id);
+  assert.equal(fl?.journey, 'tevere');
+  assert.equal(fl?.km, 12.5);
+  assert.equal(fl?.startedAt, now - 86_400_000);
+  assert.equal(travellers.some((t) => t.id === robbie.id), false);
+  b.journey.current = null;
+  await b.source.sync(now + 70_000);
+  assert.equal((await a.source.travellers(now + 80_000))?.some((t) => t.id === flavia.id), false);
 
   // --- segnalare un soprannome: due persone diverse lo nascondono, cambiarlo lo riporta ---
   assert.equal(value(await c.source.report(flavia.id)).hidden, false);

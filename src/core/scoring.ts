@@ -58,6 +58,8 @@ export type LegInput = {
   hops?: { label: string; lines: string; meters: number }[];
   /** Il tratto non è stato misurato: la partenza è stata dichiarata a posteriori. */
   declared?: boolean;
+  /** Aggiunto a mano più tardi: anche l'arrivo è dichiarato, non verificato dalla posizione. */
+  manual?: boolean;
   /** Bus o tram riconosciuto con la posizione del mezzo in tempo reale. */
   bus?: { line: string };
   /** Bus o tram riconosciuto dal percorso: fermate della linea passate in ordine. */
@@ -164,7 +166,9 @@ export function evaluateLeg(input: LegInput): Evaluated {
         : shape
           ? `${shape.tram ? 'Tram' : 'Bus'} ${shape.line}, ${shape.from} → ${shape.to}`
           : undefined);
-  if (input.declared) {
+  if (input.manual) {
+    note = 'Aggiunto a mano: partenza e arrivo dichiarati';
+  } else if (input.declared) {
     note = 'Arrivo verificato dalla posizione, partenza dichiarata';
   } else if (input.bus && meters > 0) {
     status = 'verificato';

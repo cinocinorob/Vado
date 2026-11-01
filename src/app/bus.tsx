@@ -149,11 +149,13 @@ export default function HoPresoIlBus() {
                     {PROBLEMS[here.kind]}
                   </Text>
                   <GhostButton label="Riprova" onPress={locate} />
+                  <GhostButton label="Non sono più lì: aggiungilo a mano" onPress={() => router.replace({ pathname: '/dimenticato', params: { tipo: 'bus' } })} />
                 </>
               ) : arrivals.length === 0 ? (
                 <>
                   <Text style={styles.problem}>Nessuna fermata di bus o tram entro {ARRIVAL_RADIUS_M} metri. Il viaggio si registra appena sceso.</Text>
                   <GhostButton label="Riprova" onPress={locate} />
+                  <GhostButton label="Non sono più lì: aggiungilo a mano" onPress={() => router.replace({ pathname: '/dimenticato', params: { tipo: 'bus' } })} />
                 </>
               ) : (
                 <View style={styles.chips}>

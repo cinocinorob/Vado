@@ -42,6 +42,13 @@ alter table vado.users add column if not exists trees integer not null default 0
 alter table vado.users add column if not exists showcase text not null default ''
   check (showcase ~ '^([a-z-]{2,24}:[1-3](,[a-z-]{2,24}:[1-3]){0,2})?$');
 
+-- Il percorso virtuale in corso, per vedere i compagni di lega sullo stesso percorso.
+alter table vado.users add column if not exists journey text not null default ''
+  check (journey ~ '^[a-z-]{0,24}$');
+alter table vado.users add column if not exists journey_km numeric(8, 2) not null default 0
+  check (journey_km between 0 and 100000);
+alter table vado.users add column if not exists journey_at timestamptz;
+
 -- Soprannome nascosto dopo le segnalazioni di due compagni di lega.
 alter table vado.users add column if not exists name_hidden boolean not null default false;
 
@@ -255,6 +262,48 @@ declare
   v_user uuid := vado.who(p_secret);
 begin
   return (select json_build_object('id', u.id, 'nickname', u.nickname, 'hidden', u.name_hidden) from vado.users u where u.id = v_user);
+end $$;
+
+-- Il percorso virtuale in corso e i km fatti da quando è partito ('' = nessuno).
+create or replace function public.vado_set_journey(p_secret text, p_journey text, p_km numeric, p_started timestamptz) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+begin
+  if p_journey is null or p_journey !~ '^[a-z-]{0,24}$' or p_km is null or p_km < 0 or p_km > 100000 then
+    raise exception 'dati-non-validi';
+  end if;
+  update vado.users
+    set journey = p_journey,
+        journey_km = case when p_journey = '' then 0 else round(p_km, 2) end,
+        journey_at = case when p_journey = '' then null else p_started end
+    where id = v_user;
+  return json_build_object('ok', true);
+end $$;
+
+-- I compagni delle proprie leghe con il percorso virtuale che stanno facendo.
+create or replace function public.vado_journey_people(p_secret text) returns json
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_user uuid := vado.who(p_secret);
+begin
+  return (
+    select coalesce(json_agg(json_build_object(
+      'id', x.id,
+      'name', vado.shown(x.nickname, x.name_hidden),
+      'tree', vado.tree_json(x.tree, x.stage, x.trees),
+      'journey', x.journey,
+      'km', x.journey_km,
+      'startedAt', vado.ms(x.journey_at)
+    ) order by x.journey_km desc, x.nickname), '[]'::json)
+    from (
+      select distinct u.id, u.nickname, u.name_hidden, u.tree, u.stage, u.trees, u.journey, u.journey_km, u.journey_at
+      from vado.members mine
+      join vado.members other on other.league_id = mine.league_id and other.user_id <> mine.user_id
+      join vado.users u on u.id = other.user_id
+      where mine.user_id = v_user and u.journey <> ''
+    ) x
+  );
 end $$;
 
 -- Segnala il soprannome di un compagno di lega. Con due segnalazioni di
