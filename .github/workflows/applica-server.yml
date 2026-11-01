@@ -1,0 +1,62 @@
+# Applica da sola le istruzioni del server (supabase/schema.sql) al progetto
+# Supabase vero, a ogni modifica, poi lo prova con quattro persone simulate.
+#
+# Serve una sola impostazione, fatta una volta: il segreto del repository
+# SUPABASE_ACCESS_TOKEN (un token personale creato da supabase.com, Account,
+# Access Tokens). Il token resta tra i segreti di GitHub: non è nel codice e
+# non passa da nessuna chat. Senza il segreto l'azione non fa nulla e lo dice.
+name: Applica il server
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/schema.sql']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  applica:
+    name: Applica e prova
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT: fqynpsucjgffjmwcclmw
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Applica supabase/schema.sql al progetto
+        id: applica
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::Manca il segreto SUPABASE_ACCESS_TOKEN: le istruzioni vanno ancora incollate a mano nel pannello di Supabase."
+            echo "fatto=no" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          jq -Rs '{query: .}' supabase/schema.sql > corpo.json
+          code=$(curl -sS -o risposta.txt -w '%{http_code}' -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT/database/query" \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            --data-binary @corpo.json)
+          echo "risposta $code: $(head -c 600 risposta.txt)"
+          case "$code" in
+            200|201) echo "::notice::Istruzioni del server applicate al progetto vero." ;;
+            *) echo "::error::Supabase ha rifiutato le istruzioni ($code)."; exit 1 ;;
+          esac
+          echo "fatto=si" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v6
+        if: steps.applica.outputs.fatto == 'si'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.applica.outputs.fatto == 'si'
+        run: npm ci
+      - name: Quattro persone simulate sul progetto vero
+        if: steps.applica.outputs.fatto == 'si'
+        run: |
+          export VADO_TEST_SERVER=$(sed -n "s/.*rest: '\(.*\)',/\1/p" src/social/config.ts)
+          export VADO_TEST_KEY=$(sed -n "s/.*key: '\(.*\)',/\1/p" src/social/config.ts)
+          scripts/prova_server.sh "progetto vero"
