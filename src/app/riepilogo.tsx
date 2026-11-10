@@ -148,19 +148,6 @@ export default function Riepilogo() {
         </HeroBlock>
 
         <View style={styles.body}>
-          {game && game.xp > 0 ? (
-            <View style={[styles.xp, game.up && { backgroundColor: C.lime }]} accessible>
-              <LevelBadge level={game.level.level} size={52} />
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.xpTitle, game.up && { color: C.ink }]}>{game.up ? `Livello ${game.level.level}: ${game.level.title}!` : `+${game.xp} XP`}</Text>
-                <Text style={[styles.xpDetail, game.up && { color: C.ink }]}>
-                  {game.up ? `+${game.xp} XP con questo tragitto` : `Livello ${game.level.level} · ${game.level.into} di ${game.level.need} XP`}
-                  {game.missions.length > 0 ? ` · ${game.allDone ? 'tutte le missioni di oggi fatte' : game.missions.length === 1 ? `missione: ${game.missions[0].title.toLowerCase()}` : `${game.missions.length} missioni fatte`}` : ''}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
           {medals.map((medal) => (
             <View key={medal.id} style={styles.prize} accessible accessibilityLabel={`${prizeCaption(medal)}: ${medal.name}. ${goalFor(medal, medal.tiers[medal.level - 1])}`}>
               <Pop style={styles.halo}>
@@ -207,6 +194,19 @@ export default function Riepilogo() {
                 ) : null}
               </View>
               <Text style={styles.co2Note}>Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA).</Text>
+            </View>
+          ) : null}
+
+          {game && game.xp > 0 ? (
+            <View style={[styles.xp, game.up && { backgroundColor: C.lime }]} accessible>
+              <LevelBadge level={game.level.level} size={52} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.xpTitle, game.up && { color: C.ink }]}>{game.up ? `Livello ${game.level.level}: ${game.level.title}!` : `+${game.xp} XP`}</Text>
+                <Text style={[styles.xpDetail, game.up && { color: C.ink }]}>
+                  {game.up ? `+${game.xp} XP con questo tragitto` : `Livello ${game.level.level} · ${game.level.into} di ${game.level.need} XP`}
+                  {game.missions.length > 0 ? ` · ${game.allDone ? 'tutte le missioni di oggi fatte' : game.missions.length === 1 ? `missione: ${game.missions[0].title.toLowerCase()}` : `${game.missions.length} missioni fatte`}` : ''}
+                </Text>
+              </View>
             </View>
           ) : null}
 

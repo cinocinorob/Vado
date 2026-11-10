@@ -738,6 +738,8 @@ def check_metro() -> str:
     log(f"metro a posteriori: {declared[:500]}")
     if "Flaminio → EUR Fermi" not in declared:
         return "il riepilogo non riporta Flaminio → EUR Fermi"
+    if "partenza dichiarata" not in declared and scroll_to("partenza dichiarata", swipes=3):
+        declared += " | " + visible_text()
     if "partenza dichiarata" not in declared:
         return "il riepilogo non dice che la partenza è dichiarata"
     tap_label("Fine")
