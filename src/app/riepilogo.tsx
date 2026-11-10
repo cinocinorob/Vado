@@ -24,6 +24,8 @@ import { buzz } from '../ui/motion';
 import { BonusRow, GhostButton, Header, LegRow, PrimaryButton, Screen, text } from '../ui/parts';
 import { ShareSheet, type ShareData } from '../ui/ShareCard';
 import { ShareIcon } from '../ui/Icons';
+import { Confetti, LevelBadge } from '../ui/Game';
+import { levelOf, missionsOf, totalXp, type Level, type Mission } from '../core/game';
 import { SHAPES } from '../ui/shapes';
 import { Sprout, Tree } from '../ui/Sprout';
 import { C, F, R } from '../ui/theme';
@@ -59,6 +61,7 @@ export default function Riepilogo() {
   const insets = useSafeAreaInsets();
   const [trip, setTrip] = useState<Trip | null | undefined>(undefined);
   const [medals, setMedals] = useState<BadgeState[]>([]);
+  const [game, setGame] = useState<{ xp: number; level: Level; up: boolean; missions: Mission[]; allDone: boolean } | null>(null);
   const [growth, setGrowth] = useState<Growth | null>(null);
   const [totalG, setTotalG] = useState(0);
   const [stages, setStages] = useState<{ journey: string; stages: JourneyStage[]; finished: boolean } | null>(null);
@@ -93,7 +96,16 @@ export default function Riepilogo() {
         const before = all.filter((t) => t.id !== found.id);
         const unlocked = newlyUnlocked(before, [found], found.endedAt, { ...ctx, journeys: ctx.journeys - (finished ? 1 : 0) });
         setMedals(unlocked);
-        buzz(unlocked.length > 0 ? 'premio' : 'fatto');
+        // Esperienza: i punti del tragitto più le missioni che ha chiuso.
+        const xpBefore = totalXp(before);
+        const xpAfter = totalXp(all);
+        const mBefore = missionsOf(before, found.day);
+        const mAfter = missionsOf(all, found.day);
+        const closed = mAfter.filter((m, i) => m.done && !mBefore[i].done);
+        const lvl = levelOf(xpAfter);
+        const up = lvl.level > levelOf(xpBefore).level;
+        setGame({ xp: xpAfter - xpBefore, level: lvl, up, missions: closed, allDone: mAfter.every((m) => m.done) && !mBefore.every((m) => m.done) });
+        buzz(unlocked.length > 0 || up ? 'premio' : 'fatto');
         setGrowth(growthBetween(before, all, found.endedAt, tree.species ?? DEFAULT_SPECIES));
         setTotalG(totalCo2(all));
         const ps = plantState(all, found.endedAt);
@@ -136,6 +148,19 @@ export default function Riepilogo() {
         </HeroBlock>
 
         <View style={styles.body}>
+          {game && game.xp > 0 ? (
+            <View style={[styles.xp, game.up && { backgroundColor: C.lime }]} accessible>
+              <LevelBadge level={game.level.level} size={52} />
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.xpTitle, game.up && { color: C.ink }]}>{game.up ? `Livello ${game.level.level}: ${game.level.title}!` : `+${game.xp} XP`}</Text>
+                <Text style={[styles.xpDetail, game.up && { color: C.ink }]}>
+                  {game.up ? `+${game.xp} XP con questo tragitto` : `Livello ${game.level.level} · ${game.level.into} di ${game.level.need} XP`}
+                  {game.missions.length > 0 ? ` · ${game.allDone ? 'tutte le missioni di oggi fatte' : game.missions.length === 1 ? `missione: ${game.missions[0].title.toLowerCase()}` : `${game.missions.length} missioni fatte`}` : ''}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           {medals.map((medal) => (
             <View key={medal.id} style={styles.prize} accessible accessibilityLabel={`${prizeCaption(medal)}: ${medal.name}. ${goalFor(medal, medal.tiers[medal.level - 1])}`}>
               <Pop style={styles.halo}>
@@ -243,6 +268,7 @@ export default function Riepilogo() {
         </View>
       </ScrollView>
 
+      <Confetti run={medals.length > 0 || !!game?.up || !!game?.allDone} />
       <ShareSheet data={sharing} onClose={() => setSharing(null)} />
 
       <View style={[styles.cta, { bottom: insets.bottom + 16 }]}>
@@ -258,6 +284,9 @@ function prizeCaption(medal: BadgeState): string {
 }
 
 const styles = StyleSheet.create({
+  xp: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderRadius: R.card, padding: 14 },
+  xpTitle: { fontFamily: F.displayBold, fontSize: 22, lineHeight: 27, color: C.text },
+  xpDetail: { fontFamily: F.medium, fontSize: 13.5, lineHeight: 18, color: C.dim },
   won: { backgroundColor: C.coral, borderRadius: R.card, padding: 18, gap: 2 },
   wonCaption: { fontFamily: F.semi, fontSize: 13, color: C.onCoralDim },
   wonTitle: { fontFamily: F.displayBold, fontSize: 24, lineHeight: 29, color: C.onCoral },

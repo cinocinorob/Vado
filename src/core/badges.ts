@@ -10,6 +10,7 @@
 import type { ModeId } from './modes';
 import { completedChallenges } from './challenges';
 import { totalCo2 } from './co2';
+import { perfectDays } from './game';
 import { candyMeters } from './halloween';
 import { isChristmasDays, isChristmasSeason, isHalloweenSeason, isWitchingHour } from './look';
 import { plantState } from './plant';
@@ -43,6 +44,7 @@ export type BadgeId =
   | 'diecimila'
   | 'centurione'
   | 'viaggiatore'
+  | 'giornata-perfetta'
   | 'notte-streghe'
   | 'natale-senza-auto';
 
@@ -103,6 +105,7 @@ export const BADGES: readonly Badge[] = [
   { id: 'diecimila', name: 'Diecimila', goal: '{n} giorni con 10.000 passi nei tragitti', tiers: [1, 10, 30], unit: 'giorni' },
   { id: 'centurione', name: 'Centurione', goal: '{n} giorni da almeno 100 punti', tiers: [1, 5, 20], unit: 'giorni' },
   { id: 'viaggiatore', name: 'Viaggiatore', goal: '{n} percorsi virtuali completati', tiers: [1, 2, 4], unit: 'percorsi' },
+  { id: 'giornata-perfetta', name: 'Giornata perfetta', goal: '{n} giorni con tutte e tre le missioni', tiers: [1, 10, 40], unit: 'giorni' },
   {
     id: 'notte-streghe',
     name: 'Notte delle streghe',
@@ -260,6 +263,8 @@ function progress(id: BadgeId, trips: Trip[], now: number, ctx: BadgeContext): n
     }
     case 'viaggiatore':
       return ctx.journeys;
+    case 'giornata-perfetta':
+      return perfectDays(trips);
     case 'notte-streghe':
       return trips.filter(
         (t) => (isWitchingHour(t.startedAt) || isWitchingHour(t.endedAt)) && !usesPrivateCar(t) && !hasAnomaly(t) && t.carFreeMeters >= MIN_LEG_M,

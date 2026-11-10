@@ -143,7 +143,7 @@ Stato di un tratto:
 
 ## Medaglie, sfide personali e percorsi
 
-**Medaglie** (`src/core/badges.ts`): 21, più quella a tempo di Halloween. Quasi tutte hanno tre gradi, bronzo,
+**Medaglie** (`src/core/badges.ts`): 22, più quella a tempo di Halloween. Quasi tutte hanno tre gradi, bronzo,
 argento e oro, con traguardi crescenti. Si ricalcolano ogni volta dallo storico dei tragitti, quindi non vanno
 fuori sincronia. Le tre medaglie scelte per la **vetrina** compaiono accanto al nome in classifica.
 
@@ -305,6 +305,19 @@ Dalla schermata Oggi, "Backup e cambio telefono":
 Il backup automatico di Android (dati delle app su Google Drive) non è disattivato, ma per Vado non è stato
 verificato: il file e il codice sono la strada provata. Regole in `src/core/backup.ts` e `src/core/recovery.ts`.
 
+## Livello, missioni e salvaserie
+
+Tutto in `src/core/game.ts`, ricalcolato dallo storico dei tragitti (niente da salvare a parte).
+
+- **Missioni del giorno:** tre al giorno (una facile, una media, una difficile), uguali per tutti nello stesso giorno.
+  Ognuna dà 20 XP, tutte e tre altri 40.
+- **Esperienza e livello:** XP = punti di tutti i tragitti + missioni. Per salire servono 100 XP, poi 140, 180… Il
+  titolo cambia ogni 5 livelli (Pedone, Camminatore, Pendolare…). Gli XP non contano in classifica.
+- **Salvaserie:** ogni 7 giorni attivi di fila se ne guadagna uno (massimo 2). Un giorno saltato lo consuma da solo e
+  la serie continua. La medaglia "Sette su sette" resta severa: lì i giorni saltati non valgono.
+- **Coriandoli** nel riepilogo per medaglie, nuovo livello e missioni complete; spenti se il telefono chiede meno
+  animazioni.
+
 ## Percorsi insieme e viaggi dimenticati
 
 - **Percorsi insieme:** la scheda Percorsi mostra una mappa a strada serpeggiante con le tappe e le pedine dei compagni di
@@ -420,7 +433,7 @@ simulati di 2 km il filtro tende a **sottostimare** del 5–10% tra gli isolati,
 mai sovrastimato oltre il 15%. Sui tratti di poche centinaia di metri l'errore è più ampio. Le prove qui sopra
 servono a sostituire queste stime con misure vere.
 
-Dopo ogni modifica: `npm test` (223 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
+Dopo ogni modifica: `npm test` (227 controlli automatici, più la prova del server), `npm run typecheck` e `npm run lint`. GitHub li esegue
 comunque prima di costruire l'app, e si ferma se falliscono.
 
 ## Limiti noti

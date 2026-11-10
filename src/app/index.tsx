@@ -9,7 +9,8 @@ import { candies, candyOpen } from '../core/halloween';
 import { isHalloweenSeason } from '../core/look';
 import { appName } from '../core/health';
 import { getMode } from '../core/modes';
-import { DAILY_GOAL, dayKey, streak, summarizeDay, type Trip } from '../core/scoring';
+import { levelOf, missionsOf, streakState, totalXp } from '../core/game';
+import { DAILY_GOAL, dayKey, summarizeDay, type Trip } from '../core/scoring';
 import { connectHealth, refreshHealth, type HealthState } from '../health/sync';
 import { openHealthSettings } from '../health/connect';
 import { applyReminders } from '../reminders/schedule';
@@ -23,6 +24,7 @@ import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer } from '../ui/format';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PersonalChallenges } from '../ui/ChallengeCard';
+import { FreezeShield, LevelStrip, MissionsCard } from '../ui/Game';
 import { Group, SectionTitle, ShapeBadge, TonalButton, WeekStrip } from '../ui/expressive';
 import { PageTitle } from '../ui/Hero';
 import { ChartIcon, ChevronIcon, FlameIcon, GearIcon, HeartIcon, PlusIcon } from '../ui/Icons';
@@ -109,7 +111,10 @@ export default function Oggi() {
   }, []);
 
   const today = summarizeDay(trips, dayKey(now));
-  const days = streak(trips, now);
+  const serie = streakState(trips, now);
+  const days = serie.days;
+  const level = levelOf(totalXp(trips));
+  const missions = missionsOf(trips, dayKey(now));
   const rows = today.trips.flatMap((trip) => [
     ...trip.legs.map((leg, i) => ({
       key: `${trip.id}-${i}`,
@@ -201,11 +206,19 @@ export default function Oggi() {
               </View>
             </View>
             <View style={styles.heroSide}>
-              <View style={styles.streak} accessible accessibilityLabel={days > 0 ? `Serie di ${days} giorni` : 'Nessuna serie in corso'}>
+              <View
+                style={styles.streak}
+                accessible
+                accessibilityLabel={`${days > 0 ? `Serie di ${days} giorni` : 'Nessuna serie in corso'}, ${serie.freezes} salvaserie`}
+              >
                 <FlameIcon size={34} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.streakValue}>{days}</Text>
                   <Text style={styles.streakLabel}>{days === 1 ? 'giorno di fila' : 'giorni di fila'}</Text>
+                </View>
+                <View style={styles.shields}>
+                  <FreezeShield on={serie.freezes >= 1} />
+                  <FreezeShield on={serie.freezes >= 2} />
                 </View>
               </View>
               <Pressable
@@ -226,6 +239,15 @@ export default function Oggi() {
               </Pressable>
             </View>
           </View>
+
+          {serie.savedYesterday ? (
+            <View style={styles.saved} accessibilityRole="alert">
+              <FreezeShield on size={20} />
+              <Text style={styles.savedText}>Ieri non ti sei mosso, ma un salvaserie ha tenuto viva la serie. Oggi tocca a te.</Text>
+            </View>
+          ) : null}
+
+          <LevelStrip level={level} onPress={() => router.push('/medaglie')} />
 
           {active ? (
             <Pressable onPress={() => router.push('/in-corso')} accessibilityRole="button" style={({ pressed }) => [styles.activeBanner, pressed && { opacity: 0.9 }]}>
@@ -283,6 +305,8 @@ export default function Oggi() {
           ) : null}
 
           {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
+
+          <MissionsCard missions={missions} />
 
           <SectionTitle title="La tua settimana" />
           <WeekStrip activeDays={activeDays} now={now} />
@@ -361,6 +385,9 @@ export default function Oggi() {
 }
 
 const styles = StyleSheet.create({
+  shields: { gap: 3 },
+  saved: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.deep, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 14 },
+  savedText: { flex: 1, fontFamily: F.semi, fontSize: 13.5, lineHeight: 18, color: '#E6F4FF' },
   forgot: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: R.card, backgroundColor: C.card, borderWidth: 2, borderColor: C.tonal, borderStyle: 'dashed' },
   forgotIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.lime, alignItems: 'center', justifyContent: 'center' },
   forgotTitle: { fontFamily: F.bold, fontSize: 15.5, color: C.text },

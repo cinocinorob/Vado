@@ -18,6 +18,8 @@ import { loadWins, NO_WINS, type Wins } from '../storage/wins';
 import { useActiveTrip } from '../tracking/store';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PersonalChallenges } from '../ui/ChallengeCard';
+import { LevelStrip } from '../ui/Game';
+import { levelOf, totalXp } from '../core/game';
 import { Group, SectionTitle } from '../ui/expressive';
 import { HeroBlock } from '../ui/Hero';
 import { Medal, TIER_COLORS, type MedalLook } from '../ui/Medal';
@@ -130,6 +132,11 @@ export default function Medaglie() {
         </HeroBlock>
 
         <View style={styles.body}>
+          <LevelStrip level={levelOf(totalXp(trips))} />
+          <Text style={[text.small, { paddingHorizontal: 6 }]}>
+            L&apos;esperienza (XP) viene dai punti dei tragitti e dalle missioni del giorno. Non conta in classifica: lì valgono solo i punti.
+          </Text>
+
           <SectionTitle title="Sfide in corso" />
           <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} tree={{ species: plant.species, stage: plant.stage, trees: plant.trees }} />
 

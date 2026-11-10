@@ -189,6 +189,17 @@ const LOOKS: Record<BadgeId, Look> = {
   },
   diecimila: { shape: 'cookie9', color: '#9FE3B5', number: '10K', numberSize: 0.3 },
   centurione: { shape: 'hept', color: '#FFE07A', number: '100', numberSize: 0.3 },
+  // Tre spunte: le tre missioni del giorno.
+  'giornata-perfetta': {
+    shape: 'cookie9',
+    color: '#B8F03A',
+    art: (
+      <Picto>
+        <Path d="M5 7l1.6 1.6 2.9-3.1M5 12l1.6 1.6 2.9-3.1M5 17l1.6 1.6 2.9-3.1" />
+        <Path d="M13 7.5h6M13 12.5h6M13 17.5h6" />
+      </Picto>
+    ),
+  },
   // Luna e pipistrello.
   'notte-streghe': {
     shape: 'burst',
