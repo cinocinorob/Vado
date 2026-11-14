@@ -1,0 +1,44 @@
+[prova 22:47:03] installo l'app
+[prova 22:47:22] apro l'app
+[prova 22:47:36] apro Nuovo tragitto
+[prova 22:47:45] premo Avvia e rispondo alle richieste di permesso
+[prova 22:47:53] finestra di permesso: 'Allow Vado to access this device’s location?'
+[prova 22:47:59] finestra di permesso: 'Allow Vado to send you notifications?'
+[prova 22:48:39] permessi concessi: 2
+[prova 22:48:41] cammino per 90 secondi con l'app aperta
+[prova 22:50:23] percorsi davvero 126 m, l'app ne mostra None
+[prova 22:50:23] mando l'app in secondo piano e cammino altri 60 secondi
+[prova 22:50:25] servizio in primo piano attivo: True
+[prova 22:51:26] riapro l'app
+[prova 22:51:44] percorsi davvero 210 m, l'app ne mostra None
+[prova 22:51:44] termino il tragitto
+[prova 22:51:53] riepilogo: distanza 207.0 m | Tragitto concluso | Riepilogo | +2 | punti | 0,2 km in 4 min | Nuova medaglia: Primo passo. Il primo tragitto a piedi | Medaglia Primo passo | Nuova medaglia | Primo passo | Il primo tragitto a piedi | Tratti | A piedi | 207 m · 4 min | Dichiarato | +2 | CO₂ evitata | 30 g | Fine | Fine
+[prova 22:51:59] apro le medaglie
+[prova 22:52:23] medaglie: 1 di 22 medaglie sbloccate | Io | Medaglia Maratoneta | 42 | Prossima medaglia | Maratoneta | 42 km a piedi | 0,2 di 42 km | ne mancano 41,8 km | Livello 1, Pedone. 2 di 100 punti esperienza per il prossimo livello | 1 | Livello 1 · Pedone | 2 / 100 XP | L'esperienza (XP) viene dai punti dei tragitti e dalle missioni del giorno. Non conta in classifica: lì valgono solo i punti. | Germoglio e bosco | Germoglio e bosco | Storico: settimane e mesi | Storico: settimane e mesi | Apri le impostazioni | Impostazioni | La tua settimana | Ultimi 7 giorni: 1 con punti | Dom | Lun | Mar | Mer | Gio | Ven | Oggi | Sfide in corso | Sfida del mese: Novembre a piedi, 100 km a piedi. 0,2 di 100 km | Sfida della settimana: Trecento, 300 punti. 2 di 300 punti | Sfida della settimana | ancora 2 giorni | Inizia un tragitto | Parti | Oggi | Oggi | Insieme | Insieme | Io | Io | Ultimi 7 giorni: 1 con punti | Dom | Lun | Mar | Mer | Gio | Ven | Oggi | Sfide in corso | Sfida della settimana: Trecento, 300 punti. 2 di 300 punti | Sfida della settimana | ancora 2 giorni | Trecento | 300 punti | 2 di 300 punti · sei indietro sul ritmo | Sfida del mese: Novembre a piedi, 100 km a piedi. 0,2 di 100 km | Sfida del mese | ancora 17 giorni | Novembre a piedi | 100 km a piedi | 0,2 di 100 km · sei indietro sul ritmo | La tua vetrina | Medaglia Primo passo | Primo passo | Tocca una medaglia qui sotto per metterla o toglierla dalla vetrina. | Le tue medaglie | Medaglia Primo passo, in vetrina | Medaglia Primo passo | Primo passo | Da conquistare | Inizia un tragitto | Parti | Oggi | Oggi | Insieme | Insieme | Io | Io
+[prova 22:52:53] controllo la CO₂ e apro il germoglio
+[prova 22:53:33] apro la classifica
+[prova 22:53:49] creo una lega
+[prova 22:54:08] lega creata, codice X9R945
+[prova 22:54:08] un'altra persona entra con il codice e fa 37 punti
+[prova 22:54:19] classifica: Settimana 46 · 9–15 novembre | Insieme | Invita con il codice della lega | Invita | Leghe | Leghe | Sfide | Sfide | Percorsi | Percorsi | ProvaCI | ProvaCI | Nuova lega | Nuova lega | 2º posto: tu, 2 punti | Tu | 2 | 1º posto: AmicaCI, 37 punti | AmicaCI | 37 | 2 | 1 | 3 | 2º: tu, 2 punti | 2 | Tu | 35 punti da chi hai davanti | 2 | Tieni premuto un nome per segnalare un soprannome offensivo. | Codice d'invito | X9R945 | Codice d'invito: X 9 R 9 4 5 | Chi lo inserisce da "Nuova lega" entra in questa classifica. | Condividi il codice | Condividi il codice | Esci dalla lega | Inizia un tragitto | Parti | Oggi | Oggi | Insieme | Insieme | Io | Io
+[prova 22:54:28] sfide: Settimana 46 · 9–15 novembre | Insieme | Leghe | Leghe | Sfide | Sfide | Percorsi | Percorsi | Il germoglio di Vado | Sfida del mese | Novembre a piedi | 100 km a piedi · mancano 17 giorni | La corsa del mese in ProvaCI, per km senza auto | Tabellone: 1º Tu, casella 4 di 20; 2º AmicaCI, casella 1 di 20 | 19 | 17 | 16 | 11 | 12 | 13 | 15 | 9 | 8 | 7 | 6 | Via | 2 | 3 | 4 | 1 | Tu | 0,2 km | casella 4 | 2 | AmicaCI | 0 km | casella 1 | Traguardo: chi fa di più entro fine mese | Nessuna sfida in corso. Lanciane una ai compagni di lega. | Nuova sfida | Nuova sfida | Inizia un tragitto | Parti | Oggi | Oggi | Insieme | Insieme | Io | Io
+[prova 22:54:30] apro Backup dalle impostazioni
+[prova 22:55:34] metro a posteriori: sono all'uscita di EUR Fermi
+[prova 22:56:17] metro a posteriori: Tragitto concluso | Riepilogo | +48 | punti | 12,2 km in 28 min | Nuova medaglia: bronzo: Lunga distanza. 1 tragitti di almeno 10 km senza auto | Medaglia Lunga distanza | Nuova medaglia: bronzo | Lunga distanza | 1 tragitti di almeno 10 km senza auto | Tratti | Metro | Flaminio → EUR Fermi | 12,2 km · 28 min | Dichiarato | +48 | Arrivo verificato dalla posizione, partenza dichiarata | Fine | Fine
+[prova 22:56:22] metro dentro un tragitto: entro a Termini, esco al Colosseo
+[prova 22:58:44] metro dentro un tragitto: Tragitto concluso | Riepilogo | +15 | punti | 1,4 km in 2 min | Tratti | Metro | Termini → Colosseo | 1,4 km · 2 min | +5 | Linea B: distanza lungo la rete della metro | Verificato | Bonus casa-lavoro | Tragitto abituale completato | +10 | CO₂ evitata | 230 g | Un albero adulto ci mette 4 giorni ad assorbirla | Da quando usi Vado: 2,3 kg, 38 giorni di lavoro di un albero | Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA). | 2 | Livello 2: Pedone! | Fine | Fine
+[prova 22:58:50] metro con il tratto ancora a piedi: entro a Termini, esco a Colosseo
+[prova 23:01:46] metro a piedi: Tragitto concluso | Riepilogo | +5 | punti | 1,4 km in 3 min | Tratti | A piedi | 23 m · 21 s | Dichiarato | +0 | Metro | Termini → Colosseo | 1,4 km · 2 min | +5 | Linea B: distanza lungo la rete della metro | Verificato | A piedi | 45 m · 31 s | Dichiarato | +0 | CO₂ evitata | 240 g | Un albero adulto ci mette 4 giorni ad assorbirla | Da quando usi Vado: 2,5 kg, 42 giorni di lavoro di un albero | Stima: 167 g di CO₂ per ogni km che avresti fatto in auto (media italiana, ISPRA). | Fine | Fine
+[prova 23:03:20] collego Connessione Salute
+[prova 23:03:39] schermata dei permessi: Get started with Health Connect | Health Connect stores and syncs your health and fitness data from different apps.
+
+Fitness and wellness data, including exercise sessions, steps, nutrition, sleep and more
+
+Health records, including vaccines, lab results and more | With Health Connect you can | Share data with your apps
+Choose the data each app can read or write to Health Connect | Manage your settings and privacy
+Change app permissions and manage your data at any time | Go back | Get started
+[prova 23:03:47] dopo la presentazione: Allow Vado to access your fitness and wellness data? | Choose which fitness and wellness data this app can access. This includes data tracked and stored on this device, learn more | If you give read access, the app can read new data and data from the past 30 days | You can learn how Vado handles your data in their privacy policy | Allow all | Allow “Vado” to read | Distance | Exercise | Steps | Don't allow | Allow
+[prova 23:04:02] dopo il collegamento: A piedi, 45 m · 31 s, 10 g di CO₂ evitata, +0 | 45 m · 31 s | 10 g di CO₂ evitata | +0 | A piedi, 0 m · 6 s, +0 | A piedi | 0 m · 6 s | +0 | Metro, Flaminio → Spagna, 745 m · 1 min, Registrato a posteriori, 120 g di CO₂ evitata, +2 | Metro | Flaminio → Spagna | 745 m · 1 min | Registrato a posteriori | +2 | 120 g di CO₂ evitata | Hai dimenticato di avviare?, Aggiungi un viaggio in metro, bus o tram fatto oggi | Hai dimenticato di avviare? | Aggiungi un viaggio in metro, bus o tram fatto oggi | Tieni premuto un tragitto per cancellarlo. | Missioni di oggi | 2 di 3 | Arriva a 20 punti: completata | Arriva a 20 punti | +20 XP | Evita 500 g di CO₂: completata | Evita 500 g di CO₂ | +20 XP | Cammina per 3 km: 0,2 di 3 km | Cammina per 3 km | 0,2 di 3 km | Tutte e tre: altri +40 XP. Cambiano ogni giorno. | Connessione Salute | Collegata: passi e attività vengono letti quando apri l'app. | Gest
+[prova 23:05:13] pulizia del server: ok
+[prova 23:05:13] RIUSCITA: percorsi 210 m, misurati 207.0 m (app aperta None, dopo il secondo piano None); permessi: ['Allow Vado to access this device’s location?', 'Allow Vado to send you notifications?']; percorsi: ok; germoglio: ok; storico: ok; bus: ok; classifica: ok; backup: ok; metro: ok; metro a piedi: ok; avvio rapido: ok; viaggio dimenticato: ok; Connessione Salute: collegata
+::notice::Prova riuscita: percorsi 210 m, misurati 207.0 m (app aperta None, dopo il secondo piano None); permessi: ['Allow Vado to access this device’s location?', 'Allow Vado to send you notifications?']; percorsi: ok; germoglio: ok; storico: ok; bus: ok; classifica: ok; backup: ok; metro: ok; metro a piedi: ok; avvio rapido: ok; viaggio dimenticato: ok; Connessione Salute: collegata
