@@ -3,10 +3,13 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HomeIcon, MedalIcon, PlayIcon, RouteIcon, TrophyIcon } from './Icons';
+import { HomeIcon, PeopleIcon, PersonIcon, PlayIcon } from './Icons';
 import { C, F } from './theme';
 
-export type Section = 'oggi' | 'classifica' | 'medaglie' | 'percorsi';
+/** Tre schede: cosa fare oggi, il gioco con gli altri, quello che è tuo. */
+export type Section = 'oggi' | 'insieme' | 'io';
+
+const ROUTE = { insieme: '/classifica', io: '/medaglie' } as const;
 
 const BAR = 80;
 const FAB = 64;
@@ -22,8 +25,8 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
     // "Oggi" è la base: le altre sezioni le stanno sopra e si chiudono tornando.
     if (section === 'oggi') router.dismissTo('/');
     // Da una sezione all'altra si sostituisce, così "indietro" torna sempre a Oggi.
-    else if (current === 'oggi') router.push(`/${section}`);
-    else router.replace(`/${section}`);
+    else if (current === 'oggi') router.push(ROUTE[section]);
+    else router.replace(ROUTE[section]);
   }
 
   return (
@@ -39,9 +42,8 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
       </Pressable>
       <View style={[styles.bar, { height: BAR + insets.bottom, paddingBottom: insets.bottom }]} accessibilityRole="tablist">
         <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
-        <Tab label="Classifica" active={current === 'classifica'} onPress={() => go('classifica')} icon={(color) => <TrophyIcon size={22} color={color} />} />
-        <Tab label="Medaglie" active={current === 'medaglie'} onPress={() => go('medaglie')} icon={(color) => <MedalIcon size={22} color={color} />} />
-        <Tab label="Percorsi" active={current === 'percorsi'} onPress={() => go('percorsi')} icon={(color) => <RouteIcon size={22} color={color} />} />
+        <Tab label="Insieme" active={current === 'insieme'} onPress={() => go('insieme')} icon={(color) => <PeopleIcon size={22} color={color} />} />
+        <Tab label="Io" active={current === 'io'} onPress={() => go('io')} icon={(color) => <PersonIcon size={22} color={color} />} />
       </View>
     </>
   );

@@ -22,6 +22,9 @@ import { C, F, LOOK } from '../ui/theme';
 /** L'ora letta solo in risposta a un tocco. */
 const clock = () => Date.now();
 
+/** Halloween e Natale arrivano da soli nel loro periodo: non si scelgono a mano. */
+const SHOWN_LOOKS: readonly LookChoice[] = LOOK_CHOICES.filter((c) => c !== 'halloween' && c !== 'natale');
+
 const LOOK_TEXT: Record<LookChoice, { title: string; detail: string }> = {
   auto: { title: 'Automatico', detail: 'Halloween dal 15 ottobre al 2 novembre, Natale dal 1° dicembre al 6 gennaio, il resto dell’anno come il telefono' },
   chiaro: { title: 'Chiaro', detail: 'Sempre chiaro' },
@@ -124,7 +127,7 @@ export default function Impostazioni() {
 
         <SectionTitle title="Aspetto" />
         <Group>
-          {LOOK_CHOICES.map((choice) => {
+          {SHOWN_LOOKS.map((choice) => {
             const on = choice === look;
             return (
               <Pressable

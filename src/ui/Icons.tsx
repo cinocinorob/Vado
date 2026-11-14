@@ -302,3 +302,23 @@ export function ChartIcon(props: IconProps) {
     </Stroke>
   );
 }
+
+export function PersonIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Circle cx={12} cy={8} r={3.6} />
+      <Path d="M4.5 20c.6-3.8 3.6-6 7.5-6s6.900 2.200 7.500 6" />
+    </Stroke>
+  );
+}
+
+export function PeopleIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <Circle cx={9} cy={8.500} r={3.200} />
+      <Path d="M2.500 19.500c.5-3.300 3-5.200 6.500-5.200s6 1.900 6.500 5.200" />
+      <Path d="M15.500 5.600a3.200 3.200 0 0 1 0 5.800" />
+      <Path d="M18 14.800c1.900.700 3.200 2.300 3.500 4.700" />
+    </Stroke>
+  );
+}

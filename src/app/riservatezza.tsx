@@ -20,6 +20,11 @@ const SECTIONS: { title: string; body: string }[] = [
       'Usata solo mentre un tragitto è aperto, anche a schermo spento, per misurare la distanza. Le coordinate restano in memoria finché il tragitto è in corso e non vengono mai salvate: nello storico finiscono solo distanza, tempo, passi, mezzo e punti.',
   },
   {
+    title: 'Avviso di versione nuova',
+    body:
+      "Quando apri l'app, chiede a GitHub (dove viene pubblicata) qual è il numero dell'ultima versione. È la lettura di un file pubblico: non viene inviato nessun tuo dato. Se c'è una versione più nuova compare un avviso in Oggi.",
+  },
+  {
     title: 'Metro',
     body:
       'Sottoterra il GPS non arriva: la distanza viene calcolata sulla rete tra la stazione di ingresso e quella di uscita. Per i viaggi in metro nello storico restano scritti i nomi delle due stazioni, che servono a mostrarti da dove viene la distanza. Con "Ho preso la metro" la posizione viene letta una volta sola, per riconoscere la stazione dove ti trovi, e non viene salvata.',

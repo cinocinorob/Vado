@@ -2,7 +2,7 @@
  * Schermata "Medaglie", la bacheca: medaglie a gradi, la vetrina da mostrare
  * in classifica, le sfide personali e lo storico delle vittorie.
  */
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -20,12 +20,15 @@ import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { PersonalChallenges } from '../ui/ChallengeCard';
 import { LevelStrip } from '../ui/Game';
 import { levelOf, totalXp } from '../core/game';
-import { Group, SectionTitle } from '../ui/expressive';
+import { Group, SectionTitle, WeekStrip } from '../ui/expressive';
 import { HeroBlock } from '../ui/Hero';
+import { ChartIcon, ChevronIcon, GearIcon } from '../ui/Icons';
 import { Medal, TIER_COLORS, type MedalLook } from '../ui/Medal';
 import { buzz } from '../ui/motion';
 import { ProgressBar, Screen, text } from '../ui/parts';
 import { C, F, R } from '../ui/theme';
+import { Sprout } from '../ui/Sprout';
+import { BUILD } from '../update/check';
 import { usePlant } from '../ui/usePlant';
 import { WavyBar } from '../ui/Wavy';
 
@@ -104,7 +107,7 @@ export default function Medaglie() {
   return (
     <Screen bleed>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <HeroBlock caption={`${unlocked} di ${badges.length} sbloccate`} title="Medaglie" color={C.coralSoft}>
+        <HeroBlock caption={`${unlocked} di ${badges.length} medaglie sbloccate`} title="Io" color={C.coralSoft}>
           {next ? (
             <>
               <View style={styles.next}>
@@ -136,6 +139,33 @@ export default function Medaglie() {
           <Text style={[text.small, { paddingHorizontal: 6 }]}>
             L&apos;esperienza (XP) viene dai punti dei tragitti e dalle missioni del giorno. Non conta in classifica: lì valgono solo i punti.
           </Text>
+
+          <Group>
+            <Pressable onPress={() => router.push('/bosco')} accessibilityRole="button" accessibilityLabel="Germoglio e bosco" style={styles.link}>
+              <View style={styles.linkIcon}>
+                <Sprout size={34} stage={plant.stage} health={plant.health} species={plant.species} ground={false} crop />
+              </View>
+              <Text style={styles.linkText}>Germoglio e bosco</Text>
+              <ChevronIcon size={16} />
+            </Pressable>
+            <Pressable onPress={() => router.push('/storico')} accessibilityRole="button" style={styles.link}>
+              <View style={styles.linkIcon}>
+                <ChartIcon size={20} />
+              </View>
+              <Text style={styles.linkText}>Storico: settimane e mesi</Text>
+              <ChevronIcon size={16} />
+            </Pressable>
+            <Pressable onPress={() => router.push('/impostazioni')} accessibilityRole="button" accessibilityLabel="Apri le impostazioni" style={styles.link}>
+              <View style={styles.linkIcon}>
+                <GearIcon size={20} />
+              </View>
+              <Text style={styles.linkText}>Impostazioni</Text>
+              <ChevronIcon size={16} />
+            </Pressable>
+          </Group>
+
+          <SectionTitle title="La tua settimana" />
+          <WeekStrip activeDays={new Set(trips.filter((t) => t.total > 0).map((t) => t.day))} now={now} />
 
           <SectionTitle title="Sfide in corso" />
           <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} tree={{ species: plant.species, stage: plant.stage, trees: plant.trees }} />
@@ -268,10 +298,11 @@ export default function Medaglie() {
             Contano solo i tratti validi. Per le medaglie a numero di tragitti servono almeno 500 metri senza auto. Le vittorie in lega si
             registrano quando apri la classifica.
           </Text>
+          {BUILD > 0 ? <Text style={[text.small, styles.rule]}>Versione di prova n. {BUILD}</Text> : null}
         </View>
       </ScrollView>
 
-      <BottomNav current="medaglie" tripActive={!!active} />
+      <BottomNav current="io" tripActive={!!active} />
     </Screen>
   );
 }
@@ -303,6 +334,9 @@ const styles = StyleSheet.create({
   cellName: { fontFamily: F.bold, fontSize: 13, lineHeight: 17, color: C.text, textAlign: 'center' },
   tiers: { flexDirection: 'row', gap: 4 },
   tierDot: { width: 8, height: 8, borderRadius: 4 },
+  link: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
+  linkIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  linkText: { flex: 1, fontFamily: F.semi, fontSize: 15.5, color: C.text },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10 },
   rowText: { flex: 1, gap: 3 },
   rowName: { fontFamily: F.bold, fontSize: 15, color: C.text },

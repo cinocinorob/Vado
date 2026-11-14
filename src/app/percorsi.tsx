@@ -17,9 +17,10 @@ import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { SectionTitle } from '../ui/expressive';
 import { dateLabel } from '../ui/format';
 import { PageTitle } from '../ui/Hero';
+import { InsiemeTabs } from '../ui/InsiemeTabs';
 import { JourneyMap, type MapTraveller } from '../ui/JourneyMap';
 import { buzz } from '../ui/motion';
-import { PrimaryButton, Screen, text } from '../ui/parts';
+import { GUTTER, PrimaryButton, Screen, text } from '../ui/parts';
 import { C, F, R } from '../ui/theme';
 import { TreeAvatar } from '../ui/TreeAvatar';
 import { usePlant } from '../ui/usePlant';
@@ -94,7 +95,10 @@ export default function Percorsi() {
   return (
     <Screen bleed>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <PageTitle caption="Viaggi con i km senza auto" title="Percorsi" />
+        <PageTitle caption="Viaggi con i km senza auto" title="Insieme" />
+        <View style={styles.tabs}>
+          <InsiemeTabs value="percorsi" />
+        </View>
 
         <View style={styles.body}>
           {current && run ? (
@@ -267,12 +271,13 @@ export default function Percorsi() {
         </View>
       </ScrollView>
 
-      <BottomNav current="percorsi" tripActive={!!active} />
+      <BottomNav current="insieme" tripActive={!!active} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  tabs: { paddingHorizontal: GUTTER, marginBottom: 14 },
   scroll: { paddingBottom: NAV_SPACE },
   body: { paddingHorizontal: 16, paddingTop: 4, gap: 12 },
   hero: { borderRadius: R.hero, padding: 20, gap: 6, overflow: 'hidden' },

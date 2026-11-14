@@ -1,5 +1,5 @@
 /** Schermata "Classifica": leghe (a livelli e con invito) e sfide. */
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Fragment, useCallback, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -30,8 +30,9 @@ import { PlusIcon, ShareIcon } from '../ui/Icons';
 import { Mascot } from '../ui/Mascot';
 import { HeroBlock } from '../ui/Hero';
 import { Divider, GUTTER, GhostButton, PLACEHOLDER, Panel, PrimaryButton, Screen, input, text } from '../ui/parts';
+import { InsiemeTabs } from '../ui/InsiemeTabs';
 import { GooseBoard, type BoardPlayer } from '../ui/GooseBoard';
-import { Avatar, ChallengeCard, Chip, Podium, RankRow, Segmented, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
+import { Avatar, ChallengeCard, Chip, Podium, RankRow, TierBadge, ZONE_DOWN, ZONE_UP, zonesFor } from '../ui/social';
 import { C, F } from '../ui/theme';
 import { TreePicker } from '../ui/TreeAvatar';
 import { Candy } from '../ui/Halloween';
@@ -52,7 +53,8 @@ export default function Classifica() {
   const [now, setNow] = useState(() => Date.now());
   const [loaded, setLoaded] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [section, setSection] = useState<Section>('leghe');
+  const { sezione } = useLocalSearchParams<{ sezione?: string }>();
+  const [section, setSection] = useState<Section>(sezione === 'sfide' ? 'sfide' : 'leghe');
   const [leagues, setLeagues] = useState<LeagueSummary[]>([]);
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [board, setBoard] = useState<LeagueBoard | null>(null);
@@ -180,8 +182,12 @@ export default function Classifica() {
   if (!loaded) {
     return (
       <Screen bleed>
-        <HeroBlock caption={weekLabel(now)} title="Classifica" />
-        <BottomNav current="classifica" tripActive={!!active} />
+        <HeroBlock caption={weekLabel(now)} title="Insieme" color={C.bg} style={styles.heroTabs}>
+          <View style={styles.sections}>
+            <InsiemeTabs value={section} onLocal={setSection} />
+          </View>
+        </HeroBlock>
+        <BottomNav current="insieme" tripActive={!!active} />
       </Screen>
     );
   }
@@ -190,12 +196,16 @@ export default function Classifica() {
     return (
       <Screen bleed>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <HeroBlock caption={weekLabel(now)} title="Classifica" />
+          <HeroBlock caption={weekLabel(now)} title="Insieme" color={C.bg} style={styles.heroTabs}>
+            <View style={styles.sections}>
+              <InsiemeTabs value={section} onLocal={setSection} />
+            </View>
+          </HeroBlock>
           <View style={styles.body}>
             <Nickname onDone={() => refresh(null)} />
           </View>
         </ScrollView>
-        <BottomNav current="classifica" tripActive={!!active} />
+        <BottomNav current="insieme" tripActive={!!active} />
       </Screen>
     );
   }
@@ -216,7 +226,7 @@ export default function Classifica() {
       >
         <HeroBlock
           caption={weekLabel(now)}
-          title="Classifica"
+          title="Insieme"
           color={C.bg}
           style={styles.heroTabs}
           right={
@@ -234,15 +244,7 @@ export default function Classifica() {
           }
         >
           <View style={styles.sections}>
-            <Segmented
-              label="Sezione"
-              value={section}
-              onChange={setSection}
-              options={[
-                { id: 'leghe', label: 'Leghe' },
-                { id: 'sfide', label: 'Sfide' },
-              ]}
-            />
+            <InsiemeTabs value={section} onLocal={setSection} />
           </View>
         </HeroBlock>
 
@@ -375,7 +377,7 @@ export default function Classifica() {
         </View>
       </ScrollView>
 
-      <BottomNav current="classifica" tripActive={!!active} />
+      <BottomNav current="insieme" tripActive={!!active} />
     </Screen>
   );
 }

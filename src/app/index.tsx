@@ -1,19 +1,20 @@
 /** Schermata "Oggi": punti del giorno, obiettivo e tragitti fatti. */
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { formatCo2, legCo2, tripCo2 } from '../core/co2';
-import { monthlyAt, weeklyAt } from '../core/challenges';
 import { candies, candyOpen } from '../core/halloween';
 import { isHalloweenSeason } from '../core/look';
 import { appName } from '../core/health';
 import { getMode } from '../core/modes';
-import { levelOf, missionsOf, streakState, totalXp } from '../core/game';
+import { missionsOf, streakState } from '../core/game';
 import { DAILY_GOAL, dayKey, summarizeDay, type Trip } from '../core/scoring';
 import { connectHealth, refreshHealth, type HealthState } from '../health/sync';
 import { openHealthSettings } from '../health/connect';
 import { applyReminders } from '../reminders/schedule';
+import { newerVersion } from '../update/check';
+import type { Latest } from '../core/update';
 import { updateWidget } from '../widget/update';
 import { social } from '../social';
 import { deleteTrip, loadTrips } from '../storage/trips';
@@ -23,11 +24,10 @@ import { restoreTracking } from '../tracking/tracker';
 import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer } from '../ui/format';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
-import { PersonalChallenges } from '../ui/ChallengeCard';
-import { FreezeShield, LevelStrip, MissionsCard } from '../ui/Game';
-import { Group, SectionTitle, ShapeBadge, TonalButton, WeekStrip } from '../ui/expressive';
+import { FreezeShield, MissionsCard } from '../ui/Game';
+import { Group, SectionTitle, ShapeBadge, TonalButton } from '../ui/expressive';
 import { PageTitle } from '../ui/Hero';
-import { ChartIcon, ChevronIcon, FlameIcon, GearIcon, HeartIcon, PlusIcon } from '../ui/Icons';
+import { ChevronIcon, FlameIcon, GearIcon, HeartIcon, PlusIcon } from '../ui/Icons';
 import { BonusRow, GhostButton, LegRow, ModeBadge, Panel, Screen, text } from '../ui/parts';
 import { Sprout } from '../ui/Sprout';
 import { Bats, CandyCard } from '../ui/Halloween';
@@ -38,6 +38,7 @@ import { WavyRing } from '../ui/Wavy';
 
 export default function Oggi() {
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [update, setUpdate] = useState<Latest | null>(null);
   const [health, setHealth] = useState<HealthState | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [healthNote, setHealthNote] = useState<string | null>(null);
@@ -96,6 +97,19 @@ export default function Oggi() {
     }, [applyHealth]),
   );
 
+  // Una volta per apertura si guarda se è uscita una versione più nuova.
+  useEffect(() => {
+    let alive = true;
+    newerVersion()
+      .then((latest) => {
+        if (alive) setUpdate(latest);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   // Se l'app era stata chiusa a tragitto aperto, lo si recupera.
   useEffect(() => {
     restoreTracking().catch(() => undefined);
@@ -113,7 +127,6 @@ export default function Oggi() {
   const today = summarizeDay(trips, dayKey(now));
   const serie = streakState(trips, now);
   const days = serie.days;
-  const level = levelOf(totalXp(trips));
   const missions = missionsOf(trips, dayKey(now));
   const rows = today.trips.flatMap((trip) => [
     ...trip.legs.map((leg, i) => ({
@@ -131,7 +144,6 @@ export default function Oggi() {
   const extra = Math.max(0, today.points - DAILY_GOAL);
   const todayCo2 = today.trips.reduce((sum, t) => sum + tripCo2(t), 0);
   const plant = usePlant(trips, now);
-  const activeDays = useMemo(() => new Set(trips.filter((t) => t.total > 0).map((t) => t.day)), [trips]);
 
   /** Pressione lunga su un tratto: si cancella il tragitto intero, dopo conferma. */
   function askDelete(trip: Trip) {
@@ -171,6 +183,21 @@ export default function Oggi() {
         />
 
         <View style={styles.body}>
+          {update ? (
+            <Pressable
+              onPress={() => Linking.openURL(update.apk).catch(() => undefined)}
+              accessibilityRole="button"
+              accessibilityLabel="C'è una versione nuova: tocca per scaricarla"
+              style={({ pressed }) => [styles.update, pressed && { opacity: 0.9 }]}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.updateTitle}>C&apos;è una versione nuova</Text>
+                <Text style={styles.updateText}>Tocca per scaricarla, poi apri il file per installarla. I tuoi dati restano.</Text>
+              </View>
+              <ChevronIcon size={16} color={C.ink} />
+            </Pressable>
+          ) : null}
+
           <View style={styles.hero}>
             <View style={styles.glow} pointerEvents="none" />
             {HALLOWEEN_ON ? (
@@ -247,8 +274,6 @@ export default function Oggi() {
             </View>
           ) : null}
 
-          <LevelStrip level={level} onPress={() => router.push('/medaglie')} />
-
           {active ? (
             <Pressable onPress={() => router.push('/in-corso')} accessibilityRole="button" style={({ pressed }) => [styles.activeBanner, pressed && { opacity: 0.9 }]}>
               <ModeBadge mode={currentLeg(active).mode} />
@@ -307,10 +332,6 @@ export default function Oggi() {
           {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
 
           <MissionsCard missions={missions} />
-
-          <SectionTitle title="La tua settimana" />
-          <WeekStrip activeDays={activeDays} now={now} />
-          <PersonalChallenges week={weeklyAt(trips, now)} month={monthlyAt(trips, now)} now={now} onPress={() => router.push('/medaglie')} tree={{ species: plant.species, stage: plant.stage, trees: plant.trees }} />
 
           {isHalloweenSeason(now) ? <CandyCard count={candies(trips, now)} open={candyOpen(now)} onPress={() => router.push('/classifica')} /> : null}
 
@@ -371,11 +392,6 @@ export default function Oggi() {
           ) : null}
 
 
-          <Pressable onPress={() => router.push('/storico')} accessibilityRole="button" style={styles.history}>
-            <ChartIcon size={20} />
-            <Text style={styles.historyText}>Storico: settimane e mesi</Text>
-            <ChevronIcon size={16} />
-          </Pressable>
         </View>
       </ScrollView>
 
@@ -386,6 +402,9 @@ export default function Oggi() {
 
 const styles = StyleSheet.create({
   shields: { gap: 3 },
+  update: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.lime, borderRadius: R.card, paddingVertical: 14, paddingHorizontal: 18 },
+  updateTitle: { fontFamily: F.bold, fontSize: 16, color: C.ink },
+  updateText: { fontFamily: F.medium, fontSize: 13.5, lineHeight: 18, color: C.ink },
   saved: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.deep, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 14 },
   savedText: { flex: 1, fontFamily: F.semi, fontSize: 13.5, lineHeight: 18, color: '#E6F4FF' },
   forgot: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: R.card, backgroundColor: C.card, borderWidth: 2, borderColor: C.tonal, borderStyle: 'dashed' },
@@ -447,6 +466,4 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   gear: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center' },
   hint: { textAlign: 'center', marginTop: -2 },
-  history: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60, paddingHorizontal: 18, borderRadius: R.card, backgroundColor: C.card, marginTop: 4 },
-  historyText: { flex: 1, fontFamily: F.semi, fontSize: 15.5, color: C.text },
 });

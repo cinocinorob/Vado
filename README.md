@@ -175,7 +175,7 @@ Contano solo i tratti validi. Per le medaglie a numero di tragitti il tratto con
 500 m, altrimenti basterebbe premere Avvia e Termina dieci volte.
 
 **Sfide personali** (`src/core/challenges.ts`): una della settimana (otto che ruotano ogni lunedì) e una del mese
-(dodici, una per mese: a ottobre "Ottobre da paura", 120 km senza auto). Si vedono in Oggi e in Medaglie; in
+(dodici, una per mese: a ottobre "Ottobre da paura", 120 km senza auto). Si vedono nella scheda Io; in
 Classifica la sfida del mese ha anche la graduatoria del mese della lega.
 
 **Vittorie:** piazzamenti di fine settimana nelle leghe, sfide con gli amici, sfide personali e percorsi finiti.
@@ -405,7 +405,7 @@ come testo.
 
 ## Halloween e aspetto
 
-Impostazioni → Aspetto: automatico (Halloween dal 15 ottobre al 2 novembre, poi come il telefono), chiaro, scuro, Halloween.
+Impostazioni → Aspetto: automatico (Halloween dal 15 ottobre al 2 novembre, Natale dal 1° dicembre al 6 gennaio, poi come il telefono), chiaro, scuro. I temi di stagione non si scelgono a mano.
 Il cambio si vede alla riapertura dell'app. Ad Halloween: cappello da strega al germoglio, pipistrelli, caramelle (un km senza
 auto, una caramella, dal 15 al 31 ottobre) con classifica nella lega, medaglia a tempo "Notte delle streghe" (un tragitto
 senza auto la sera del 31 ottobre).
@@ -540,3 +540,16 @@ src/app/        le schermate: Oggi, Nuovo tragitto, In corso, Riepilogo, Classif
 scripts/        la prova automatica su telefono simulato
 .github/        la ricetta con cui GitHub costruisce, prova e pubblica l'app
 ```
+
+## Tre schede e avviso di versione nuova
+
+- **Tre schede** (`src/ui/BottomNav.tsx`): **Oggi** (anello, tragitti, missioni del giorno), **Insieme** (leghe, sfide,
+  percorsi: `src/ui/InsiemeTabs.tsx` unisce `classifica.tsx` e `percorsi.tsx`), **Io** (`medaglie.tsx`: livello, germoglio
+  e bosco, storico, impostazioni, settimana, sfide personali, vetrina, medaglie, vittorie). Le sfide della settimana e
+  del mese non stanno più in Oggi: lì ci sono solo le missioni del giorno.
+- **Avviso di versione nuova** (`src/core/update.ts`, `src/update/check.ts`): la compilazione scrive nell'app il proprio
+  numero (`EXPO_PUBLIC_BUILD`, il numero della costruzione) e la pubblicazione mette accanto a `vado.apk` un file
+  `versione.json` con l'ultimo numero. All'apertura l'app li confronta: se quello pubblicato è più alto, in Oggi compare
+  "C'è una versione nuova" e toccandolo si scarica il file. L'installazione va comunque confermata a mano: fuori dal
+  Play Store Android non permette aggiornamenti silenziosi. Il numero viaggia con il file (`build.txt`), così anche un
+  file riusato dalla cache resta coerente con il suo `versione.json`.

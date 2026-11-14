@@ -373,7 +373,8 @@ friend_secret = secrets.token_hex(32)
 def check_leaderboard() -> str:
     """Classifica vera: soprannome, lega creata dall'app, un'altra persona che entra con il codice."""
     log("apro la classifica")
-    tap_label("Classifica")
+    tap(wait_for("Insieme", 30, "aprendo la scheda Insieme", exact=True))
+    time.sleep(1.5)
     field = wait_for("Soprannome", 30, "aprendo la classifica", exact=True, required=False)
     if not field:
         screenshot("classifica-senza-soprannome")
@@ -508,8 +509,14 @@ def open_settings() -> bool:
 
 
 def check_percorsi() -> str:
-    """Si apre la scheda Percorsi, si parte per un viaggio e compaiono le tappe."""
-    tap_label("Percorsi")
+    """Da Insieme si aprono i Percorsi, si parte per un viaggio e compaiono le tappe."""
+    tap(wait_for("Insieme", 30, "aprendo la scheda Insieme", exact=True))
+    time.sleep(1.5)
+    part = wait_for("Percorsi", 20, "cercando i percorsi dentro Insieme", exact=True, required=False)
+    if not part:
+        return "in Insieme manca la sezione Percorsi: " + visible_text()[:300]
+    tap(part)
+    time.sleep(1.5)
     if not wait_for("Scegli un viaggio", 20, "aprendo i percorsi", required=False):
         return "la schermata dei percorsi non si apre: " + visible_text()[:300]
     screenshot("percorsi")
@@ -532,6 +539,8 @@ def check_percorsi() -> str:
 
 def check_storico() -> str:
     """Lo storico si apre e mostra le settimane."""
+    tap(wait_for("Io", 30, "aprendo la scheda Io", exact=True))
+    wait_for("sbloccate", 30, "aprendo la scheda Io")
     link = scroll_to("Storico: settimane e mesi", swipes=10)
     if not link:
         return "collegamento allo storico non trovato: " + visible_text()[:300]
@@ -540,12 +549,9 @@ def check_storico() -> str:
         return "lo storico non si apre: " + visible_text()[:300]
     screenshot("storico")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
-    # Oggi era scorsa fino in fondo: si torna in cima.
-    wait_for("Storico: settimane e mesi", 30, "tornando a Oggi dallo storico")
-    for _ in range(5):
-        adb("shell", "input", "swipe", "540", "700", "540", "1700", "300")
-        time.sleep(0.8)
-    wait_for("Tragitti di oggi", 30, "tornando in cima a Oggi")
+    wait_for("Storico: settimane e mesi", 30, "tornando alla scheda Io dallo storico")
+    tap(wait_for("Oggi", 30, "tornando a Oggi", exact=True))
+    wait_for("Tragitti di oggi", 30, "tornando a Oggi dalla scheda Io")
     return "ok"
 
 
@@ -964,13 +970,13 @@ def main() -> None:
     screenshot("oggi-dopo")
 
     log("apro le medaglie")
-    tap_label("Medaglie")
+    tap(wait_for("Io", 30, "aprendo la scheda Io", exact=True))
     wait_for("sbloccate", 30, "aprendo le medaglie")
     screenshot("medaglie")
     medals = visible_text()
     # La medaglia presa sta nella vetrina o nello scaffale, più in basso.
     if "Primo passo" not in medals:
-        scroll_to("Primo passo", swipes=8)
+        scroll_to("Primo passo", swipes=14)
         medals += " | " + visible_text()
     log(f"medaglie: {medals}")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
@@ -1007,7 +1013,7 @@ def main() -> None:
             problems.append(f"distanza gonfiata: {total:.0f} m su {walked:.0f} m veri")
     if first is not None and second is not None and second <= first:
         problems.append(f"la distanza non è cresciuta ad app nascosta: {first} → {second} m")
-    if "Primo passo" not in medals or not re.search(r"\b1 di \d+ sbloccate", medals):
+    if "Primo passo" not in medals or not re.search(r"\b1 di \d+ medaglie sbloccate", medals):
         problems.append("la medaglia Primo passo non risulta sbloccata")
     measured = (
         f"percorsi {walked:.0f} m, misurati {total} m (app aperta {first}, dopo il secondo piano {second}); "

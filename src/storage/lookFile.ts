@@ -14,7 +14,9 @@ export function readLookChoice(): LookChoice {
     const file = new File(Paths.document, NAME);
     if (!file.exists) return 'auto';
     const parsed = JSON.parse(file.textSync()) as { look?: unknown };
-    return isLookChoice(parsed.look) ? parsed.look : 'auto';
+    if (!isLookChoice(parsed.look)) return 'auto';
+    // I temi di stagione non si scelgono più a mano: chi li aveva torna ad automatico.
+    return parsed.look === 'halloween' || parsed.look === 'natale' ? 'auto' : parsed.look;
   } catch {
     return 'auto';
   }
