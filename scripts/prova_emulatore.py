@@ -550,7 +550,8 @@ def check_storico() -> str:
     screenshot("storico")
     adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Storico: settimane e mesi", 30, "tornando alla scheda Io dallo storico")
-    tap(wait_for("Oggi", 30, "tornando a Oggi", exact=True))
+    # "Oggi" è anche un giorno della striscia della settimana: si torna con Indietro.
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
     wait_for("Tragitti di oggi", 30, "tornando a Oggi dalla scheda Io")
     return "ok"
 
