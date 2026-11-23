@@ -175,7 +175,8 @@ export default function Impostazioni() {
                   <Text style={styles.rowTitle}>Avvio automatico</Text>
                   <Text style={text.small}>
                     Quando cominci a camminare, pedalare o sali su un mezzo arriva un avviso: un tocco e il tragitto parte. Usa il permesso &quot;Attività
-                    fisica&quot;, non la posizione. Al massimo un avviso ogni 45 minuti, mai di notte.
+                    fisica&quot;, non la posizione. Dalla notifica puoi anche scegliere subito il mezzo. Al massimo un avviso ogni 45 minuti (15 quando scendi da
+                    un mezzo), mai di notte.
                   </Text>
                 </View>
                 <Toggle value={auto} onChange={toggleAuto} label="Avvio automatico" />

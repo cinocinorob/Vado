@@ -868,6 +868,18 @@ def check_dimenticato() -> str:
     if not wait_for("Riepilogo", 30, "aggiungendo il viaggio dimenticato", required=False):
         return "il viaggio non è stato salvato: " + visible_text()[:300]
     summary = visible_text()
+    # Dal riepilogo si apre la segnalazione di un tragitto contato male.
+    report = scroll_to("Contato male? Segnalalo", exact=True, swipes=6)
+    if not report:
+        return "nel riepilogo manca «Contato male? Segnalalo»: " + visible_text()[:300]
+    tap(report)
+    if not wait_for("Come ti sei mosso davvero?", 20, "aprendo la segnalazione", required=False):
+        return "la schermata di segnalazione non si apre: " + visible_text()[:300]
+    screenshot("segnala")
+    if not find("Condividi la segnalazione", exact=True):
+        return "nella segnalazione manca il pulsante per condividerla: " + visible_text()[:300]
+    adb("shell", "input", "keyevent", "KEYCODE_BACK")
+    wait_for("Fine", 20, "tornando al riepilogo dalla segnalazione", exact=True)
     tap_label("Fine")
     wait_for("Inizia un tragitto", 30, "tornando a Oggi dopo il viaggio dimenticato")
     if "Flaminio → Spagna" not in summary:

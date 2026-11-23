@@ -13,8 +13,11 @@ class TransitionReceiver : BroadcastReceiver() {
     val result = ActivityTransitionResult.extractResult(intent) ?: return
     val event = result.transitionEvents.lastOrNull { it.transitionType == ActivityTransition.ACTIVITY_TRANSITION_ENTER } ?: return
     val now = System.currentTimeMillis()
+    // Il movimento precedente serve a capire se si è appena scesi da un mezzo.
+    val previous = Prefs.lastEvent(context)
+    val previousAt = Prefs.lastEventAt(context)
     Prefs.setLastEvent(context, Transitions.name(event.activityType), now)
-    val outcome = Nudge.maybeNotify(context, event.activityType)
+    val outcome = Nudge.maybeNotify(context, event.activityType, previous, previousAt)
     Prefs.addHistory(context, "$now ${Transitions.name(event.activityType)} $outcome")
   }
 }

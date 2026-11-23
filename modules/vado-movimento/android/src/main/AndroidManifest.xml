@@ -6,6 +6,7 @@
 
   <application>
     <receiver android:name="app.vado.movimento.TransitionReceiver" android:exported="false" />
+    <receiver android:name="app.vado.movimento.DismissReceiver" android:exported="false" />
     <!-- BOOT_COMPLETED e MY_PACKAGE_REPLACED li manda solo il sistema; il ricevitore riattiva il riconoscimento se era acceso. -->
     <receiver android:name="app.vado.movimento.BootReceiver" android:exported="true">
       <intent-filter>

@@ -146,6 +146,15 @@ export default function Oggi() {
   const plant = usePlant(trips, now);
 
   /** Pressione lunga su un tratto: si cancella il tragitto intero, dopo conferma. */
+  /** Pressione lunga su un tratto: segnalarlo o cancellarlo. */
+  function askAction(trip: Trip) {
+    Alert.alert('Questo tragitto', 'Cosa vuoi fare?', [
+      { text: 'Annulla', style: 'cancel' },
+      ...(trip.source === 'salute' ? [] : [{ text: 'Segnala che è sbagliato', onPress: () => router.push({ pathname: '/segnala', params: { id: trip.id } }) }]),
+      { text: 'Cancella', style: 'destructive', onPress: () => askDelete(trip) },
+    ]);
+  }
+
   function askDelete(trip: Trip) {
     const what = trip.legs.length > 1 ? `questo tragitto (${trip.legs.length} tratti)` : 'questo tragitto';
     Alert.alert('Cancellare il tragitto?', `Si tolgono ${what} e i suoi ${trip.total} punti, anche dalla classifica. Non si può annullare.`, [
@@ -305,7 +314,7 @@ export default function Oggi() {
           ) : (
             <Group>
               {rows.map((row) => (
-                <Pressable key={row.key} onLongPress={() => askDelete(row.trip)} delayLongPress={450} accessibilityHint="Tieni premuto per cancellare il tragitto">
+                <Pressable key={row.key} onLongPress={() => askAction(row.trip)} delayLongPress={450} accessibilityHint="Tieni premuto per segnalarlo o cancellarlo">
                   {row.leg ? (
                     <LegRow leg={row.leg} caption={row.caption} co2={legCo2(row.leg) > 0 ? `${formatCo2(legCo2(row.leg))} di CO₂ evitata` : undefined} />
                   ) : (
@@ -329,7 +338,7 @@ export default function Oggi() {
             </Pressable>
           ) : null}
 
-          {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per cancellarlo.</Text> : null}
+          {rows.length > 0 ? <Text style={[text.small, styles.hint]}>Tieni premuto un tragitto per segnalarlo o cancellarlo.</Text> : null}
 
           <MissionsCard missions={missions} />
 

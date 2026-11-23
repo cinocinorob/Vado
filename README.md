@@ -363,7 +363,8 @@ Regole in `src/tracking/tripState.ts` (`splitTransit`) e `src/core/geo.ts` (`fas
 
 Impostazioni, "Avvio automatico". Il riconoscimento delle attività di Google Play services (permesso "Attività fisica",
 non la posizione) avvisa quando si comincia a camminare, a pedalare o si sale su un veicolo. Arriva una notifica
-"Stai camminando?": toccandola si apre Nuovo tragitto e la misura parte subito. Al massimo un avviso ogni 45 minuti,
+"Stai camminando?": toccandola si apre Nuovo tragitto e la misura parte subito; i pulsanti della notifica (per esempio "A piedi",
+"Bus, tram, metro", "Ignora") avviano direttamente con quel mezzo. Al massimo un avviso ogni 45 minuti, 15 se si è appena scesi da un mezzo,
 mai tra le 23 e le 6, mai durante un tragitto. Il codice nativo è in `modules/vado-movimento` (Kotlin): funziona
 anche ad app chiusa e si riattiva dopo un riavvio del telefono o un aggiornamento dell'app. Non è verificabile sul
 telefono simulato della prova (lì si prova solo il collegamento della notifica).
@@ -553,3 +554,10 @@ scripts/        la prova automatica su telefono simulato
   "C'è una versione nuova" e toccandolo si scarica il file. L'installazione va comunque confermata a mano: fuori dal
   Play Store Android non permette aggiornamenti silenziosi. Il numero viaggia con il file (`build.txt`), così anche un
   file riusato dalla cache resta coerente con il suo `versione.json`.
+
+## Segnalare un tragitto contato male
+
+Dal riepilogo ("Contato male? Segnalalo") o tenendo premuto un tragitto in Oggi si apre "Tragitto sbagliato": mezzo vero,
+una nota e un testo da condividere con il tragitto come l'ha valutato l'app e le righe del registro di diagnostica di quel
+periodo (10 minuti prima e dopo). Niente coordinate (`src/core/report.ts`, `src/app/segnala.tsx`). Serve a tarare il
+riconoscimento di bus e metro su casi veri.

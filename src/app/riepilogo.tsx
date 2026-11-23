@@ -1,7 +1,7 @@
 /** Riepilogo a fine tragitto: punti, tratti e perché valgono quanto valgono. */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TIER_NAMES, goalFor, newlyUnlocked, type BadgeState } from '../core/badges';
@@ -249,6 +249,12 @@ export default function Riepilogo() {
             />
           ) : null}
 
+          {trip.source !== 'salute' ? (
+            <Pressable onPress={() => router.push({ pathname: '/segnala', params: { id: trip.id } })} accessibilityRole="button" hitSlop={8} style={styles.report}>
+              <Text style={styles.reportText}>Contato male? Segnalalo</Text>
+            </Pressable>
+          ) : null}
+
           {capped ? (
             <Text style={text.body}>
               Hai raggiunto il tetto di {TRIP_CAP} punti per tragitto
@@ -284,6 +290,8 @@ function prizeCaption(medal: BadgeState): string {
 }
 
 const styles = StyleSheet.create({
+  report: { alignSelf: 'center', paddingVertical: 6 },
+  reportText: { fontFamily: F.bold, fontSize: 14.5, color: C.text, textDecorationLine: 'underline' },
   xp: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.card, borderRadius: R.card, padding: 14 },
   xpTitle: { fontFamily: F.displayBold, fontSize: 22, lineHeight: 27, color: C.text },
   xpDetail: { fontFamily: F.medium, fontSize: 13.5, lineHeight: 18, color: C.dim },

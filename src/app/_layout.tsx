@@ -66,6 +66,7 @@ export default function RootLayout() {
         <Stack.Screen name="bus" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="diagnostica" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="dimenticato" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="segnala" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );
