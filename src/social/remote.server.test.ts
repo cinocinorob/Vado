@@ -322,3 +322,20 @@ test('leghe, punti e sfide tra persone vere', { skip }, async () => {
   // La lega resta agli altri due.
   assert.equal((await c.source.board(league.id, later))?.entries.length, 2);
 });
+
+test('tetto giornaliero: oltre 300 punti nello stesso giorno il server non salva', { skip }, async () => {
+  const now = Date.now();
+  const tag = now.toString(36).slice(-4);
+  const [a, b] = [phone(), phone()];
+  const me = value(await a.source.setNickname(`Tetto ${tag}`));
+  value(await b.source.setNickname(`Altro ${tag}`));
+  const league = value(await a.source.createLeague(`Tetto ${tag}`));
+  value(await b.source.joinLeague(league.code ?? ''));
+  // Sei tragitti da 60 punti nello stesso minuto: 360 in tutto, ne passano 300.
+  const at = Math.max(weekStart(now) + 1000, now - 60_000);
+  for (let i = 0; i < 6; i++) a.trips.push(trip(60, at + i * 1000, 'piedi'));
+  await a.source.sync(now);
+  const board = await b.source.board(league.id, now);
+  assert.ok(board);
+  assert.equal(board.entries.find((e) => e.id === me.id)?.points, 300);
+});

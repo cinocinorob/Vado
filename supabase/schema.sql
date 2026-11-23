@@ -385,18 +385,26 @@ end $$;
 
 -- Riceve i tragitti con punti non ancora inviati. Quelli già presenti vengono
 -- ignorati, quindi rimandare lo stesso elenco non fa danni.
+--
+-- Tetto giornaliero: al massimo 300 punti per persona nello stesso giorno (ora
+-- di Roma). Una giornata vera ne fa al più 4 tragitti da 60 più il bonus da 10:
+-- il tetto ferma solo gli invii impossibili da un'app modificata. I tragitti
+-- che lo supererebbero non vengono salvati; si contano in ordine di ora.
 create or replace function public.vado_push_scores(p_secret text, p_scores jsonb) returns json
 language plpgsql security definer set search_path = '' as $$
 declare
   v_user uuid := vado.who(p_secret);
-  v_saved integer;
+  v_saved integer := 0;
+  v_rows integer;
+  v_day_total integer;
+  r record;
 begin
   if p_scores is null or jsonb_typeof(p_scores) <> 'array' or jsonb_array_length(p_scores) > 500 then
     raise exception 'dati-non-validi';
   end if;
-  insert into vado.scores (user_id, trip_id, ended_at, points, mode, meters)
-    select v_user, left(s ->> 'id', 40), (s ->> 'at')::timestamptz, (s ->> 'points')::integer, left(s ->> 'mode', 12),
-      least(500000, greatest(0, coalesce((s ->> 'meters')::integer, 0)))
+  for r in
+    select left(s ->> 'id', 40) as id, (s ->> 'at')::timestamptz as at, (s ->> 'points')::integer as points,
+      left(s ->> 'mode', 12) as mode, least(500000, greatest(0, coalesce((s ->> 'meters')::integer, 0))) as meters
     from jsonb_array_elements(p_scores) s
     where coalesce(s ->> 'id', '') <> ''
       -- Un tragitto vale al massimo 60 punti più 10 di bonus.
@@ -404,9 +412,25 @@ begin
       -- Niente tragitti nel futuro, né più vecchi di due mesi.
       and (s ->> 'at')::timestamptz <= now() + interval '10 minutes'
       and (s ->> 'at')::timestamptz >= now() - interval '60 days'
+    order by (s ->> 'at')::timestamptz
+  loop
     -- Un tragitto già presente aggiorna solo i metri (per chi l'aveva mandato prima che esistessero).
-    on conflict (user_id, trip_id) do update set meters = excluded.meters where vado.scores.meters = 0;
-  get diagnostics v_saved = row_count;
+    update vado.scores set meters = r.meters where user_id = v_user and trip_id = r.id and meters = 0;
+    if exists (select 1 from vado.scores where user_id = v_user and trip_id = r.id) then
+      continue;
+    end if;
+    select coalesce(sum(points), 0) into v_day_total from vado.scores
+      where user_id = v_user
+        and (ended_at at time zone 'Europe/Rome')::date = (r.at at time zone 'Europe/Rome')::date;
+    if v_day_total + r.points > 300 then
+      continue;
+    end if;
+    insert into vado.scores (user_id, trip_id, ended_at, points, mode, meters)
+      values (v_user, r.id, r.at, r.points, r.mode, r.meters)
+      on conflict (user_id, trip_id) do nothing;
+    get diagnostics v_rows = row_count;
+    v_saved := v_saved + v_rows;
+  end loop;
   delete from vado.scores where user_id = v_user and ended_at < now() - interval '70 days';
   return json_build_object('saved', v_saved);
 end $$;
