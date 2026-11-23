@@ -17,7 +17,7 @@ const FAB = 64;
 /** Spazio da lasciare in fondo alle schermate che mostrano la barra e il pulsante. */
 export const NAV_SPACE = BAR + FAB + 40;
 
-export function BottomNav({ current, tripActive }: { current: Section; tripActive: boolean }) {
+export function BottomNav({ current, tripActive, compact = false }: { current: Section; tripActive: boolean; compact?: boolean }) {
   const insets = useSafeAreaInsets();
 
   function go(section: Section) {
@@ -35,10 +35,10 @@ export function BottomNav({ current, tripActive }: { current: Section; tripActiv
         onPress={() => router.push(tripActive ? '/in-corso' : '/nuovo')}
         accessibilityRole="button"
         accessibilityLabel={tripActive ? 'Riapri il tragitto in corso' : 'Inizia un tragitto'}
-        style={({ pressed }) => [styles.fab, { bottom: insets.bottom + BAR + 16 }, tripActive && styles.fabActive, pressed && styles.pressed]}
+        style={({ pressed }) => [styles.fab, { bottom: insets.bottom + BAR + 16 }, compact && styles.fabCompact, tripActive && styles.fabActive, pressed && styles.pressed]}
       >
         <PlayIcon size={24} color={tripActive ? C.lime : C.onCoral} />
-        <Text style={[styles.fabLabel, tripActive && { color: C.lime }]}>{tripActive ? 'In corso' : 'Parti'}</Text>
+        {compact ? null : <Text style={[styles.fabLabel, tripActive && { color: C.lime }]}>{tripActive ? 'In corso' : 'Parti'}</Text>}
       </Pressable>
       <View style={[styles.bar, { height: BAR + insets.bottom, paddingBottom: insets.bottom }]} accessibilityRole="tablist">
         <Tab label="Oggi" active={current === 'oggi'} onPress={() => go('oggi')} icon={(color) => <HomeIcon size={22} color={color} />} />
@@ -80,6 +80,8 @@ const styles = StyleSheet.create({
     boxShadow: '0px 6px 16px 0px rgba(58, 19, 6, 0.22)',
     zIndex: 2,
   },
+  // Stretto: solo il simbolo, in un quadrato tondo.
+  fabCompact: { width: FAB, paddingLeft: 0, paddingRight: 0, justifyContent: 'center' },
   fabActive: { backgroundColor: C.deep },
   fabLabel: { fontFamily: F.bold, fontSize: 16, color: C.onCoral },
   pressed: { transform: [{ scale: 0.96 }] },

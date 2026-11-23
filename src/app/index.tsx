@@ -39,6 +39,7 @@ import { WavyRing } from '../ui/Wavy';
 export default function Oggi() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [update, setUpdate] = useState<Latest | null>(null);
+  const [compactFab, setCompactFab] = useState(false);
   const [health, setHealth] = useState<HealthState | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [healthNote, setHealthNote] = useState<string | null>(null);
@@ -140,6 +141,12 @@ export default function Oggi() {
     ...(trip.bonus > 0 ? [{ key: `${trip.id}-bonus`, trip, leg: null, bonus: trip.bonus, caption: undefined }] : []),
   ]);
   const healthSteps = health?.connected ? health.todaySteps : null;
+  // Sotto la CO₂: i passi se ci sono, altrimenti i km senza auto (uno zero grande non dice niente).
+  const stepsShown = healthSteps ?? today.steps;
+  const second =
+    stepsShown > 0
+      ? { label: healthSteps != null ? 'passi oggi' : 'passi nei tragitti', value: integer(stepsShown) }
+      : { label: 'km senza auto', value: (today.carFreeMeters / 1000).toFixed(1).replace('.', ',') };
   // I punti oltre l'obiettivo valgono come gli altri (classifica, sfide): l'anello fa un secondo giro.
   const extra = Math.max(0, today.points - DAILY_GOAL);
   const todayCo2 = today.trips.reduce((sum, t) => sum + tripCo2(t), 0);
@@ -173,7 +180,16 @@ export default function Oggi() {
 
   return (
     <Screen bleed>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        scrollEventThrottle={100}
+        onScroll={(e) => {
+          // Scorrendo, "Parti" si stringe al solo simbolo per non coprire le schede.
+          const down = e.nativeEvent.contentOffset.y > 80;
+          if (down !== compactFab) setCompactFab(down);
+        }}
+      >
         <PageTitle
           caption={dateLabel(now)}
           title="Oggi"
@@ -260,7 +276,7 @@ export default function Oggi() {
               <Pressable
                 onPress={() => router.push('/bosco')}
                 accessibilityRole="button"
-                accessibilityLabel={`CO₂ evitata oggi ${formatCo2(todayCo2)}, ${integer(healthSteps ?? today.steps)} ${healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}`}
+                accessibilityLabel={`CO₂ evitata oggi ${formatCo2(todayCo2)}, ${second.value} ${second.label}`}
                 style={({ pressed }) => [styles.steps, pressed && { opacity: 0.85 }]}
               >
                 <Text style={styles.stepsLabel}>CO₂ evitata oggi</Text>
@@ -268,9 +284,9 @@ export default function Oggi() {
                   {formatCo2(todayCo2)}
                 </Text>
                 <View style={styles.stepsLine} />
-                <Text style={styles.stepsLabel}>{healthSteps != null ? 'passi oggi' : 'passi nei tragitti'}</Text>
+                <Text style={styles.stepsLabel}>{second.label}</Text>
                 <Text style={styles.stepsValueSmall} adjustsFontSizeToFit numberOfLines={1}>
-                  {integer(healthSteps ?? today.steps)}
+                  {second.value}
                 </Text>
               </Pressable>
             </View>
@@ -394,7 +410,7 @@ export default function Oggi() {
         </View>
       </ScrollView>
 
-      <BottomNav current="oggi" tripActive={!!active} />
+      <BottomNav current="oggi" tripActive={!!active} compact={compactFab} />
     </Screen>
   );
 }
