@@ -10,17 +10,19 @@ decise insieme. Tragitti e posizioni restano sul telefono; al server va solo ci�
 
 | C'è | Manca |
 |---|---|
-| Schermata Oggi: punti, obiettivo da 80, serie di giorni, tragitti | Mappa vera sotto il percorso |
-| Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | CO₂ evitata (servono fattori di emissione con fonte) |
-| Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Tema scuro (la grafica è solo chiara) |
-| Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Riconoscimento automatico del mezzo |
-| Medaglie a tre gradi, vetrina, obiettivo della settimana e sfida del mese, vittorie, percorsi virtuali | |
-| Metro di Roma: distanza calcolata sulla rete, anche registrata a posteriori | Metro di altre città; bus e treni in galleria |
-| Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
-| Classifica, leghe con invito e sfide tra persone vere | Lega a livelli automatica; segnalazione di soprannomi e nomi offensivi |
-| Rilevamento a schermo spento, con notifica fissa | |
-| Controlli anti-imbroglio di base | |
-| Schermata Riservatezza | |
+| Oggi: punti, obiettivo da 80, serie con salvaserie, CO₂ evitata, tragitti, missioni | Mappa vera sotto il percorso |
+| Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | Verifica del casa-lavoro con i luoghi |
+| Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Metro di altre città; bus e treni in galleria |
+| Riepilogo con lo stato di ogni tratto, medaglie e segnalazione "contato male" | Prova su telefono reale di avvio automatico e riconoscimento di bus e metro |
+| CO₂ evitata (167,1 g/km, metodo ISPRA) e germoglio che cresce | Versione iPhone (scelta: solo Android) |
+| Medaglie a tre gradi, vetrina, obiettivo della settimana e sfida del mese, vittorie, percorsi virtuali | Lega a livelli automatica (scritta, spenta finché gli utenti sono pochi) |
+| Metro di Roma sulla rete; bus e tram riconosciuti dal tempo reale e dalla forma della linea | |
+| Avvio automatico con notifica (riconoscimento delle attività), avviso di versione nuova | |
+| Connessione Salute: passi e attività registrate da altre app | |
+| Classifica, leghe con invito, sfide tra persone, segnalazione e blocco | |
+| Rilevamento a schermo spento con notifica fissa; tema chiaro, scuro e di stagione | |
+| Controlli anti-imbroglio sul telefono e tetto giornaliero sul server | |
+| Riservatezza nell'app e informativa pubblica (`PRIVACY.md`) | |
 
 ## Grafica
 
