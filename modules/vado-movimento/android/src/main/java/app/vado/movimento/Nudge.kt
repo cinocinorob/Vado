@@ -44,17 +44,20 @@ internal object Nudge {
 
     val (title, body, mode) = when (type) {
       DetectedActivity.ON_BICYCLE -> Triple("Stai pedalando?", "Tocca per avviare il tragitto in bici: Vado misura e ti dà i punti.", "bici")
-      DetectedActivity.IN_VEHICLE -> Triple("Sei su un mezzo?", "Se è bus, tram o metro, tocca per avviare il tragitto. In auto non serve.", "tpl")
+      DetectedActivity.IN_VEHICLE -> Triple("Sei su un mezzo?", "Bus, tram, metro o auto: scegli qui sotto e il tragitto parte. Toccando l'avviso scegli tra tutti i mezzi.", "tpl")
       else -> Triple("Stai camminando?", "Tocca per avviare il tragitto a piedi: Vado misura e ti dà i punti.", "piedi")
     }
     ensureChannel(context)
-    val tap = start(context, mode, 7303)
+    // Su un veicolo il mezzo può essere di tutto (bus, treno, auto elettrica):
+    // toccando l'avviso si apre la scelta, senza partire.
+    val tap = start(context, mode, 7303, autostart = type != DetectedActivity.IN_VEHICLE)
     // Pulsanti: il mezzo riconosciuto, l'alternativa più probabile e "Ignora".
-    // Ognuno avvia subito il tragitto con quel mezzo, senza passare dalla scelta.
+    // Avviano subito il tragitto con quel mezzo; "In auto" apre la scelta tra
+    // auto elettrica, a benzina e car sharing, con l'auto elettrica già scelta.
     val actions = when (type) {
-      DetectedActivity.ON_BICYCLE -> listOf("In bici" to "bici", "Bici elettrica" to "ebike")
-      DetectedActivity.IN_VEHICLE -> listOf("Bus, tram, metro" to "tpl", "Treno" to "treno")
-      else -> listOf("A piedi" to "piedi", "Bus, tram, metro" to "tpl")
+      DetectedActivity.ON_BICYCLE -> listOf(Triple("In bici", "bici", true), Triple("Bici elettrica", "ebike", true))
+      DetectedActivity.IN_VEHICLE -> listOf(Triple("Bus, tram, metro", "tpl", true), Triple("In auto", "autoel", false))
+      else -> listOf(Triple("A piedi", "piedi", true), Triple("Bus, tram, metro", "tpl", true))
     }
     val notification = NotificationCompat.Builder(context, CHANNEL)
       .setSmallIcon(android.R.drawable.ic_menu_mylocation)
@@ -62,8 +65,8 @@ internal object Nudge {
       .setContentText(body)
       .setStyle(NotificationCompat.BigTextStyle().bigText(body))
       .setContentIntent(tap)
-      .addAction(0, actions[0].first, start(context, actions[0].second, 7304))
-      .addAction(0, actions[1].first, start(context, actions[1].second, 7305))
+      .addAction(0, actions[0].first, start(context, actions[0].second, 7304, actions[0].third))
+      .addAction(0, actions[1].first, start(context, actions[1].second, 7305, actions[1].third))
       .addAction(0, "Ignora", dismiss(context))
       .setAutoCancel(true)
       .setTimeoutAfter(20 * 60 * 1000L)
@@ -78,9 +81,10 @@ internal object Nudge {
     }
   }
 
-  /** Apre l'app e avvia subito il tragitto con il mezzo indicato. */
-  private fun start(context: Context, mode: String, code: Int): PendingIntent {
-    val link = Intent(Intent.ACTION_VIEW, Uri.parse("vado://nuovo?modo=$mode&avvia=1"))
+  /** Apre la scelta del mezzo con quello indicato e, se richiesto, avvia subito il tragitto. */
+  private fun start(context: Context, mode: String, code: Int, autostart: Boolean = true): PendingIntent {
+    val query = if (autostart) "modo=$mode&avvia=1" else "modo=$mode"
+    val link = Intent(Intent.ACTION_VIEW, Uri.parse("vado://nuovo?$query"))
       .setPackage(context.packageName)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     return PendingIntent.getActivity(context, code, link, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)

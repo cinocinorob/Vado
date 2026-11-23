@@ -364,7 +364,8 @@ Regole in `src/tracking/tripState.ts` (`splitTransit`) e `src/core/geo.ts` (`fas
 Impostazioni, "Avvio automatico". Il riconoscimento delle attività di Google Play services (permesso "Attività fisica",
 non la posizione) avvisa quando si comincia a camminare, a pedalare o si sale su un veicolo. Arriva una notifica
 "Stai camminando?": toccandola si apre Nuovo tragitto e la misura parte subito; i pulsanti della notifica (per esempio "A piedi",
-"Bus, tram, metro", "Ignora") avviano direttamente con quel mezzo. Al massimo un avviso ogni 45 minuti, 15 se si è appena scesi da un mezzo,
+"Bus, tram, metro", "Ignora") avviano direttamente con quel mezzo; su un veicolo "In auto" apre la scelta con l'auto
+elettrica già selezionata (anche auto a benzina e car sharing), e toccando l'avviso si sceglie tra tutti i mezzi. Al massimo un avviso ogni 45 minuti, 15 se si è appena scesi da un mezzo,
 mai tra le 23 e le 6, mai durante un tragitto. Il codice nativo è in `modules/vado-movimento` (Kotlin): funziona
 anche ad app chiusa e si riattiva dopo un riavvio del telefono o un aggiornamento dell'app. Non è verificabile sul
 telefono simulato della prova (lì si prova solo il collegamento della notifica).
