@@ -144,7 +144,8 @@ export default function Oggi() {
   // Sotto la CO₂: i passi se ci sono, altrimenti i km senza auto (uno zero grande non dice niente).
   const stepsShown = healthSteps ?? today.steps;
   const second =
-    stepsShown > 0
+    // Con Connessione Salute collegata i passi del giorno si mostrano sempre: è un dato del telefono, anche se zero.
+    healthSteps != null || stepsShown > 0
       ? { label: healthSteps != null ? 'passi oggi' : 'passi nei tragitti', value: integer(stepsShown) }
       : { label: 'km senza auto', value: (today.carFreeMeters / 1000).toFixed(1).replace('.', ',') };
   // I punti oltre l'obiettivo valgono come gli altri (classifica, sfide): l'anello fa un secondo giro.
