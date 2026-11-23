@@ -97,7 +97,7 @@ export const BADGES: readonly Badge[] = [
   { id: 'occhio-di-falco', name: 'Occhio di falco', goal: '{n} viaggi in bus riconosciuti in tempo reale', tiers: [3, 15, 50], unit: 'viaggi' },
   { id: 'polmone-verde', name: 'Polmone verde', goal: '{n} kg di CO₂ evitata', tiers: [10, 50, 200], unit: 'kg' },
   { id: 'boscaiolo', name: 'Boscaiolo', goal: '{n} alberi nel bosco', tiers: [1, 3, 10], unit: 'alberi' },
-  { id: 'settimana-perfetta', name: 'Settimana perfetta', goal: '{n} sfide della settimana completate', tiers: [1, 5, 20], unit: 'sfide' },
+  { id: 'settimana-perfetta', name: 'Settimana perfetta', goal: '{n} obiettivi della settimana raggiunti', tiers: [1, 5, 20], unit: 'sfide' },
   { id: 'campione-del-mese', name: 'Campione del mese', goal: '{n} sfide del mese completate', tiers: [1, 3, 6], unit: 'sfide' },
   { id: 'podio', name: 'Podio', goal: '{n} volte sul podio della lega', tiers: [1, 5, 20], unit: 'volte' },
   { id: 'fuori-porta', name: 'Fuori porta', goal: '{n} tragitti senza auto nel fine settimana', tiers: [5, 20, 50], unit: 'tragitti' },

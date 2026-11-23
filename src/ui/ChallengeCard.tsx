@@ -32,7 +32,7 @@ function Row({ label, run, now, last, tree }: { label: string; run: ChallengeRun
 export function PersonalChallenges({ week, month, now, onPress, tree }: { week: ChallengeRun; month: ChallengeRun; now: number; onPress?: () => void; tree?: TreeBadge | null }) {
   return (
     <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined} style={styles.card}>
-      <Row label="Sfida della settimana" run={week} now={now} tree={tree} />
+      <Row label="Obiettivo della settimana" run={week} now={now} tree={tree} />
       <Row label="Sfida del mese" run={month} now={now} tree={tree} last />
     </Pressable>
   );

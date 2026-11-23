@@ -675,6 +675,15 @@ def station_fix(station_id: str, north_m: float = 0.0) -> None:
     adb("emu", "geo", "fix", f"{station['lon']:.7f}", f"{lat:.7f}", "20", "12", "0", check=False)
 
 
+def open_forgotten() -> bool:
+    """Da Oggi apre "Viaggio non registrato?", da cui partono metro e bus a posteriori."""
+    link = scroll_to("Viaggio non registrato?", swipes=10)
+    if not link:
+        return False
+    tap(link)
+    return wait_for("Sei ancora all'arrivo?", 20, "aprendo i viaggi non registrati", required=False) is not None
+
+
 def check_bus() -> str:
     """"Ho preso il bus" a una fermata del 64: compaiono le linee e, scelta una, le fermate di partenza."""
     data = json.loads(Path("src/data/bus-roma.json").read_text(encoding="utf-8"))
@@ -684,7 +693,7 @@ def check_bus() -> str:
     for _ in range(3):
         adb("emu", "geo", "fix", f"{lon:.7f}", f"{lat:.7f}", "20", "12", "0", check=False)
         time.sleep(1)
-    button = scroll_to("Ho preso il bus")
+    button = open_forgotten() and scroll_to("Ho preso il bus")
     if not button:
         return "pulsante Ho preso il bus non trovato: " + visible_text()[:300]
     tap(button)
@@ -712,7 +721,7 @@ def check_metro() -> str:
     for _ in range(4):
         station_fix("eur-fermi", 60)
         time.sleep(1)
-    button = scroll_to("Ho preso la metro")
+    button = open_forgotten() and scroll_to("Ho preso la metro")
     if not button:
         screenshot("metro-senza-pulsante")
         return "pulsante Ho preso la metro non trovato: " + visible_text()[:300]
@@ -832,7 +841,7 @@ def check_metro_a_piedi() -> str:
 
 def check_dimenticato() -> str:
     """Viaggio dimenticato aggiunto a mano da Oggi: Flaminio → Spagna sulla linea A."""
-    link = scroll_to("Hai dimenticato di avviare?", swipes=10)
+    link = scroll_to("Viaggio non registrato?", swipes=10)
     if not link:
         return "riquadro per i viaggi dimenticati assente: " + visible_text()[:300]
     tap(link)

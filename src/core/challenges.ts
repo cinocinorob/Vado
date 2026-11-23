@@ -50,17 +50,15 @@ export function measure(metric: Metric, trips: readonly Trip[]): number {
   }
 }
 
-/** Le sfide della settimana: si va in ordine, una a settimana. */
-export const WEEKLY: readonly ChallengeDef[] = [
-  { id: 's-km20', title: 'Venti senza auto', goal: '20 km senza auto', metric: 'km', target: 20 },
-  { id: 's-mezzi5', title: 'Pendolare pubblico', goal: '5 viaggi con i mezzi', metric: 'mezzi', target: 5 },
-  { id: 's-piedi15', title: 'Gambe in spalla', goal: '15 km a piedi', metric: 'km-piedi', target: 15 },
-  { id: 's-giorni5', title: 'Cinque su sette', goal: '5 giorni senza auto', metric: 'giorni', target: 5 },
-  { id: 's-punti300', title: 'Trecento', goal: '300 punti', metric: 'punti', target: 300 },
-  { id: 's-bici20', title: 'Pedala', goal: '20 km in bici', metric: 'km-bici', target: 20 },
-  { id: 's-trag10', title: 'Dieci uscite', goal: '10 tragitti senza auto', metric: 'tragitti', target: 10 },
-  { id: 's-co2', title: 'Aria pulita', goal: '4 kg di CO₂ evitata', metric: 'co2', target: 4 },
-];
+/**
+ * L'obiettivo della settimana è personale: il 10% in più della media dei punti
+ * delle due settimane precedenti, arrotondato alla decina più vicina, tra 150 e 700.
+ * Chi comincia, o torna dopo una pausa, parte da 150 (meno di due giorni
+ * all'obiettivo giornaliero). Si ricalcola dai tragitti, come tutto il resto.
+ */
+export const WEEK_GOAL_MIN = 150;
+export const WEEK_GOAL_MAX = 700;
+export const WEEK_GOAL_GROWTH = 1.1;
 
 /** Le sfide del mese, una per mese dell'anno (gennaio = 0). */
 export const MONTHLY: readonly ChallengeDef[] = [
@@ -78,11 +76,6 @@ export const MONTHLY: readonly ChallengeDef[] = [
   { id: 'm-12', title: 'Dicembre dei mezzi', goal: '30 viaggi con i mezzi', metric: 'mezzi', target: 30 },
 ];
 
-/** Numero della settimana dal 5 gennaio 2026 (un lunedì), per far girare le sfide. */
-function weekNumber(start: number): number {
-  return Math.round((start - new Date(2026, 0, 5).getTime()) / (7 * 24 * 3600 * 1000));
-}
-
 export type ChallengeRun = ChallengeDef & { from: number; to: number; value: number; done: boolean; ratio: number };
 
 function run(def: ChallengeDef, trips: readonly Trip[], from: number, to: number): ChallengeRun {
@@ -97,10 +90,22 @@ function addDays(ts: number, n: number): number {
   return d.getTime();
 }
 
+/** Punti fatti tra due istanti. */
+const pointsBetween = (trips: readonly Trip[], from: number, to: number) => measure('punti', trips.filter((t) => t.endedAt >= from && t.endedAt < to));
+
+/** L'obiettivo di punti della settimana che comincia in `from`, e la media su cui è calcolato. */
+export function weekGoal(trips: readonly Trip[], from: number): { target: number; average: number } {
+  const average = (pointsBetween(trips, addDays(from, -14), addDays(from, -7)) + pointsBetween(trips, addDays(from, -7), from)) / 2;
+  const target = Math.min(WEEK_GOAL_MAX, Math.max(WEEK_GOAL_MIN, Math.round((average * WEEK_GOAL_GROWTH) / 10) * 10));
+  return { target, average };
+}
+
 export function weeklyAt(trips: readonly Trip[], now: number): ChallengeRun {
   const from = weekStart(now);
-  const n = ((weekNumber(from) % WEEKLY.length) + WEEKLY.length) % WEEKLY.length;
-  return run(WEEKLY[n], trips, from, addDays(from, 7));
+  const { target, average } = weekGoal(trips, from);
+  const why = average * WEEK_GOAL_GROWTH > WEEK_GOAL_MIN ? 'il 10% in più della tua media' : 'per cominciare';
+  const def: ChallengeDef = { id: 's-obiettivo', title: 'Il tuo obiettivo', goal: `${target} punti in settimana, ${why}`, metric: 'punti', target };
+  return run(def, trips, from, addDays(from, 7));
 }
 
 export function monthlyAt(trips: readonly Trip[], now: number): ChallengeRun {

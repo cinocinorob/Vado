@@ -14,7 +14,7 @@ decise insieme. Tragitti e posizioni restano sul telefono; al server va solo ci�
 | Nuovo tragitto: 8 mezzi, interruttore casa-lavoro | CO₂ evitata (servono fattori di emissione con fonte) |
 | Tragitto in corso: percorso disegnato, punti che maturano, pausa, cambio mezzo | Tema scuro (la grafica è solo chiara) |
 | Riepilogo con lo stato di ogni tratto e le medaglie appena prese | Riconoscimento automatico del mezzo |
-| Medaglie a tre gradi, vetrina, sfide della settimana e del mese, vittorie, percorsi virtuali | |
+| Medaglie a tre gradi, vetrina, obiettivo della settimana e sfida del mese, vittorie, percorsi virtuali | |
 | Metro di Roma: distanza calcolata sulla rete, anche registrata a posteriori | Metro di altre città; bus e treni in galleria |
 | Connessione Salute: passi e attività registrate da altre app | Versione iPhone del collegamento (Apple Salute) |
 | Classifica, leghe con invito e sfide tra persone vere | Lega a livelli automatica; segnalazione di soprannomi e nomi offensivi |
@@ -162,7 +162,7 @@ fuori sincronia. Le tre medaglie scelte per la **vetrina** compaiono accanto al 
 | Occhio di falco | 3 / 15 / 50 bus riconosciuti in tempo reale |
 | Polmone verde | 10 / 50 / 200 kg di CO₂ evitata |
 | Boscaiolo | 1 / 3 / 10 alberi nel bosco |
-| Settimana perfetta | 1 / 5 / 20 sfide della settimana |
+| Settimana perfetta | 1 / 5 / 20 obiettivi della settimana |
 | Campione del mese | 1 / 3 / 6 sfide del mese |
 | Podio | 1 / 5 / 20 settimane sul podio della lega |
 | Fuori porta | 5 / 20 / 50 tragitti nel fine settimana |
@@ -561,3 +561,12 @@ Dal riepilogo ("Contato male? Segnalalo") o tenendo premuto un tragitto in Oggi 
 una nota e un testo da condividere con il tragitto come l'ha valutato l'app e le righe del registro di diagnostica di quel
 periodo (10 minuti prima e dopo). Niente coordinate (`src/core/report.ts`, `src/app/segnala.tsx`). Serve a tarare il
 riconoscimento di bus e metro su casi veri.
+
+## Revisione esterna (novembre 2026): semplificazioni
+
+- **Un solo ingresso per i viaggi non registrati:** in Oggi "Viaggio non registrato?" apre la schermata dei viaggi
+  dimenticati; da lì "Metro" e "Bus" riconoscono l'arrivo dalla posizione se si è ancora alla stazione o alla fermata.
+- **XP solo nella scheda Io:** il riepilogo del tragitto mostra livello raggiunto e missioni fatte, senza numeri di XP.
+- **Obiettivo della settimana personale** (`weekGoal` in `src/core/challenges.ts`): il 10% in più della media dei punti
+  delle due settimane precedenti, arrotondato alla decina, tra 150 e 700. Sostituisce le otto sfide settimanali a
+  rotazione. La sfida del mese resta (la usa anche la classifica mensile della lega).

@@ -25,7 +25,7 @@ import { currentLeg } from '../tracking/tripState';
 import { dateLabel, integer } from '../ui/format';
 import { BottomNav, NAV_SPACE } from '../ui/BottomNav';
 import { FreezeShield, MissionsCard } from '../ui/Game';
-import { Group, SectionTitle, ShapeBadge, TonalButton } from '../ui/expressive';
+import { Group, SectionTitle, ShapeBadge } from '../ui/expressive';
 import { PageTitle } from '../ui/Hero';
 import { ChevronIcon, FlameIcon, GearIcon, HeartIcon, PlusIcon } from '../ui/Icons';
 import { BonusRow, GhostButton, LegRow, ModeBadge, Panel, Screen, text } from '../ui/parts';
@@ -293,17 +293,7 @@ export default function Oggi() {
             </Pressable>
           ) : null}
 
-          <SectionTitle
-            title="Tragitti di oggi"
-            right={
-              !active ? (
-                <View style={styles.after}>
-                  <TonalButton label="Metro" accessibilityLabel="Ho preso la metro" onPress={() => router.push('/metro')} icon={<PlusIcon size={16} color={C.text} />} />
-                  <TonalButton label="Bus" accessibilityLabel="Ho preso il bus" onPress={() => router.push('/bus')} icon={<PlusIcon size={16} color={C.text} />} />
-                </View>
-              ) : undefined
-            }
-          />
+          <SectionTitle title="Tragitti di oggi" />
           {rows.length === 0 ? (
             <View style={styles.empty}>
               <Sprout size={88} stage="seme" />
@@ -331,8 +321,8 @@ export default function Oggi() {
                 <PlusIcon size={20} color={C.ink} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.forgotTitle}>Hai dimenticato di avviare?</Text>
-                <Text style={text.small}>Aggiungi un viaggio in metro, bus o tram fatto oggi</Text>
+                <Text style={styles.forgotTitle}>Viaggio non registrato?</Text>
+                <Text style={text.small}>Aggiungi metro, bus o tram fatti oggi senza avviare Vado</Text>
               </View>
               <ChevronIcon size={16} />
             </Pressable>
@@ -471,7 +461,6 @@ const styles = StyleSheet.create({
   healthLinkText: { fontFamily: F.semi, fontSize: 13, color: C.text, textDecorationLine: 'underline' },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 18, paddingHorizontal: 16, backgroundColor: C.card, borderRadius: R.card },
   reset: { alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16 },
-  after: { flexDirection: 'row', gap: 6 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   gear: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.tonal, alignItems: 'center', justifyContent: 'center' },
   hint: { textAlign: 'center', marginTop: -2 },

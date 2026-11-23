@@ -279,7 +279,7 @@ export default function Medaglie() {
             <Group>
               {[
                 ...leagueWins.map((l) => ({ at: l.week + 7 * 864e5, title: `${l.rank}º in ${l.league}`, detail: `${weekText(l.week)} · ${l.points} punti`, key: `l${l.leagueId}${l.week}` })),
-                ...done.map((d) => ({ at: d.to, title: d.title, detail: `${d.id.startsWith('s-') ? 'Sfida della settimana' : 'Sfida del mese'} · ${challengeProgress(d)}`, key: `c${d.id}${d.from}` })),
+                ...done.map((d) => ({ at: d.to, title: d.title, detail: `${d.id.startsWith('s-') ? 'Obiettivo della settimana' : 'Sfida del mese'} · ${challengeProgress(d)}`, key: `c${d.id}${d.from}` })),
                 ...wins.duels.filter((d) => d.won).map((d) => ({ at: d.endsAt, title: `Vinta: ${d.title}`, detail: 'Sfida con gli amici', key: `d${d.id}` })),
                 ...journeys.done.map((j) => ({ at: j.doneAt, title: journeyById(j.id)?.name ?? j.id, detail: 'Percorso virtuale completato', key: `j${j.id}${j.doneAt}` })),
               ]

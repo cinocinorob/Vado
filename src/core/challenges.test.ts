@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { WEEKLY, challengeProgress, completedChallenges, measure, monthlyAt, weeklyAt } from './challenges';
+import { WEEK_GOAL_MAX, WEEK_GOAL_MIN, challengeProgress, completedChallenges, measure, monthlyAt, weeklyAt } from './challenges';
 import { dayKey, type LegResult, type Trip } from './scoring';
 
 function trip(end: number, legs: [LegResult['mode'], number][]): Trip {
@@ -23,14 +23,10 @@ test('misure: km senza auto, mezzi, giorni senza auto', () => {
   assert.equal(measure('giorni', trips), 2);
 });
 
-test('sfida della settimana: cambia ogni lunedì e si completa con i tragitti di quella settimana', () => {
+test('sfida del mese e obiettivo della settimana: partono dal lunedì e dal primo del mese', () => {
   const a = weeklyAt([], at(9, 19));
-  const b = weeklyAt([], at(9, 26));
-  assert.notEqual(a.id, b.id);
-  assert.equal(weeklyAt([], at(9, 25)).id, a.id);
   assert.equal(new Date(a.from).getDay(), 1);
-  const def = WEEKLY.find((w) => w.id === a.id)!;
-  assert.ok(def);
+  assert.equal(a.target, WEEK_GOAL_MIN);
   const m = monthlyAt([], at(9, 19));
   assert.equal(m.title, 'Ottobre da paura');
   const lots = [trip(at(9, 2), [['piedi', 60]]), trip(at(9, 3), [['bici', 70]])];
@@ -38,4 +34,21 @@ test('sfida della settimana: cambia ogni lunedì e si completa con i tragitti di
   assert.ok(completedChallenges(lots, at(10, 5)).some((r) => r.id === 'm-10'));
   assert.equal(challengeProgress({ metric: 'km', value: 12.57, target: 20 }), '12,5 di 20 km');
   assert.equal(challengeProgress({ metric: 'punti', value: 1250, target: 1200 }), '1.250 di 1.200 punti');
+});
+
+test('obiettivo della settimana: 10% in più della media delle due settimane prima, tra il minimo e il massimo', () => {
+  // Lunedì 19 ottobre 2026: settimane precedenti dal 5 e dal 12.
+  const busy = (d: number, n: number) => Array.from({ length: n }, (_, i) => trip(at(9, d) + i * 3600_000, [['piedi', 1]]));
+  // 30 tragitti da 10 punti nella settimana del 5, 10 in quella del 12: media 200, obiettivo 220.
+  const trips = [...busy(6, 30), ...busy(13, 10)];
+  const w = weeklyAt(trips, at(9, 20));
+  assert.equal(w.target, 220);
+  assert.match(w.goal, /10% in più/);
+  // Senza storia si parte dal minimo; con tantissimi punti non si supera il massimo.
+  assert.equal(weeklyAt([], at(9, 20)).target, WEEK_GOAL_MIN);
+  assert.equal(weeklyAt([...busy(6, 200), ...busy(13, 200)], at(9, 20)).target, WEEK_GOAL_MAX);
+  // Completato: entra tra le sfide fatte, con lo stesso nome ogni settimana.
+  const done = [...trips, ...busy(20, 22)];
+  assert.equal(weeklyAt(done, at(9, 25)).done, true);
+  assert.ok(completedChallenges(done, at(9, 28)).some((r) => r.id === 's-obiettivo' && r.target === 220));
 });

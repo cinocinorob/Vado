@@ -21,6 +21,7 @@ import { km } from '../ui/format';
 import { CheckIcon, CloseIcon, ShieldIcon } from '../ui/Icons';
 import { Header, LineBadge, Panel, PointsChip, PrimaryButton, RoundButton, Screen, Toggle, input, text, PLACEHOLDER } from '../ui/parts';
 import { Segmented } from '../ui/social';
+import { TonalButton } from '../ui/expressive';
 import { C, F, R } from '../ui/theme';
 
 const clock = () => Date.now();
@@ -174,6 +175,17 @@ export default function Dimenticato() {
             </RoundButton>
           }
         />
+
+        <Panel style={styles.here}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.hereTitle}>Sei ancora all&apos;arrivo?</Text>
+            <Text style={text.small}>La stazione o la fermata viene riconosciuta dalla posizione.</Text>
+          </View>
+          <View style={styles.hereButtons}>
+            <TonalButton label="Metro" accessibilityLabel="Ho preso la metro" onPress={() => router.replace('/metro')} />
+            <TonalButton label="Bus" accessibilityLabel="Ho preso il bus" onPress={() => router.replace('/bus')} />
+          </View>
+        </Panel>
 
         <Segmented
           label="Mezzo"
@@ -340,7 +352,7 @@ export default function Dimenticato() {
           <ShieldIcon size={22} color={C.teal} />
           <Text style={[text.small, { flex: 1, lineHeight: 18 }]}>
             Partenza, arrivo e orario li dichiari tu: il viaggio risulta &quot;dichiarato&quot; e se ne possono aggiungere {DECLARED_PER_DAY} al giorno
-            per la metro e {DECLARED_PER_DAY} per bus e tram, solo di oggi. Se sei ancora alla stazione di arrivo, &quot;+ Metro&quot; e &quot;+ Bus&quot; in Oggi
+            per la metro e {DECLARED_PER_DAY} per bus e tram, solo di oggi. Se sei ancora alla stazione o alla fermata di arrivo, i pulsanti in alto
             verificano l&apos;arrivo dalla posizione.
           </Text>
         </Panel>
@@ -362,6 +374,9 @@ export default function Dimenticato() {
 }
 
 const styles = StyleSheet.create({
+  here: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 20, paddingVertical: 12 },
+  hereTitle: { fontFamily: F.bold, fontSize: 15, color: C.text },
+  hereButtons: { gap: 6 },
   scroll: { gap: 14, paddingBottom: 116 },
   section: { gap: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

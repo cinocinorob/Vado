@@ -197,14 +197,16 @@ export default function Riepilogo() {
             </View>
           ) : null}
 
-          {game && game.xp > 0 ? (
+          {game && (game.up || game.missions.length > 0) ? (
+            // Qui niente XP: in Oggi e nel riepilogo contano i punti. Livello ed esperienza stanno nella scheda Io.
             <View style={[styles.xp, game.up && { backgroundColor: C.lime }]} accessible>
               <LevelBadge level={game.level.level} size={52} />
               <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.xpTitle, game.up && { color: C.ink }]}>{game.up ? `Livello ${game.level.level}: ${game.level.title}!` : `+${game.xp} XP`}</Text>
+                <Text style={[styles.xpTitle, game.up && { color: C.ink }]}>
+                  {game.up ? `Livello ${game.level.level}: ${game.level.title}!` : game.allDone ? 'Tutte le missioni di oggi fatte' : game.missions.length === 1 ? 'Missione fatta' : `${game.missions.length} missioni fatte`}
+                </Text>
                 <Text style={[styles.xpDetail, game.up && { color: C.ink }]}>
-                  {game.up ? `+${game.xp} XP con questo tragitto` : `Livello ${game.level.level} · ${game.level.into} di ${game.level.need} XP`}
-                  {game.missions.length > 0 ? ` · ${game.allDone ? 'tutte le missioni di oggi fatte' : game.missions.length === 1 ? `missione: ${game.missions[0].title.toLowerCase()}` : `${game.missions.length} missioni fatte`}` : ''}
+                  {game.missions.length === 1 && !game.allDone ? game.missions[0].title : game.up ? 'Il tuo livello è nella scheda Io' : 'Domani ne arrivano tre nuove'}
                 </Text>
               </View>
             </View>
@@ -212,7 +214,7 @@ export default function Riepilogo() {
 
           {won.map((run) => (
             <View key={run.id} style={styles.won} accessible>
-              <Text style={styles.wonCaption}>{run.id.startsWith('s-') ? 'Sfida della settimana completata' : 'Sfida del mese completata'}</Text>
+              <Text style={styles.wonCaption}>{run.id.startsWith('s-') ? 'Obiettivo della settimana raggiunto' : 'Sfida del mese completata'}</Text>
               <Text style={styles.wonTitle}>{run.title}</Text>
               <Text style={styles.wonGoal}>{run.goal}</Text>
             </View>
