@@ -10,12 +10,14 @@ import * as Crypto from 'expo-crypto';
 
 import { plantState, type TreeBadge } from '../core/plant';
 import { journeyById, journeyRun } from '../core/journeys';
+import { blockedIds } from '../storage/blocks';
 import { loadJourneys } from '../storage/journey';
 import { loadPauses } from '../storage/pause';
 import { showcaseFor } from '../storage/showcase';
 import { loadTree } from '../storage/tree';
 import { loadTrips } from '../storage/trips';
 import { SERVER } from './config';
+import { withBlocks } from './blocks';
 import { remoteSource } from './remote';
 import type { SocialSource } from './types';
 
@@ -33,7 +35,8 @@ export async function myTree(): Promise<TreeBadge | null> {
   return { species: tree.species, stage: plant.stage, trees: plant.trees };
 }
 
-export const social: SocialSource = remoteSource({
+export const social: SocialSource = withBlocks(
+  remoteSource({
   rest: SERVER.rest,
   key: SERVER.key,
   storage: {
@@ -51,6 +54,8 @@ export const social: SocialSource = remoteSource({
     return { id: j.id, km: journeyRun(j, trips, state.current.startedAt).km, startedAt: state.current.startedAt };
   },
   newSecret,
-});
+  }),
+  blockedIds,
+);
 
 export type * from './types';

@@ -11,7 +11,6 @@ import { Platform, View } from 'react-native';
 // all'avvio del programma, prima che venga mostrata qualsiasi schermata.
 import '../tracking/tracker';
 import '../reminders/schedule';
-import '../reminders/home';
 import { refreshAuto } from '../auto/movimento';
 import { C, DARK_UI } from '../ui/theme';
 

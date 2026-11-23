@@ -8,10 +8,11 @@ import { forgetImportedBefore } from '../health/sync';
 import { social } from '../social';
 import { readLookChoice, writeLookChoice } from '../storage/lookFile';
 import { clearPauses } from '../storage/pause';
+import { loadBlocked, unblockPerson } from '../storage/blocks';
+import type { Blocked } from '../social/blocks';
 import { loadReminders, saveReminders, type Reminders } from '../storage/reminders';
 import { loadTree, saveTree } from '../storage/tree';
 import { clearTrips } from '../storage/trips';
-import { disableHomeReminder, enableHomeReminder, homeReminderOn } from '../reminders/home';
 import { AUTO_SUPPORTED, autoStatus, disableAuto, enableAuto } from '../auto/movimento';
 import { applyReminders } from '../reminders/schedule';
 import { Group, SectionTitle } from '../ui/expressive';
@@ -45,15 +46,14 @@ export default function Impostazioni() {
   const [reminders, setReminders] = useState<Reminders | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [cleared, setCleared] = useState(false);
-  const [home, setHome] = useState(false);
-  const [homeNote, setHomeNote] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<Blocked[]>([]);
   const [auto, setAuto] = useState(() => !!autoStatus()?.enabled);
   const [autoNote, setAutoNote] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       loadReminders().then(setReminders);
-      homeReminderOn().then(setHome);
+      loadBlocked().then(setBlocked);
     }, []),
   );
 
@@ -80,18 +80,6 @@ export default function Impostazioni() {
     const result = await enableAuto();
     setAuto(result.ok);
     if (!result.ok) setAutoNote(result.problem);
-  }
-
-  async function toggleHome(on: boolean) {
-    setHomeNote(null);
-    if (!on) {
-      await disableHomeReminder();
-      setHome(false);
-      return;
-    }
-    const result = await enableHomeReminder();
-    setHome(result.ok);
-    setHomeNote(result.ok ? 'Fatto: casa è dove sei adesso (150 metri attorno).' : result.problem);
   }
 
   async function reset() {
@@ -186,16 +174,32 @@ export default function Impostazioni() {
           </>
         ) : null}
 
-        <Group>
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>Avvisami quando esco di casa</Text>
-              <Text style={text.small}>Accendilo mentre sei a casa. Uscendo arriva un avviso per avviare il tragitto. Serve la posizione &quot;Consenti sempre&quot;.</Text>
-            </View>
-            <Toggle value={home} onChange={toggleHome} label="Avvisami quando esco di casa" />
-          </View>
-        </Group>
-        {homeNote ? <Text style={[text.small, styles.homeNote]}>{homeNote}</Text> : null}
+
+        {blocked.length > 0 ? (
+          <>
+            <SectionTitle title="Persone bloccate" />
+            <Group>
+              {blocked.map((b) => (
+                <View key={b.id} style={styles.row}>
+                  <Text style={[styles.rowTitle, { flex: 1 }]} numberOfLines={1}>
+                    {b.name}
+                  </Text>
+                  <Pressable
+                    onPress={async () => {
+                      await unblockPerson(b.id);
+                      setBlocked(await loadBlocked());
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Sblocca ${b.name}`}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.unblock}>Sblocca</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </Group>
+          </>
+        ) : null}
 
         <SectionTitle title="I tuoi dati" />
         <Group>
@@ -237,6 +241,7 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
 const styles = StyleSheet.create({
   scroll: { gap: 8, paddingBottom: 40 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60, paddingVertical: 10 },
+  unblock: { fontFamily: F.bold, fontSize: 15, color: C.text, textDecorationLine: 'underline' },
   rowTitle: { fontFamily: F.semi, fontSize: 15.5, color: C.text },
   radio: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: C.outline, alignItems: 'center', justifyContent: 'center' },
   radioOn: { borderColor: C.text },

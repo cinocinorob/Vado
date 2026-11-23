@@ -16,7 +16,7 @@
       "package": "app.vado.prototipo",
       "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#0B1F2A",
+        "backgroundColor": "#C8F560",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -48,9 +48,8 @@
         "expo-location",
         {
           "isAndroidForegroundServiceEnabled": true,
-          "isAndroidBackgroundLocationEnabled": true,
-          "locationWhenInUsePermission": "Vado usa la posizione durante un tragitto per misurare la distanza percorsa.",
-          "locationAlwaysAndWhenInUsePermission": "Solo se lo attivi nelle impostazioni: Vado ti avvisa quando esci di casa, per avviare il tragitto."
+          "isAndroidBackgroundLocationEnabled": false,
+          "locationWhenInUsePermission": "Vado usa la posizione durante un tragitto per misurare la distanza percorsa."
         }
       ],
       [
@@ -93,7 +92,16 @@
           ]
         }
       ],
-      "./plugins/abi-split.js"
+      "./plugins/abi-split.js",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F7EC"
+        }
+      ]
     ]
   }
 }

@@ -47,6 +47,15 @@ const SECTIONS: { title: string; body: string }[] = [
       "Solo se scegli un soprannome. Da quel momento al server di Vado arrivano: il soprannome, le leghe e le sfide a cui partecipi e, per ogni tragitto che ti ha dato punti, l'ora in cui è finito, i punti e il mezzo principale. Servono a sommare i punti della settimana e delle sfide. I compagni di lega vedono il tuo soprannome, il totale dei punti e il mezzo che usi di più; non i singoli tragitti. Non arrivano mai posizioni, distanze o nomi di stazioni. Niente email né password: il telefono si fa riconoscere con una chiave casuale.",
   },
   {
+    title: 'Persone bloccate',
+    body:
+      "Tenendo premuto un nome in classifica puoi bloccare una persona: per te non si vedono più il suo nome e il suo avatar e non compare nelle tue sfide. L'elenco resta solo su questo telefono; si annulla dalle impostazioni.",
+  },
+  {
+    title: 'Informativa completa',
+    body: 'La stessa spiegazione, con i tuoi diritti e come contattarci, è pubblicata su github.com/cinocinorob/Vado/blob/main/PRIVACY.md.',
+  },
+  {
     title: 'Backup',
     body:
       "Il file di backup lo crei tu e va dove lo mandi tu (Drive, una chat, un'email): contiene i tragitti, con distanze, orari, passi, mezzi e i nomi delle stazioni della metro, e il codice di recupero della classifica. Vado non ne tiene una copia. Chi ha il file o il codice può usare il tuo profilo della classifica: tienili per te.",

@@ -395,11 +395,10 @@ come testo.
   circa 100 KB, un migliaio di mezzi) e cerca i mezzi a meno di 90 m dal telefono nello stesso istante. Se lo stesso mezzo resta
   accanto almeno 3 volte, per almeno 2 minuti e mezzo e 600 m, il tratto diventa "Verificato" con la linea (`src/core/busMatch.ts`).
   Il confronto avviene sul telefono: la posizione non viene mandata a nessuno.
-- **"Ho preso il bus"** (da Oggi, dopo il viaggio): fermata di arrivo dalla posizione, linea e fermata di partenza scelte
+- **"Ho preso il bus"** (da Oggi, "Viaggio non registrato?", dopo il viaggio): fermata di arrivo dalla posizione, linea e fermata di partenza scelte
   dall'utente, metri lungo il percorso della linea. Due al giorno, come per la metro.
-- **Avviso all'uscita di casa** (impostazioni): un recinto virtuale di 150 m attorno a casa; uscendo arriva una notifica che apre
-  "Nuovo tragitto". Il tragitto non parte da solo: Android non lo consente dal secondo piano e una partenza in auto darebbe
-  punti falsi. Serve la posizione "Consenti sempre".
+- **Avviso all'uscita di casa: tolto** (novembre 2026). Richiedeva la posizione "Consenti sempre", che l'app non chiede
+  (è bloccata in `app.json`) e che Google Play esamina con severità; al suo posto c'è l'avvio automatico.
 - Linee e fermate: `src/data/bus-roma.json`, estratto da `scripts/rete_bus.py` (azione "Aggiorna la rete della metro").
 - Limite noto: per i mezzi pubblici la CO₂ evitata non toglie le emissioni del mezzo (metodo ISPRA); non ho trovato un fattore
   per passeggero-km dei bus di Roma da una fonte affidabile.
@@ -570,3 +569,14 @@ riconoscimento di bus e metro su casi veri.
 - **Obiettivo della settimana personale** (`weekGoal` in `src/core/challenges.ts`): il 10% in più della media dei punti
   delle due settimane precedenti, arrotondato alla decina, tra 150 e 700. Sostituisce le otto sfide settimanali a
   rotazione. La sfida del mese resta (la usa anche la classifica mensile della lega).
+
+## Verso il Play Store: cose fatte (novembre 2026)
+
+- **Niente posizione in background:** tolto l'avviso all'uscita di casa; nel manifest finale `ACCESS_BACKGROUND_LOCATION`
+  non c'è (bloccato in `app.json`). Il tragitto usa la posizione con il servizio in primo piano, avviato ad app aperta.
+- **Blocco delle persone** (`src/social/blocks.ts`): tenendo premuto un nome in classifica, "Blocca". Per chi blocca, la
+  persona diventa "Persona bloccata" (niente nome, avatar, vetrina), non compare tra i compagni di viaggio né tra quelli
+  da sfidare; i suoi punti restano in classifica. Elenco solo sul telefono, "Sblocca" in Impostazioni.
+- **Informativa pubblica:** `PRIVACY.md`, all'indirizzo https://github.com/cinocinorob/Vado/blob/main/PRIVACY.md.
+- **Icona e schermata di avvio:** germoglio a due foglie a V su lime (`assets/`), disegnato in SVG.
+- **Tetto giornaliero sul server:** 300 punti per persona al giorno (ora di Roma) in `vado_push_scores`.

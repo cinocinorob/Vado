@@ -111,7 +111,7 @@ export function Podium({ ranked, onReport }: { ranked: Ranked[]; onReport?: (ent
                 accessibilityLabel={`${entry.rank}º posto: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti`}
                 onLongPress={!entry.me && onReport ? () => onReport(entry) : undefined}
                 delayLongPress={500}
-                accessibilityActions={!entry.me && onReport ? [{ name: 'longpress', label: 'Segnala il soprannome' }] : undefined}
+                accessibilityActions={!entry.me && onReport ? [{ name: 'longpress', label: 'Segnala o blocca' }] : undefined}
                 onAccessibilityAction={() => (!entry.me && onReport ? onReport(entry) : undefined)}
               >
                 {first ? <CrownIcon /> : null}
@@ -146,7 +146,7 @@ export function RankRow({ entry, ranked, zone, onReport }: { entry: Ranked; rank
       style={[styles.row, entry.me && styles.rowMe]}
       onLongPress={!entry.me && onReport ? () => onReport(entry) : undefined}
       delayLongPress={500}
-      accessibilityActions={!entry.me && onReport ? [{ name: 'longpress', label: 'Segnala il soprannome' }] : undefined}
+      accessibilityActions={!entry.me && onReport ? [{ name: 'longpress', label: 'Segnala o blocca' }] : undefined}
       onAccessibilityAction={() => (!entry.me && onReport ? onReport(entry) : undefined)}
       accessible
       accessibilityLabel={`${entry.rank}º: ${entry.me ? 'tu' : entry.name}, ${entry.points} punti${zoneText ? `, ${zoneText.toLowerCase()}` : ''}`}

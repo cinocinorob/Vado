@@ -19,7 +19,9 @@ import type { SpeciesId, TreeBadge } from '../core/plant';
 import { monthStart } from '../core/social';
 import { candyOpen } from '../core/halloween';
 import { myTree, social, type CandyEntry, type LeagueBoard, type LeagueSummary, type Profile } from '../social';
+import { BLOCKED_NAME } from '../social/blocks';
 import { recordWins } from '../social/history';
+import { blockPerson } from '../storage/blocks';
 import { leagueToOpen } from '../social/selection';
 import type { PeriodEntry } from '../social/types';
 import { loadTrips } from '../storage/trips';
@@ -134,25 +136,33 @@ export default function Classifica() {
     setProblem(social.problem());
   }
 
-  /** Pressione lunga su un altro partecipante: segnala il soprannome. */
+  /** Pressione lunga su un altro partecipante: segnalarlo o bloccarlo. */
   function report(entry: Ranked) {
+    if (entry.name === BLOCKED_NAME) {
+      Alert.alert('Persona bloccata', 'La puoi sbloccare dalle impostazioni, in "Persone bloccate".');
+      return;
+    }
     if (entry.name === 'Soprannome nascosto') return;
-    Alert.alert(
-      `Segnalare "${entry.name}"?`,
-      'Se il soprannome è offensivo o inappropriato. Con due segnalazioni di persone diverse viene nascosto a tutti finché non lo cambia.',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Segnala',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await social.report(entry.id);
-            Alert.alert(result.ok ? 'Segnalazione inviata' : 'Non inviata', result.ok ? (result.value.hidden ? 'Il soprannome ora è nascosto.' : 'Grazie: se lo segnala anche qualcun altro, viene nascosto.') : result.problem);
-            if (result.ok) refresh(leagueId).catch(() => undefined);
-          },
+    Alert.alert(`"${entry.name}"`, 'Segnala il soprannome se è offensivo: con due segnalazioni di persone diverse viene nascosto a tutti. Bloccando, per te non si vedono più il suo nome e il suo avatar e non può comparire nelle tue sfide.', [
+      { text: 'Annulla', style: 'cancel' },
+      {
+        text: 'Blocca',
+        style: 'destructive',
+        onPress: async () => {
+          await blockPerson({ id: entry.id, name: entry.name });
+          refresh(leagueId).catch(() => undefined);
         },
-      ],
-    );
+      },
+      {
+        text: 'Segnala',
+        style: 'destructive',
+        onPress: async () => {
+          const result = await social.report(entry.id);
+          Alert.alert(result.ok ? 'Segnalazione inviata' : 'Non inviata', result.ok ? (result.value.hidden ? 'Il soprannome ora è nascosto.' : 'Grazie: se lo segnala anche qualcun altro, viene nascosto.') : result.problem);
+          if (result.ok) refresh(leagueId).catch(() => undefined);
+        },
+      },
+    ]);
   }
 
   async function invite() {
