@@ -13,8 +13,8 @@ cat esito.txt
 
 flat() { sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g'; }
 
-if [ "$status" -eq 0 ] && grep -q '^# pass 1' esito.txt && grep -q '^# skipped 0' esito.txt; then
-  echo "::notice::Prova del server riuscita ($name): leghe, punti e sfide tra quattro persone simulate."
+if [ "$status" -eq 0 ] && grep -Eq '^# pass [1-9]' esito.txt && grep -q '^# fail 0' esito.txt && grep -q '^# skipped 0' esito.txt; then
+  echo "::notice::Prova del server riuscita ($name): leghe, punti, sfide e tetto giornaliero tra persone simulate."
   exit 0
 fi
 detail=$(grep -E -A14 '^not ok|^# (pass|fail|skipped)' esito.txt | head -60 | flat)
